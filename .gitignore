@@ -1,0 +1,45 @@
+# Build directories
+build/
+.cache/
+*.so
+*.so.*
+*.a
+*.o
+*.dylib
+*.dll
+*.exe
+
+# Qt
+*.pro.user
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.autosave
+*.qm
+moc_*
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# LSP and formatting
+compile_commands.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application files
+layout.json
+*.log
