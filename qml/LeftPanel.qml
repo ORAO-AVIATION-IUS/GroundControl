@@ -5,7 +5,7 @@ Rectangle {
 
 	Text {
 		anchors.centerIn: parent
-		text: qsTr("Left Panel")
+		text: qsTr("bu bir button")
 		font.pixelSize: 24
 	}
 }
