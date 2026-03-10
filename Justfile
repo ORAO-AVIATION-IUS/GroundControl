@@ -1,14 +1,18 @@
-qmlformat6 := "/usr/lib/qt6/bin/qmlformat"
-qmllint6 := "/usr/lib/qt6/bin/qmllint"
+qmlformat6 := if os() == "linux" { "/usr/lib/qt6/bin/qmlformat" } else { "qmlformat" }
+qmllint6 := if os() == "linux" { "/usr/lib/qt6/bin/qmllint" } else { "qmllint" }
 # Build project
 build:
     cmake -B build -S . -G Ninja
     cmake --build build
 
 # Run
-[unix]
+[linux]
 run BACKEND="xcb":
     cd build && QT_QPA_PLATFORM={{BACKEND}} QML_IMPORT_PATH=./com ./GroundControl
+
+[macos]
+run:
+    cd build && ./GroundControl
 
 [windows]
 run:
