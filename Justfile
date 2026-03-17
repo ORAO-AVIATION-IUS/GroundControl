@@ -1,3 +1,4 @@
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 qmlformat6 := if os() == "linux" { "/usr/lib/qt6/bin/qmlformat" } else { "qmlformat" }
 qmllint6 := if os() == "linux" { "/usr/lib/qt6/bin/qmllint" } else { "qmllint" }
 # Build project
@@ -16,7 +17,7 @@ run:
 
 [windows]
 run:
-    cd build && ./GroundControl.exe
+    ./build/GroundControl.exe
 
 # Format code using clang-format and qmlformat (all files or specific file)
 [unix]
@@ -103,11 +104,6 @@ clean TARGET="all":
 
 [windows]
 clean TARGET="all":
-    @if "{{TARGET}}"=="all" ( \
-        if exist build rmdir /s /q build && \
-        if exist compile_commands.json del /f compile_commands.json \
-    ) else if "{{TARGET}}"=="build" ( \
-        if exist build rmdir /s /q build \
-    ) else if "{{TARGET}}"=="lsp" ( \
-        if exist compile_commands.json del /f compile_commands.json \
-    )
+    Remove-Item -Path build -Verbose -Recurse -ErrorAction SilentlyContinue -Force
+    Remove-Item -Path compile_commands.json -Verbose -ErrorAction SilentlyContinue -Force
+

@@ -43,3 +43,4 @@ Thumbs.db
 # Application files
 layout.json
 *.log
+.qmlls.ini
