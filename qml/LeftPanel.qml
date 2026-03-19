@@ -1,17 +1,30 @@
 import QtQuick 2.6
-import QtQuick.Controls 2.6
-import QtQuick.Layouts 1.3
+import "components"
 
 Rectangle {
 	color: "#e0e0e0"
-	ColumnLayout {
-		Button {
-			text: "Take off"
-			onClicked: console.log("Take off button clicked")
-		}
-		Button {
-			text: "Land"
-			onClicked: console.log("Land button clicked")
+
+	Text {
+		anchors.centerIn: parent
+		text: qsTr("Left Panel")
+		font.pixelSize: 24
+	}
+
+	Column {
+		x: 20
+		y: 20
+		spacing: 15
+
+		Repeater {
+			model: ["VTOL Take off", "Transition", "Horizontal", "Vertical", "Return To Launch", "VTOL Land"]
+
+			NormalButton {
+				text: modelData
+
+				onClicked: {
+					console.log(modelData + " activated");
+				}
+			}
 		}
 	}
 }
