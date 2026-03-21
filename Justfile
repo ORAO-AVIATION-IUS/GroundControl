@@ -54,8 +54,6 @@ format FILE="":
 lint FILE="":
     #!/usr/bin/env sh
     set -e
-    
-    # Filter out GCC-specific flags that clang-tidy doesn't understand
     if [ -f build/compile_commands.json ]; then
         sed -i.bak 's/-mno-direct-extern-access//g' build/compile_commands.json
     fi
@@ -82,15 +80,11 @@ lint FILE="":
         mv build/compile_commands.json.bak build/compile_commands.json
     fi
 
+# Lint code using clang-tidy (C++/headers) and qmllint (QML) with compile_commands.json reference
 [windows]
 lint FILE="":
-    @if "{{FILE}}"=="" ( \
-        powershell -Command "Get-ChildItem -Recurse -Filter '*.cpp','*.h' | Where-Object { $_.FullName -notmatch 'third_party|build' } | ForEach-Object { clang-tidy -p build $_.FullName --extra-arg-before=-Wno-unknown-warning-option }" && \
-        powershell -Command "Get-ChildItem -Recurse -Filter '*.qml' | Where-Object { $_.FullName -notmatch 'third_party|build' } | ForEach-Object { qmllint $_.FullName }" \
-    ) else ( \
-        echo {{FILE}} | findstr /I "\.qml$" >nul && (qmllint {{FILE}}) || (clang-tidy -p build {{FILE}} --extra-arg-before=-Wno-unknown-warning-option) \
-    )
-
+    Get-ChildItem -Recurse -Filter *.qml | Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\third_party\\' } | ForEach-Object { qmllint $_.FullName }
+    Get-ChildItem -Recurse -Include *.cpp,*.h | Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\third_party\\' } | ForEach-Object { clang-tidy $_.FullName -p build --header-filter=".*" 2>&1 | Out-Null }
 # Clean build directory and/or LSP files (TARGET: build|lsp|all, default: all)
 [unix]
 clean TARGET="all":
@@ -104,6 +98,5 @@ clean TARGET="all":
 
 [windows]
 clean TARGET="all":
-    Remove-Item -Path build -Verbose -Recurse -ErrorAction SilentlyContinue -Force
-    Remove-Item -Path compile_commands.json -Verbose -ErrorAction SilentlyContinue -Force
-
+    if ("{{TARGET}}" -eq "all" -or "{{TARGET}}" -eq "build") {Remove-Item -Path build -Verbose -Recurse -ErrorAction SilentlyContinue -Force}
+    if ("{{TARGET}}" -eq "all" -or "{{TARGET}}" -eq "lsp") {Remove-Item -Path compile_commands.json -Verbose -ErrorAction SilentlyContinue -Force}
