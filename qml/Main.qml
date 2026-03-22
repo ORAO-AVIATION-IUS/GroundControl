@@ -17,6 +17,7 @@ ApplicationWindow {
 			addDockWidget(leftPanel, KDDW.KDDockWidgets.Location_OnLeft);
 			addDockWidget(rightPanel, KDDW.KDDockWidgets.Location_OnRight);
 			addDockWidget(bottomPanel, KDDW.KDDockWidgets.Location_OnBottom);
+			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
 		}
 
 		KDDW.DockWidget {
@@ -41,6 +42,14 @@ ApplicationWindow {
 			uniqueName: "bottomPanel"
 			title: qsTr("Bottom Panel")
 			source: "qrc:/qml/BottomPanel.qml"
+		}
+
+		KDDW.DockWidget {
+			id: compassPanel
+
+			uniqueName: "compassPanel"
+			title: qsTr("compass Panel")
+			source: "qrc:/qml/CompassPanel.qml"
 		}
 	}
 

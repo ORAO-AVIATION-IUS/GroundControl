@@ -42,12 +42,8 @@ format FILE="":
 
 [windows]
 format FILE="":
-    @if "{{FILE}}"=="" ( \
-        powershell -Command "Get-ChildItem -Recurse -Filter '*.cpp','*.h' | Where-Object { $_.FullName -notmatch 'third_party|build' } | ForEach-Object { clang-format -i -style=file $_.FullName }" && \
-        powershell -Command "Get-ChildItem -Recurse -Filter '*.qml' | Where-Object { $_.FullName -notmatch 'third_party|build' } | ForEach-Object { qmlformat -i $_.FullName }" \
-    ) else ( \
-        echo {{FILE}} | findstr /I "\.qml$" >nul && (qmlformat -i {{FILE}}) || (clang-format -i -style=file {{FILE}}) \
-    )
+    Get-ChildItem -Recurse -Filter *.qml | Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\third_party\\' } | ForEach-Object { qmlformat -i $_.FullName }
+    Get-ChildItem -Recurse -Include *.cpp,*.h | Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\third_party\\' } | ForEach-Object { clang-format -i $_.FullName }
 
 # Lint code using clang-tidy and qmllint (all files or specific file)
 [unix]

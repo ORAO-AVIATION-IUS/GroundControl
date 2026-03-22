@@ -21,6 +21,9 @@ add_subdirectory(third_party/KDDockWidgets EXCLUDE_FROM_ALL)
 file(GLOB QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
     qml/*.qml
 )
+file(GLOB QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
+    assets/*.png
+)
 
 qt_add_executable(GroundControl
     main.cpp
@@ -34,6 +37,7 @@ qt_add_qml_module(GroundControl
 qt_add_resources(GroundControl
     PREFIX "/"
     FILES ${QML_FILES}
+    FILES ${QML_ASSETS}
 )
 
 target_link_libraries(GroundControl PRIVATE Qt6::Quick Qt6::QuickControls2 KDAB::kddockwidgets)
