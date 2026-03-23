@@ -22,7 +22,8 @@ file(GLOB QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
     qml/*.qml
 )
 file(GLOB QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
-    assets/*.png
+    assets/*.png,
+    assets/*.svg
 )
 
 qt_add_executable(GroundControl
