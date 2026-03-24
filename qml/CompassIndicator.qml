@@ -4,7 +4,8 @@ Item {
 	id: root
 	width: 200
 	height: 200
-	property real heading: 0
+
+	property real heading: (typeof mavManager !== "undefined") ? mavManager.yaw : 0
 
 	Rectangle {
 		id: circle
@@ -21,10 +22,9 @@ Item {
 			anchors.fill: parent
 			fillMode: Image.PreserveAspectFit
 			antialiasing: true
-			width: parent.width
-			height: parent.height
 		}
 
+		//dönen iğne
 		Image {
 			id: needleImg
 			source: "qrc:/assets/compass_needle.svg"
@@ -33,7 +33,17 @@ Item {
 			antialiasing: true
 			width: parent.width
 			height: parent.height
+
+			
 			rotation: root.heading
+
+			Behavior on rotation {
+				RotationAnimation {
+					duration: 500
+					direction: RotationAnimation.Shortest
+					easing.type: Easing.OutQuad
+				}
+			}
 		}
 	}
 }

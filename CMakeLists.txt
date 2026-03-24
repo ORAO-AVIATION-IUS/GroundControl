@@ -43,6 +43,8 @@ qt_add_executable(GroundControl
 qt_add_qml_module(GroundControl
     URI gc
     VERSION 1.0
+    QML_FILES
+    QML_FILES
 )
 
 qt_add_resources(GroundControl

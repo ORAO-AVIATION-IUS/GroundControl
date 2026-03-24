@@ -24,6 +24,7 @@ ApplicationWindow {
 			addDockWidget(rightPanel, KDDW.KDDockWidgets.Location_OnRight);
 			addDockWidget(bottomPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
+			addDockWidget(telemetryPanel,KDDW.KDDockWidgets.Location_OnTop);
 		}
 
 		KDDW.DockWidget {
@@ -57,6 +58,12 @@ ApplicationWindow {
 			title: qsTr("compass Panel")
 			source: "qrc:/qml/CompassPanel.qml"
 		}
+		KDDW.DockWidget{
+			id: telemetryPanel
+			uniqueName: "telemetryPanel"
+			title: qsTr("telemetryPanel")
+			source:"qrc:/qml/TelemetryPanel.qml"
+		}
 	}
 
 	menuBar: MenuBar {
@@ -87,6 +94,10 @@ ApplicationWindow {
 				text: qsTr("Show Compass Panel")
 				onTriggered: compassPanel.open()
 			}
+			Action{
+				text: qsTr("Show Telemetry Panel")
+				onTriggered: telemetryPanel.open()
+			}
 
 			MenuSeparator {}
 
@@ -97,6 +108,7 @@ ApplicationWindow {
 					rightPanel.open();
 					bottomPanel.open();
 					compassPanel.open();
+					telemetryPanel.open();
 				}
 			}
 			Action {
@@ -106,6 +118,7 @@ ApplicationWindow {
 					rightPanel.close();
 					bottomPanel.close();
 					compassPanel.close();
+					telemetryPanel.close();
 				}
 			}
 		}

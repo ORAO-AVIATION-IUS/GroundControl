@@ -8,8 +8,7 @@ Rectangle {
 	CompassIndicator {
 		id: myCompass
 		anchors.centerIn: parent
-		heading: -150
-		width: 400
-		height: 400
+
+		heading: (typeof mavManager !== "undefined") ? mavManager.yaw : 0
 	}
 }

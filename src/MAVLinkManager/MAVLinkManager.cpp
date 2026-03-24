@@ -5,7 +5,6 @@ MAVLinkManager::MAVLinkManager(QObject* parent) : QObject(parent) {
 	socket = new QUdpSocket(this);
 	connectionTimer = new QTimer(this);
 
-	// 3 saniye boyunca veri gelmezse bağlantıyı koptu say
 	connectionTimer->setInterval(3000);
 	connect(connectionTimer, &QTimer::timeout, this, [=]() {
 		updateConnectionStatus(false);
@@ -34,7 +33,6 @@ MAVLinkManager::MAVLinkManager(QObject* parent) : QObject(parent) {
 
 			for (int i = 0; i < datagram.size(); i++) {
 				if (mavlink_parse_char(MAVLINK_COMM_0, (uint8_t)datagram.at(i), &msg, &status)) {
-					// Mesaj geldiyse bağlantıyı aktif et ve zamanlayıcıyı sıfırla
 					updateConnectionStatus(true);
 					connectionTimer->start();
 
@@ -80,8 +78,12 @@ void MAVLinkManager::handleMessage(const mavlink_message_t& msg) {
 			mavlink_vfr_hud_t hud;
 			mavlink_msg_vfr_hud_decode(&msg, &hud);
 
-			_altitude = hud.alt; // Metre cinsinden rakım
+			_airspeed = hud.airspeed; // C++'da bu değişkeni tanımlamış olmalısın
+			_altitude = hud.alt;
+			_yaw = hud.heading;       // Pusula iğnesini döndüren veri
+
 			emit vfrHudChanged();
+			emit attitudeChanged(); // Yaw/Heading değiştiği için bu sinyali de tetikleyelim
 			break;
 		}
 		case MAVLINK_MSG_ID_SYS_STATUS: {
@@ -114,6 +116,22 @@ void MAVLinkManager::handleMessage(const mavlink_message_t& msg) {
 				_flightMode = modeStr;
 				emit flightModeChanged();
 			}
+			break;
+		}
+		case MAVLINK_MSG_ID_RAW_IMU: {
+			mavlink_raw_imu_t imu;
+			mavlink_msg_raw_imu_decode(&msg, &imu);
+
+			// G-Kuvveti Hesabı: Vektörel toplam / 9806 (mG to G)
+			double rawAcc = std::sqrt(std::pow(imu.xacc, 2) +
+									  std::pow(imu.yacc, 2) +
+									  std::pow(imu.zacc, 2));
+			_gForce = rawAcc / 9806.0;
+
+			// Jiroskop (X ekseni örneği - rad/s'ye çevirmek gerekebilir)
+			_gyroX = imu.xgyro / 1000.0;
+
+			emit imuDataChanged();
 			break;
 		}
 	}
