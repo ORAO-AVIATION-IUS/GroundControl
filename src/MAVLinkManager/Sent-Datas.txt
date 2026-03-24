@@ -1,0 +1,12 @@
+Gönderilen Veriler
+
+Pusula (Heading)
+Yunuslama (Pitch)
+Yatış (Roll)
+Hava Hızı
+İrtifa
+G-Kuvveti
+Jiroskop
+Batarya
+Uçuş Modu
+Bağlantı Durumu
