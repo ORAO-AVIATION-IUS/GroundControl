@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="/qt/qml/gc">/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/gc</file>
+
+  </qresource>
+</RCC>

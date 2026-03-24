@@ -1,0 +1,14 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="qml/BottomPanel.qml">/home/xfgq/XFGQ/Teknofest/GroundControl/qml/BottomPanel.qml</file>
+    <file alias="qml/CompassIndicator.qml">/home/xfgq/XFGQ/Teknofest/GroundControl/qml/CompassIndicator.qml</file>
+    <file alias="qml/CompassPanel.qml">/home/xfgq/XFGQ/Teknofest/GroundControl/qml/CompassPanel.qml</file>
+    <file alias="qml/LeftPanel.qml">/home/xfgq/XFGQ/Teknofest/GroundControl/qml/LeftPanel.qml</file>
+    <file alias="qml/Main.qml">/home/xfgq/XFGQ/Teknofest/GroundControl/qml/Main.qml</file>
+    <file alias="qml/RightPanel.qml">/home/xfgq/XFGQ/Teknofest/GroundControl/qml/RightPanel.qml</file>
+    <file alias="qml/TopNavBar.qml">/home/xfgq/XFGQ/Teknofest/GroundControl/qml/TopNavBar.qml</file>
+    <file alias="assets/compass_background.svg">/home/xfgq/XFGQ/Teknofest/GroundControl/assets/compass_background.svg</file>
+    <file alias="assets/compass_needle.svg">/home/xfgq/XFGQ/Teknofest/GroundControl/assets/compass_needle.svg</file>
+  </qresource>
+</RCC>
+

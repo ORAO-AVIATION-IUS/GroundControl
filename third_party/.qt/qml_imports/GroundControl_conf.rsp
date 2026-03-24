@@ -1,0 +1,14 @@
+-rootPath
+/home/xfgq/XFGQ/Teknofest/GroundControl
+-cmake-output
+-output-file
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/.qt/qml_imports/GroundControl_conf.cmake
+-importPath
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party
+-importPath
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/gc
+-importPath
+/usr/lib64/qt6/qml
+-qrcFiles
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/.qt/rcc/qmake_gc.qrc
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/.qt/rcc/PREFIX.qrc

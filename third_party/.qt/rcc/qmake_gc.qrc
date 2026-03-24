@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/qt/qml/gc">
+    <file alias="qmldir">/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/gc/qmldir</file>
+  </qresource>
+</RCC>
+

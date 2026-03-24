@@ -1,0 +1,5 @@
+module gc
+typeinfo GroundControl.qmltypes
+prefer :/qt/qml/gc/
+depends QtQuick
+

@@ -1,0 +1,14 @@
+-I
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party
+-I
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/gc
+-I
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party
+-I
+/usr/lib64/qt6/qml
+--resource
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/.qt/rcc/qmake_gc.qrc
+--resource
+/home/xfgq/XFGQ/Teknofest/GroundControl/third_party/.qt/rcc/PREFIX.qrc
+--module
+gc
