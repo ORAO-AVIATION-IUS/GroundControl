@@ -1,5 +1,9 @@
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
-qmlformat6 := if os() == "linux" { "/usr/lib/qt6/bin/qmlformat" } else { "qmlformat" }
+# Önce sistemde hangi isimle varsa onu bulmaya çalışalım
+qmlformat_path := shell("which qmlformat-qt6 qmlformat6 qmlformat 2>/dev/null | head -n 1")
+
+# Eğer shell bulamazsa senin belirttiğin varsayılan yolları kullansın
+qmlformat6 := if qmlformat_path != "" { qmlformat_path } else if os() == "linux" { "/usr/lib/qt6/bin/qmlformat" } else { "qmlformat" }
 qmllint6 := if os() == "linux" { "/usr/lib/qt6/bin/qmllint" } else { "qmllint" }
 # Build project
 build:

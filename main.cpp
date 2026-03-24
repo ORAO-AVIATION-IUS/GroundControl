@@ -6,6 +6,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QDebug> // Hata ayıklama için şart
+#include <MAVLinkManager.h>
 
 int main(int argc, char* argv[]) {
 #ifdef Q_OS_WIN
@@ -18,12 +20,40 @@ int main(int argc, char* argv[]) {
 
 	QGuiApplication app(argc, argv);
 
+	// 1. KRİTİK: KDDockWidgets'ı başlat (Bu satır sende eksikti, QML yüklenmesini engelleyebilir)
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
 
-	QQmlApplicationEngine appEngine;
+	QQmlApplicationEngine engine;
 
-	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
-	appEngine.load(QUrl("qrc:/qml/Main.qml"));
+	// 2. MAVLinkManager nesnesini oluştur
+	MAVLinkManager* mavManager = new MAVLinkManager(&app);
+	qDebug() << "MAVLinkManager olusturuldu, UDP dinleniyor...";
 
+	// 3. QML tarafına 'mavManager' ismiyle gönder
+	engine.rootContext()->setContextProperty("mavManager", mavManager);
+
+	// 4. Platform motorunu ayarla
+	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&engine);
+
+	// 5. QML Yükleme ve Hata Kontrolü
+	const QUrl url(QStringLiteral("qrc:/qml/Main.qml"));
+
+	// Yükleme sırasında hata olursa terminale bas
+	QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+					 &app, [url](QObject *obj, const QUrl &objUrl) {
+						 if (!obj && url == objUrl) {
+							 qCritical() << "HATA: QML nesnesi olusturulamadi! Dosya yolunu veya QML kodunu kontrol et:" << url;
+							 QCoreApplication::exit(-1);
+						 }
+					 }, Qt::QueuedConnection);
+
+	engine.load(url);
+
+	if (engine.rootObjects().isEmpty()) {
+		qWarning() << "UYARI: Root nesnesi bos, uygulama baslatilamiyor.";
+		return -1;
+	}
+
+	qDebug() << "Uygulama basariyla baslatildi.";
 	return app.exec();
 }

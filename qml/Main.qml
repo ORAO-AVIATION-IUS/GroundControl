@@ -9,10 +9,10 @@ ApplicationWindow {
 	title: qsTr("Ground Control")
 
 	//topnavbar bar
-	header:TopNavBar{
+	header: TopNavBar {
 		id: mainNavBar
-
 	}
+
 
 	KDDW.DockingArea {
 		id: root
@@ -68,8 +68,8 @@ ApplicationWindow {
 				onTriggered: Qt.quit()
 			}
 		}
-		Menu{
-					title: qsTr("&Widgets")
+		Menu {
+			title: qsTr("&Widgets")
 
 			Action {
 				text: qsTr("Show Left Panel")
@@ -88,23 +88,26 @@ ApplicationWindow {
 				onTriggered: compassPanel.open()
 			}
 
-			MenuSeparator { }
+			MenuSeparator {}
 
 			Action {
 				text: qsTr("Show All")
 				onTriggered: {
-					leftPanel.open(); rightPanel.open();
-					bottomPanel.open(); compassPanel.open();
+					leftPanel.open();
+					rightPanel.open();
+					bottomPanel.open();
+					compassPanel.open();
 				}
 			}
 			Action {
 				text: qsTr("Hide All")
 				onTriggered: {
-					leftPanel.close(); rightPanel.close();
-					bottomPanel.close(); compassPanel.close();
+					leftPanel.close();
+					rightPanel.close();
+					bottomPanel.close();
+					compassPanel.close();
 				}
 			}
 		}
 	}
-	
 }

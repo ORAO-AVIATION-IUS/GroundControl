@@ -1,0 +1,31 @@
+{
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/**",
+
+        "/usr/include/x86_64-linux-gnu/qt6",
+        "/usr/include/x86_64-linux-gnu/qt6/QtCore",
+        "/usr/include/x86_64-linux-gnu/qt6/QtNetwork",
+        "/usr/include/x86_64-linux-gnu/qt6/QtGui",
+        "/usr/include/x86_64-linux-gnu/qt6/QtQml",
+        "/usr/include/x86_64-linux-gnu/qt6/QtQuick",
+
+        "${workspaceFolder}/third_party/c_library_v2"
+      ],
+      "defines": [
+        "QT_CORE_LIB",
+        "QT_NETWORK_LIB",
+        "QT_GUI_LIB",
+        "QT_QML_LIB",
+        "QT_QUICK_LIB"
+      ],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64"
+    }
+  ],
+  "version": 4
+}

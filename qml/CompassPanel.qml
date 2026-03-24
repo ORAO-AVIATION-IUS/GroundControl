@@ -8,6 +8,8 @@ Rectangle {
 	CompassIndicator {
 		id: myCompass
 		anchors.centerIn: parent
-		heading: -154
+		heading: -150
+		width: 400
+		height: 400
 	}
 }

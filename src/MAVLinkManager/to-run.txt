@@ -1,0 +1,12 @@
+#download this library
+pip install pymavlink
+
+git clone https://github.com/mavlink/c_library_v2.git
+indirdik
+
+
+program çalışıyor ama udp başlatıldı, program bağlandı, bağlantı keisldi gibi bilgiler vermiyordu
+aşağıdaki kod işe yaradı
+
+export QT_LOGGING_RULES="*.debug=true;*.info=true;*.warning=true" && cd build && ./GroundControl
+komutu ile  çıktı vermesini zorladık environment variables ordada udp başlatıldı bağlantı kuruldu diyordu.
