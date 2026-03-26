@@ -2,8 +2,8 @@ import QtQuick 2.15
 
 Item {
 	id: root
-	width: 200
-	height: 200
+	width: 250
+	height: 250
 	property real heading: 0
 
 	Rectangle {
@@ -23,6 +23,8 @@ Item {
 			antialiasing: true
 			width: parent.width
 			height: parent.height
+			sourceSize.width: width
+			sourceSize.height: height
 		}
 
 		Image {
@@ -34,6 +36,8 @@ Item {
 			width: parent.width
 			height: parent.height
 			rotation: root.heading
+			sourceSize.width: width
+			sourceSize.height: height
 		}
 	}
 }
