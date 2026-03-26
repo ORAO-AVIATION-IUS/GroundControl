@@ -12,17 +12,17 @@ ApplicationWindow {
 		id: root
 
 		anchors.fill: parent
-		uniqueName: "MainLayout-1"
+		uniqueName: "MainLayout-3"
 		Component.onCompleted: {
 			addDockWidget(leftPanel, KDDW.KDDockWidgets.Location_OnLeft);
 			addDockWidget(rightPanel, KDDW.KDDockWidgets.Location_OnRight);
 			addDockWidget(bottomPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
+			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnTop);
 		}
 
 		KDDW.DockWidget {
 			id: leftPanel
-
 			uniqueName: "leftPanel"
 			title: qsTr("Left Panel")
 			source: "qrc:/qml/LeftPanel.qml"
@@ -30,7 +30,6 @@ ApplicationWindow {
 
 		KDDW.DockWidget {
 			id: rightPanel
-
 			uniqueName: "rightPanel"
 			title: qsTr("Right Panel")
 			source: "qrc:/qml/RightPanel.qml"
@@ -38,7 +37,6 @@ ApplicationWindow {
 
 		KDDW.DockWidget {
 			id: bottomPanel
-
 			uniqueName: "bottomPanel"
 			title: qsTr("Bottom Panel")
 			source: "qrc:/qml/BottomPanel.qml"
@@ -46,10 +44,16 @@ ApplicationWindow {
 
 		KDDW.DockWidget {
 			id: compassPanel
-
 			uniqueName: "compassPanel"
 			title: qsTr("compass Panel")
 			source: "qrc:/qml/CompassPanel.qml"
+		}
+
+		KDDW.DockWidget {
+			id: testPanel
+			uniqueName: "testPanel"
+			title: qsTr("Test Panel")
+			source: "qrc:/qml/ButtonTestPanel.qml"
 		}
 	}
 
