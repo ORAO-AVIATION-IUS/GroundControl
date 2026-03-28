@@ -17,7 +17,7 @@ Item {
 
 		Image {
 			id: compassImg
-			source: "qrc:/assets/compass_background.svg"
+			source: "qrc:/resources/assets/compass_background.svg"
 			anchors.fill: parent
 			fillMode: Image.PreserveAspectFit
 			antialiasing: true
@@ -29,7 +29,7 @@ Item {
 
 		Image {
 			id: needleImg
-			source: "qrc:/assets/compass_needle.svg"
+			source: "qrc:/resources/assets/compass_needle.svg"
 			anchors.centerIn: parent
 			fillMode: Image.PreserveAspectFit
 			antialiasing: true

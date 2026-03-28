@@ -4,10 +4,9 @@
     {
       "label": "just build",
       "type": "shell",
-      "command": "cmd",
+      "command": "just",
       "args": [
-        "/c",
-        "just build"
+        "build"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

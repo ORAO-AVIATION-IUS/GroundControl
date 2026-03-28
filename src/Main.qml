@@ -25,35 +25,35 @@ ApplicationWindow {
 			id: leftPanel
 			uniqueName: "leftPanel"
 			title: qsTr("Left Panel")
-			source: "qrc:/qml/LeftPanel.qml"
+			source: "qrc:/src/LeftPanel.qml"
 		}
 
 		KDDW.DockWidget {
 			id: rightPanel
 			uniqueName: "rightPanel"
 			title: qsTr("Right Panel")
-			source: "qrc:/qml/RightPanel.qml"
+			source: "qrc:/src/RightPanel.qml"
 		}
 
 		KDDW.DockWidget {
 			id: bottomPanel
 			uniqueName: "bottomPanel"
 			title: qsTr("Bottom Panel")
-			source: "qrc:/qml/BottomPanel.qml"
+			source: "qrc:/src/BottomPanel.qml"
 		}
 
 		KDDW.DockWidget {
 			id: compassPanel
 			uniqueName: "compassPanel"
 			title: qsTr("compass Panel")
-			source: "qrc:/qml/CompassPanel.qml"
+			source: "qrc:/src/CompassPanel.qml"
 		}
 
 		KDDW.DockWidget {
 			id: testPanel
 			uniqueName: "testPanel"
 			title: qsTr("Test Panel")
-			source: "qrc:/qml/ButtonTestPanel.qml"
+			source: "qrc:/src/ButtonTestPanel.qml"
 		}
 	}
 
