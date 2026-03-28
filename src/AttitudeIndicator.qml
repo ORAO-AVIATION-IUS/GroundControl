@@ -31,12 +31,12 @@ Item {
 
 		Image {
 			id: horizonBg
-			source: "qrc:/assets/attitude_back.svg"
+			source: "qrc:/resources/assets/attitude_back.svg"
 			anchors.centerIn: parent
 			width: parent.width * 1.45
 			height: parent.height * 3.5
-            sourceSize.width: width
-            sourceSize.height: height
+			sourceSize.width: width
+			sourceSize.height: height
 			fillMode: Image.PreserveAspectCrop
 			asynchronous: true
 			antialiasing: true
@@ -64,7 +64,7 @@ Item {
 
 	Image {
 		id: crosshairImg
-		source: "qrc:/assets/attitude_pointer.svg"
+		source: "qrc:/resources/assets/attitude_pointer.svg"
 		anchors.centerIn: parent
 		width: parent.width * 0.8
 		height: parent.height * 0.8
@@ -75,7 +75,7 @@ Item {
 	}
 	Image {
 		id: frameImg
-		source: "qrc:/assets/attitude_frame.svg"
+		source: "qrc:/resources/assets/attitude_frame.svg"
 		anchors.fill: parent
 		fillMode: Image.PreserveAspectFit
 		asynchronous: true
@@ -94,7 +94,7 @@ Item {
 
 		Image {
 			id: triangleImg
-			source: "qrc:/assets/attitude_triangle.svg"
+			source: "qrc:/resources/assets/attitude_triangle.svg"
 			width: 25
 			height: 25
 			fillMode: Image.PreserveAspectFit

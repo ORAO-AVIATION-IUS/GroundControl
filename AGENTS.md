@@ -45,7 +45,7 @@ just clean
 ├── main.cpp              # Application entry point
 ├── CMakeLists.txt        # CMake configuration
 ├── Justfile             # Task definitions
-├── qml/                 # QML source files
+├── src/                 # QML source files
 │   ├── Main.qml
 │   ├── LeftPanel.qml
 │   ├── RightPanel.qml
@@ -67,4 +67,3 @@ just clean
 3. Run `just lint` to check for issues
 4. Run `just build` to compile
 5. Run `just run` to test
-

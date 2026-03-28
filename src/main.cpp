@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 	QQmlApplicationEngine appEngine;
 
 	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
-	appEngine.load(QUrl("qrc:/qml/Main.qml"));
+	appEngine.load(QUrl("qrc:/src/Main.qml"));
 
 	return app.exec();
 }

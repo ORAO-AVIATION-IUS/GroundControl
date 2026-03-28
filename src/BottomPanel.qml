@@ -1,12 +1,12 @@
 import QtQuick 2.6
-import "qrc:/resources/components"
+import "qrc:/src/components"
 
 Rectangle {
-	color: "#e0e0e0"
+	color: "#e0d0e0"
 
 	Text {
 		anchors.centerIn: parent
-		text: qsTr("Left Panel")
+		text: qsTr("Bottom Panel")
 		font.pixelSize: 24
 	}
 }
