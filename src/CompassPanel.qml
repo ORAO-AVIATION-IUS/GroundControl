@@ -24,6 +24,16 @@ Rectangle {
 		pitch: pitchSlider.value
 		roll: rollSlider.value
 	}
+
+	AirspeedIndicator {
+		AirspeedIndicator {
+			id: myAirspeed
+			anchors.top: myAttitude.bottom
+			anchors.topMargin: 20
+			anchors.horizontalCenter: myAttitude.horizontalCenter
+			airspeed: airspeedSlider.value
+		}
+	}
 	Rectangle {
 		width: 450
 		height: 220
@@ -91,6 +101,24 @@ Rectangle {
 					width: 250
 					from: 0
 					to: 360
+					value: 0
+					stepSize: 1
+				}
+			}
+			Row {
+				spacing: 15
+				Text {
+					text: "Airspeed: " + Math.round(airspeedSlider.value) + " knots"
+					width: 90
+					font.pixelSize: 15
+					font.bold: true
+					color: "#2c3e50"
+				}
+				Slider {
+					id: airspeedSlider
+					width: 250
+					from: 0
+					to: 200
 					value: 0
 					stepSize: 1
 				}
