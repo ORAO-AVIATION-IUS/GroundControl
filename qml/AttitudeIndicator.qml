@@ -35,8 +35,8 @@ Item {
 			anchors.centerIn: parent
 			width: parent.width * 1.45
 			height: parent.height * 3.5
-            sourceSize.width: width
-            sourceSize.height: height
+			sourceSize.width: width
+			sourceSize.height: height
 			fillMode: Image.PreserveAspectCrop
 			asynchronous: true
 			antialiasing: true
