@@ -8,7 +8,6 @@ ApplicationWindow {
 	height: 800
 	title: qsTr("Ground Control")
 
-	//topnavbar bar
 	header:TopNavBar{
 		id: mainNavBar
 
