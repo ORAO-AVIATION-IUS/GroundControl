@@ -1,16 +1,16 @@
 import QtQuick 2.6
+import "qrc:/src/theme"
 
 Rectangle {
 	id: rootBox
 
-	property int boxWidth: 200
-	property int boxHeight: 150
-	property color boxColor: '#002f55'
-	property color borderColor: '#cbc1ff'
-	property int borderWidth: 2
-	property int boxRadius: 8
-
-	property int padding: 10
+	property int boxWidth: Style.boxWidth
+	property int boxHeight: Style.boxHeight
+	property color boxColor: Style.boxColor
+	property color borderColor: Style.boxBorderColor
+	property int borderWidth: Style.boxBorderWidth
+	property int boxRadius: Style.boxRadius
+	property int padding: Style.boxPadding
 
 	default property alias content: innerContainer.data
 

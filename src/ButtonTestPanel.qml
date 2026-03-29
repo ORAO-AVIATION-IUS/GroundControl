@@ -12,23 +12,23 @@ Rectangle {
 		anchors.margins: 15
 		spacing: 15
 
-		SlidersButton {
+		SlidersToolButton {
 			onClicked: console.log("Sliders.")
 		}
 
-		EditButton {
+		EditToolButton {
 			onClicked: console.log("Edit.")
 		}
 
-		CameraButton {
+		CameraToolButton {
 			onClicked: console.log("Camera.")
 		}
 
-		ArmedButton {
+		ArmedToolButton {
 			onClicked: console.log("Armed.")
 		}
 
-		CancelButton {
+		CancelToolButton {
 			onClicked: console.log("Cancel.")
 		}
 	}
@@ -42,7 +42,7 @@ Rectangle {
 		Row {
 			spacing: 10
 
-			SettingsButton {
+			SettingsToolButton {
 				onClicked: console.log("Settings.")
 			}
 
@@ -50,8 +50,6 @@ Rectangle {
 		}
 
 		Column {
-			spacing: 15
-
 			NormalButton {
 				text: "Test1"
 				onClicked: console.log("Test1")

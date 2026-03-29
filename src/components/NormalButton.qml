@@ -1,14 +1,15 @@
 import QtQuick 2.6
+import "qrc:/src/theme"
 
 Rectangle {
 	id: rootButton
 
-	implicitWidth: 64
-	implicitHeight: 24
+	implicitWidth: Style.normalButtonWidth
+	implicitHeight: Style.normalButtonHeight
 
-	property color normalColor: "#b2d8ff"
-	property color hoverColor: "#80bfff"
-	property color pressedColor: "#0e76ff"
+	property color normalColor: Style.normalButtonColor
+	property color hoverColor: Style.normalButtonHoverColor
+	property color pressedColor: Style.normalButtonPressedColor
 
 	property alias text: textItem.text
 	property alias textColor: textItem.color
@@ -18,14 +19,14 @@ Rectangle {
 	signal clicked
 
 	color: mouseArea.pressed ? pressedColor : (mouseArea.containsMouse ? hoverColor : normalColor)
-	radius: 4
+	radius: Style.normalButtonRadius
 
 	Text {
 		id: textItem
 		anchors.centerIn: parent
-		color: "black"
+		color: Style.normalButtonTextColor
 		text: "Button"
-		font.pixelSize: 10
+		font.pixelSize: Style.normalButtonTextSize
 	}
 
 	MouseArea {

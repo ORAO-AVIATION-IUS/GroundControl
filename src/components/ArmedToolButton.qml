@@ -1,9 +1,10 @@
 import QtQuick 2.6
+import "qrc:/src/theme"
 
 Item {
 	id: root
-	width: 24
-	height: 24
+	width: Style.toolButtonWidth
+	height: Style.toolButtonHeight
 
 	signal clicked
 

@@ -20,6 +20,7 @@ add_subdirectory(third_party/KDDockWidgets EXCLUDE_FROM_ALL)
 
 file(GLOB_RECURSE QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
     src/*.qml
+    src/theme/qmldir
     )
 file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
     resources/*.svg
