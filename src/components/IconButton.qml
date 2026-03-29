@@ -3,14 +3,16 @@ import "qrc:/src/theme"
 
 Item {
 	id: root
-	width: Style.toolButtonWidth
-	height: Style.toolButtonHeight
+	width: Style.iconBtnWidth
+	height: Style.iconBtnHeight
+
+	property alias iconSource: iconBtnImage.source
 
 	signal clicked
 
 	Image {
+		id: iconBtnImage
 		anchors.fill: parent
-		source: "qrc:/resources/icons/Sliders.svg"
 		fillMode: Image.PreserveAspectFit
 	}
 

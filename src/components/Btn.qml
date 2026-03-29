@@ -4,12 +4,12 @@ import "qrc:/src/theme"
 Rectangle {
 	id: rootButton
 
-	implicitWidth: Style.normalButtonWidth
-	implicitHeight: Style.normalButtonHeight
+	implicitWidth: Style.btnWidth
+	implicitHeight: Style.btnHeight
 
-	property color normalColor: Style.normalButtonColor
-	property color hoverColor: Style.normalButtonHoverColor
-	property color pressedColor: Style.normalButtonPressedColor
+	property color normalColor: Style.btnColor
+	property color hoverColor: Style.btnHoverColor
+	property color pressedColor: Style.btnPressedColor
 
 	property alias text: textItem.text
 	property alias textColor: textItem.color
@@ -19,14 +19,14 @@ Rectangle {
 	signal clicked
 
 	color: mouseArea.pressed ? pressedColor : (mouseArea.containsMouse ? hoverColor : normalColor)
-	radius: Style.normalButtonRadius
+	radius: Style.btnRadius
 
 	Text {
 		id: textItem
 		anchors.centerIn: parent
-		color: Style.normalButtonTextColor
+		color: Style.btnTextColor
 		text: "Button"
-		font.pixelSize: Style.normalButtonTextSize
+		font.pixelSize: Style.btnTextSize
 	}
 
 	MouseArea {
