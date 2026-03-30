@@ -5,9 +5,10 @@ Item {
 	width: 250
 	height: 250
 
-	property double airspeed: 0
+	property double airspeedMs: 0
 	property double startAngle: 0
-	property double degreesPerKnot: 0.6
+	property double degreesPerKnot: 1.5
+	readonly property double airspeedKnots: airspeedMs * 1.94384
 
 	Rectangle {
 		id: circle
@@ -40,6 +41,6 @@ Item {
 		sourceSize.width: width
 		sourceSize.height: height
 		z: 2
-		rotation: root.startAngle + (root.airspeed * root.degreesPerKnot)
+		rotation: root.startAngle + (root.airspeedKnots * root.degreesPerKnot)
 	}
 }

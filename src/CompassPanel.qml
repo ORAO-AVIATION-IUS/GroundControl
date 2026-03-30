@@ -26,14 +26,13 @@ Rectangle {
 	}
 
 	AirspeedIndicator {
-		AirspeedIndicator {
 			id: myAirspeed
 			anchors.top: myAttitude.bottom
-			anchors.topMargin: 20
-			anchors.horizontalCenter: myAttitude.horizontalCenter
-			airspeed: airspeedSlider.value
-		}
+			anchors.topMargin: 40
+			anchors.horizontalCenter : myAttitude.horizontalCenter
+			airspeedMs: airspeedSlider.value / 1.94384 
 	}
+
 	Rectangle {
 		width: 450
 		height: 220
