@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="tube-clip">
+      <rect x="170" y="296" width="160" height="44" rx="22"/>
+    </clipPath>
+    <clipPath id="dial-clip">
+      <circle cx="250" cy="250" r="210"/>
+    </clipPath>
+  </defs>
+
+  <!-- tube shadow -->
+  <rect x="169" y="298" width="162" height="46" rx="23"
+        fill="#000000" fill-opacity="0.55"
+        clip-path="url(#dial-clip)"/>
+
+  <!-- tube housing -->
+  <rect x="168" y="296" width="164" height="44" rx="22"
+        fill="#1c1c1c" stroke="#3a3a3a" stroke-width="1"
+        clip-path="url(#dial-clip)"/>
+
+  <!-- inner glass chamber -->
+  <rect x="173" y="300" width="154" height="36" rx="18"
+        fill="#080808" stroke="#1a1a1a" stroke-width="0.8"
+        clip-path="url(#dial-clip)"/>
+
+  <!-- concave arc guide -->
+  <path d="M 180 332 Q 250 306 320 332"
+        fill="none" stroke="#181818" stroke-width="1.5"
+        clip-path="url(#tube-clip)"/>
+
+  <!-- glass sheen -->
+  <rect x="173" y="300" width="154" height="10" rx="16"
+        fill="#ffffff" fill-opacity="0.04"
+        clip-path="url(#tube-clip)"/>
+
+  <!-- center index mark (white) -->
+  <line x1="250" y1="294" x2="250" y2="302"
+        stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- side index marks -->
+  <line x1="236" y1="295" x2="236" y2="301"
+        stroke="#666666" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="264" y1="295" x2="264" y2="301"
+        stroke="#666666" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

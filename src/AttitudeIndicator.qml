@@ -9,11 +9,12 @@ Item {
 	property double roll: 0
 	property double pitch: 0
 
-	readonly property double pixelPerDegree: 2
-	property double clampedPitch: Math.max(-40, Math.min(40, pitch))
+	readonly property double pitchScale: 2
+	readonly property double pixelPerDegree: pitchScale * (root.height / 250.0)
+	readonly property double clampedPitch: Math.max(-90, Math.min(90, pitch))
 
-	property double deltaFaceX: (horizonBg.width / 240) * pixelPerDegree * clampedPitch * Math.sin(Math.PI * roll / 180.0)
-	property double deltaFaceY: (horizonBg.height / 240) * pixelPerDegree * clampedPitch * Math.cos(Math.PI * roll / 180.0)
+	readonly property double deltaFaceX: pixelPerDegree * clampedPitch * Math.sin(Math.PI * roll / 180.0)
+	readonly property double deltaFaceY: pixelPerDegree * clampedPitch * Math.cos(Math.PI * roll / 180.0)
 
 	Rectangle {
 		id: circleMask
@@ -33,25 +34,20 @@ Item {
 			id: horizonBg
 			source: "qrc:/resources/assets/attitude_back.svg"
 			anchors.centerIn: parent
-			width: parent.width * 1.45
-			height: parent.height * 3.5
+			width: parent.width * 2.5
+			height: parent.height * 3
 			sourceSize.width: width
 			sourceSize.height: height
 			fillMode: Image.PreserveAspectCrop
 			asynchronous: true
 			antialiasing: true
-
-			transform: [
-				Rotation {
-					origin.x: horizonBg.width / 2
-					origin.y: horizonBg.height / 2
-					angle: -root.roll
-				},
-				Translate {
-					x: root.deltaFaceX
-					y: root.deltaFaceY
-				}
-			]
+			x: parent.width / 2 - width / 2 + root.deltaFaceX
+			y: parent.height / 2 - height / 2 + root.deltaFaceY
+			transform: Rotation {
+				origin.x: horizonBg.width / 2
+				origin.y: horizonBg.height / 2
+				angle: -root.roll
+			}
 		}
 	}
 
@@ -71,8 +67,11 @@ Item {
 		fillMode: Image.PreserveAspectFit
 		asynchronous: true
 		antialiasing: true
+		sourceSize.width: 400
+		sourceSize.height: 400
 		z: 1
 	}
+
 	Image {
 		id: frameImg
 		source: "qrc:/resources/assets/attitude_frame.svg"
@@ -80,6 +79,8 @@ Item {
 		fillMode: Image.PreserveAspectFit
 		asynchronous: true
 		antialiasing: true
+		sourceSize.width: 400
+		sourceSize.height: 400
 		z: 2
 	}
 
@@ -88,7 +89,6 @@ Item {
 		anchors.centerIn: parent
 		width: parent.width
 		height: parent.height
-
 		rotation: root.roll
 		z: 3
 
@@ -100,7 +100,8 @@ Item {
 			fillMode: Image.PreserveAspectFit
 			asynchronous: true
 			antialiasing: true
-
+			sourceSize.width: 200
+			sourceSize.height: 200
 			anchors.horizontalCenter: parent.horizontalCenter
 			anchors.top: parent.top
 			anchors.topMargin: 2

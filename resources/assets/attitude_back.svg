@@ -1,39 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 800" width="200" height="800">
-  <defs>
-    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#00a8ff;stop-opacity:1" /> <stop offset="100%" style="stop-color:#00d2d3;stop-opacity:1" /> </linearGradient>
-  </defs>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" width="1200" height="1600">
+<defs>
+  <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%"   stop-color="#0a1628"/>
+    <stop offset="100%" stop-color="#1a3a5c"/>
+  </linearGradient>
+  <linearGradient id="earthGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%"   stop-color="#3d2608"/>
+    <stop offset="100%" stop-color="#1a1008"/>
+  </linearGradient>
+</defs>
 
-  <rect x="0" y="0" width="200" height="400" fill="url(#skyGradient)"/>
-  
-  <rect x="0" y="400" width="200" height="400" fill="#a0522d"/>
-  
-  <line x1="0" y1="400" x2="200" y2="400" stroke="#ffffff" stroke-width="3"/>
+<!-- Sky and ground -->
+<rect x="0" y="0"   width="1200" height="800" fill="url(#skyGrad)"/>
+<rect x="0" y="800" width="1200" height="800" fill="url(#earthGrad)"/>
 
-  <g stroke="#ffffff" stroke-width="2">
-    <line x1="60" y1="280" x2="140" y2="280"/>
-    <text x="55" y="285" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">30</text>
-    <text x="145" y="285" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="start" stroke="none">30</text>
-    
-    <line x1="70" y1="320" x2="130" y2="320"/>
-    <text x="65" y="325" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">20</text>
-    <text x="135" y="325" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="start" stroke="none">20</text>
-    
-    <line x1="80" y1="360" x2="120" y2="360"/>
-    <text x="75" y="365" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">10</text>
-    <text x="125" y="365" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ff9f43" text-anchor="start" stroke="none">10</text>
-    
-    <line x1="80" y1="440" x2="120" y2="440"/>
-    <text x="75" y="445" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">10</text>
-    <text x="139" y="445" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">10</text>
-    
-    
-    <line x1="70" y1="480" x2="130" y2="480"/>
-    <text x="65" y="485" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">20</text>
-    <text x="150" y="485" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">20</text>
-    
-    <line x1="60" y1="520" x2="140" y2="520"/>
-    <text x="55" y="525" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">30</text>
-    <text x="160" y="525" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ff9f43" text-anchor="end" stroke="none">30</text>
-  </g>
+<!-- Horizon line (full width) -->
+<line x1="0" y1="800" x2="1200" y2="800" stroke="#e0f0ff" stroke-width="6"/>
+
+<!-- ===== PITCH UP ===== -->
+
+<!-- +5° minor — short tick -->
+<line x1="585" y1="779" x2="615" y2="779" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- +10° major — medium line + label -->
+<line x1="560" y1="757" x2="640" y2="757" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="548" y="769" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">10</text>
+<text x="652" y="769" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">10</text>
+
+<!-- +15° minor — short tick -->
+<line x1="585" y1="736" x2="615" y2="736" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- +20° major — wider line + label -->
+<line x1="545" y1="715" x2="655" y2="715" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="533" y="727" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">20</text>
+<text x="667" y="727" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">20</text>
+
+<!-- +25° minor — short tick -->
+<line x1="585" y1="693" x2="615" y2="693" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- +30° major — wider line + label -->
+<line x1="530" y1="672" x2="670" y2="672" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="518" y="684" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">30</text>
+<text x="682" y="684" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">30</text>
+
+<!-- +35° minor — short tick -->
+<line x1="585" y1="651" x2="615" y2="651" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- +40° major — widest line + label -->
+<line x1="515" y1="629" x2="685" y2="629" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="503" y="641" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">40</text>
+<text x="697" y="641" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">40</text>
+
+<!-- ===== PITCH DOWN ===== -->
+
+<!-- -5° minor — short tick -->
+<line x1="585" y1="821" x2="615" y2="821" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- -10° major -->
+<line x1="560" y1="843" x2="640" y2="843" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="548" y="855" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">10</text>
+<text x="652" y="855" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">10</text>
+
+<!-- -15° minor — short tick -->
+<line x1="585" y1="864" x2="615" y2="864" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- -20° major -->
+<line x1="545" y1="885" x2="655" y2="885" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="533" y="897" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">20</text>
+<text x="667" y="897" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">20</text>
+
+<!-- -25° minor — short tick -->
+<line x1="585" y1="907" x2="615" y2="907" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- -30° major -->
+<line x1="530" y1="928" x2="670" y2="928" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="518" y="940" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">30</text>
+<text x="682" y="940" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">30</text>
+
+<!-- -35° minor — short tick -->
+<line x1="585" y1="949" x2="615" y2="949" stroke="#6090b8" stroke-width="2" stroke-linecap="round"/>
+
+<!-- -40° major -->
+<line x1="515" y1="971" x2="685" y2="971" stroke="#c8e8ff" stroke-width="3" stroke-linecap="round"/>
+<text x="503" y="983" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="end">40</text>
+<text x="697" y="983" font-family="Courier New, monospace" font-size="24" font-weight="bold" fill="#f0c040" text-anchor="start">40</text>
+
 </svg>

@@ -1,5 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <circle cx="100" cy="100" r="5" fill="#e74c3c"/>
-  <polygon points="100,45 110,100 100,105 90,100" fill="#e74c3c"/>
-  <polygon points="100,155 110,100 100,95 90,100" fill="#95a5a6"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000">
+<defs>
+  <linearGradient id="nred" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%"   stop-color="#6a0a0a"/>
+    <stop offset="28%"  stop-color="#cc1818"/>
+    <stop offset="50%"  stop-color="#ff6a6a"/>
+    <stop offset="72%"  stop-color="#cc1818"/>
+    <stop offset="100%" stop-color="#6a0a0a"/>
+  </linearGradient>
+  <linearGradient id="nsilver" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%"   stop-color="#303030"/>
+    <stop offset="28%"  stop-color="#808080"/>
+    <stop offset="50%"  stop-color="#d0d0d0"/>
+    <stop offset="72%"  stop-color="#808080"/>
+    <stop offset="100%" stop-color="#303030"/>
+  </linearGradient>
+  <radialGradient id="cap" cx="40%" cy="35%" r="65%">
+    <stop offset="0%"   stop-color="#3a4248"/>
+    <stop offset="60%"  stop-color="#1c2228"/>
+    <stop offset="100%" stop-color="#0e1216"/>
+  </radialGradient>
+  <radialGradient id="capshine" cx="35%" cy="30%" r="55%">
+    <stop offset="0%"   stop-color="#6a7888" stop-opacity="0.7"/>
+    <stop offset="100%" stop-color="#0e1216" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="rglow" x="-80%" y="-30%" width="260%" height="160%">
+    <feGaussianBlur stdDeviation="10" result="b"/>
+    <feComposite in="SourceGraphic" in2="b" operator="over"/>
+  </filter>
+</defs>
+
+<!-- North red half -->
+<polygon points="500,112  528,490  500,508  472,490"
+  fill="url(#nred)" filter="url(#rglow)"/>
+<polygon points="500,112  528,490  500,508  472,490"
+  fill="#ff1111" opacity="0.15" filter="url(#rglow)"/>
+<!-- Left facet highlight -->
+<polygon points="500,112  472,490  500,360"
+  fill="#ff9090" opacity="0.18"/>
+<!-- Right facet shadow -->
+<polygon points="500,112  528,490  500,360"
+  fill="#000" opacity="0.20"/>
+
+<!-- South silver half -->
+<polygon points="500,888  528,510  500,492  472,510"
+  fill="url(#nsilver)"/>
+<!-- Left facet highlight -->
+<polygon points="500,888  472,510  500,640"
+  fill="#ffffff" opacity="0.12"/>
+<!-- Right facet shadow -->
+<polygon points="500,888  528,510  500,640"
+  fill="#000" opacity="0.22"/>
+
+<!-- Center cap body -->
+<circle cx="500" cy="500" r="36" fill="url(#cap)"/>
+<circle cx="500" cy="500" r="36" fill="url(#capshine)"/>
+<circle cx="500" cy="500" r="36" fill="none" stroke="#4a5560" stroke-width="4"/>
+<!-- Inner cap detail -->
+<circle cx="500" cy="500" r="20" fill="#0e1418" stroke="#2a3038" stroke-width="2"/>
+<circle cx="500" cy="500" r="8"  fill="#1a2228"/>
+
 </svg>

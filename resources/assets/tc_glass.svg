@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glare" cx="38%" cy="28%" r="60%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.07"/>
+      <stop offset="50%"  stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="edge" cx="50%" cy="50%" r="50%">
+      <stop offset="78%"  stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="90%"  stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.15"/>
+    </radialGradient>
+    <clipPath id="g-clip">
+      <circle cx="250" cy="250" r="212"/>
+    </clipPath>
+  </defs>
+  <circle cx="250" cy="250" r="212" fill="url(#glare)"/>
+  <circle cx="250" cy="250" r="212" fill="url(#edge)"/>
+  <ellipse cx="160" cy="135" rx="58" ry="18"
+           fill="#ffffff" fill-opacity="0.06"
+           transform="rotate(-38 160 135)"
+           clip-path="url(#g-clip)"/>
+</svg>
