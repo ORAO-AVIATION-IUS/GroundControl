@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="dial-clip">
+      <circle cx="250" cy="250" r="210"/>
+    </clipPath>
+  </defs>
+
+  <line x1="250" y1="48" x2="250" y2="82"
+        stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"
+        clip-path="url(#dial-clip)"/>
+
+  <g transform="rotate(-20 250 250)">
+    <rect x="178" y="54" width="52" height="13" rx="6.5" fill="#cccccc"/>
+  </g>
+  <g transform="rotate(20 250 250)">
+    <rect x="270" y="54" width="52" height="13" rx="6.5" fill="#cccccc"/>
+  </g>
+
+  <line x1="50" y1="250" x2="450" y2="250"
+        stroke="#1e1e1e" stroke-width="1" stroke-dasharray="4 6"
+        clip-path="url(#dial-clip)"/>
+
+  <text x="268" y="278"
+        font-family="Arial, sans-serif" font-size="13" font-weight="700"
+        letter-spacing="1.5" text-anchor="middle" fill="#cccccc">TURN COORDINATOR</text>
+
+  <text x="95" y="370"
+        font-family="Arial, sans-serif" font-size="22" font-weight="900"
+        text-anchor="middle" fill="#cccccc">L</text>
+
+  <text x="405" y="370"
+        font-family="Arial, sans-serif" font-size="22" font-weight="900"
+        text-anchor="middle" fill="#cccccc">R</text>
+
+  <text x="250" y="400"
+        font-family="Arial, sans-serif" font-size="13" font-weight="700"
+        letter-spacing="2" text-anchor="middle" fill="#bbbbbb">2 MIN</text>
+</svg>

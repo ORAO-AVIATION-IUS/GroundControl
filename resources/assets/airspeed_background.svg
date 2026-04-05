@@ -1,24 +1,131 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="361.5" font-family="Nimbus Sans L,Ubuntu,Liberation Sans,Helvetica,Arial,sans-serif" font-size="28.667" text-anchor="middle">
-  <path d="M356.429 179.355a176.432 176.432 0 1 1-352.864 0 176.432 176.432 0 1 1 352.864 0"/>
-  <path fill="#fbe90a" d="M21.75 133.16c-4.278 14.661-6.562 30.151-6.562 46.188 0 49.125 21.524 93.266 55.656 123.47l14.219-15.094c-30.124-26.418-49.156-65.19-49.156-108.38 0-14.063 2.02-27.648 5.78-40.5l-19.937-5.687z"/>
-  <path fill="#01873c" d="m315.28 85.25-16.938 11.938c16.227 23.316 25.75 51.617 25.75 82.156 0 79.545-64.549 144.12-144.09 144.12-36.297 0-69.466-13.45-94.812-35.625l-13.469 15.75c28.966 25.271 66.851 40.562 108.28 40.562 90.976 0 164.81-73.836 164.81-164.81 0-34.98-10.923-67.405-29.531-94.094z"/>
-  <path fill="none" stroke="#fff" stroke-width="2" d="M23.2 131.86C43.574 64.58 106.097 15.56 180 15.56c55.406 0 104.41 27.554 134.06 69.698"/>
-  <g fill="#fff">
-    <text x="229.896" y="85.131">40</text>
-    <text x="261.563" y="119.677">60</text>
-    <text x="282.538" y="170.674">80</text>
-    <text x="274.312" y="231.541">100</text>
-    <text x="243.468" y="280.07">120</text>
-    <text x="182.601" y="296.932">140</text>
-    <text x="119.677" y="280.892">160</text>
-    <text x="84.309" y="237.299">180</text>
-    <text x="81.019" y="179.311">200</text>
-    <text x="95.002" y="127.491">220</text>
-    <text x="139.007" y="87.599">240</text>
-    <text x="179" y="245" font-size="24">KNOT</text>
-  </g>
-  <path fill="none" stroke="#ff0101" stroke-width="6" d="m55.417 143.12-33.749-9.758"/>
-    <path fill="#fff" d="M181.828 179.352a1.768 1.768 0 1 1-3.536 0 1.768 1.768 0 1 1 3.536 0"/>
-  <path fill="none" stroke="#fff" stroke-width="3" d="m118.36 58.368-13.121-25.757M89.131 78.519 69.815 57.082m-4.075 48.947L41.394 90.403m10.368 44.326-27.282-9.495m20.73 37.55-28.689-3.527m29.28 40.532-28.562 4.349m39.368 31.91-26.25 12.061m47.516 20.676-21.74 19.039m49.984 5.498-15.695 24.213m48.68-8.586-8.705 27.587m46.849-21.437-.585 28.905m40.863-34.128 7.989 27.782m29.965-45.353 16.06 24.031m14.336-51.936 22.529 18.095m-2.381-52.501 26.814 10.773m-17.626-48.343 28.812 2.784m-30.84-42.827 28.348-5.741m-40.337-28.45 25.817-13.029m-46.312-16.782 21.429-19.359m-41.799.944 17.097-23.28m-58.984 2.41 8.191-27.754m11.038 35.127 12.28-26.163m3.374 25.162 10.528-17.787m11.683 34.002 13.725-15.468m8.911 40.871 17.005-11.838m.455 45.846 19.502-6.94m-11.505 45.807 20.657-1.351m-24.307 44.47 20.097 4.842m-35.356 33.383 17.914 10.333m-43.94 22.497 14.19 15.062m-50.511 9.893 8.969 18.653m-50.478-5.97 3.003 20.495m-46.855-20.785-3.3 20.408m-68.633-54.324L71.425 303.13m-12.16-45.306-17.368 11.29M41.813 220l-19.873 5.845m13.974-46.488H15.197m35.812-63.89-18.534-9.18m37.19-19.508L53.812 73.477m43.916-12.314L85.917 44.194m45.384-.28-7.01-19.497m-7.07 284.49-9.026 18.625m34.517-308.89 6.598 28.441m81.586-2.529 7.244-19.184"/>
-  <path fill="#fff" d="m286.84 82.688-10.938 9.906c20.776 22.95 33.438 53.378 33.438 86.75 0 16.938-3.26 33.14-9.187 47.97l13.687 5.468c6.606-16.523 10.25-34.566 10.25-53.438 0-37.183-14.1-71.086-37.25-96.656"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+  <defs>
+    <radialGradient id="face-bg" cx="50%" cy="42%" r="54%">
+      <stop offset="0%"   stop-color="#1c1c1c"/>
+      <stop offset="60%"  stop-color="#111111"/>
+      <stop offset="100%" stop-color="#080808"/>
+    </radialGradient>
+    <radialGradient id="bezel-body" cx="46%" cy="38%" r="58%">
+      <stop offset="0%"   stop-color="#686868"/>
+      <stop offset="35%"  stop-color="#3e3e3e"/>
+      <stop offset="70%"  stop-color="#2a2a2a"/>
+      <stop offset="100%" stop-color="#161616"/>
+    </radialGradient>
+    <radialGradient id="bezel-sheen" cx="50%" cy="50%" r="50%">
+      <stop offset="78%"  stop-color="#000000" stop-opacity="0"/>
+      <stop offset="90%"  stop-color="#888888" stop-opacity="0.18"/>
+      <stop offset="96%"  stop-color="#cccccc" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
+    </radialGradient>
+    <radialGradient id="inner-bevel" cx="50%" cy="50%" r="50%">
+      <stop offset="82%"  stop-color="#000000" stop-opacity="0"/>
+      <stop offset="92%"  stop-color="#000000" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.70"/>
+    </radialGradient>
+    <clipPath id="face-clip">
+      <circle cx="250" cy="250" r="218"/>
+    </clipPath>
+  </defs>
+
+  <!-- Outer shadow -->
+  <circle cx="252" cy="253" r="244" fill="#000000" fill-opacity="0.55"/>
+
+  <!-- Bezel body -->
+  <circle cx="250" cy="250" r="244" fill="#111111"/>
+  <circle cx="250" cy="250" r="242" fill="url(#bezel-body)"/>
+  <circle cx="250" cy="250" r="240" fill="none" stroke="#555" stroke-width="0.4"/>
+  <circle cx="250" cy="250" r="236" fill="none" stroke="#444" stroke-width="0.3"/>
+  <circle cx="250" cy="250" r="230" fill="none" stroke="#333" stroke-width="0.3"/>
+  <path d="M 105 112 A 206 206 0 0 1 328 62" fill="none" stroke="#888" stroke-width="1.2" stroke-linecap="round" opacity="0.28"/>
+  <circle cx="250" cy="250" r="242" fill="url(#bezel-sheen)"/>
+
+  <!-- Inner bevel ring -->
+  <circle cx="250" cy="250" r="224" fill="none" stroke="#1a1a1a" stroke-width="4"/>
+  <circle cx="250" cy="250" r="222" fill="none" stroke="#444444" stroke-width="0.8"/>
+  <circle cx="250" cy="250" r="219" fill="none" stroke="#111111" stroke-width="3"/>
+
+  <!-- Instrument face -->
+  <circle cx="250" cy="250" r="218" fill="url(#face-bg)"/>
+  <circle cx="250" cy="250" r="218" fill="url(#inner-bevel)"/>
+
+  <!-- ── COLORED ARC ZONES ─────────────────────────────── -->
+  <!-- White arc: 20–80 kt (stall speed / flap range) -->
+  <path d="M 144.0 433.6 A 212 212 0 0 1 87.6 113.73"
+        fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round"
+        clip-path="url(#face-clip)"/>
+  <!-- Green arc: 60–160 kt (normal operating) -->
+  <path d="M 46.39 226.2 A 205 205 0 0 1 453.61 226.2"
+        fill="none" stroke="#22bb55" stroke-width="7" stroke-linecap="round"
+        clip-path="url(#face-clip)"/>
+  <!-- Yellow arc: 160–200 kt (caution) -->
+  <path d="M 460.57 225.39 A 212 212 0 0 1 356.0 433.6"
+        fill="none" stroke="#EF9F27" stroke-width="7" stroke-linecap="round"
+        clip-path="url(#face-clip)"/>
+  <!-- Red line: 200 kt (Vne) -->
+  <line x1="357.5" y1="436.2" x2="345.0" y2="414.54"
+        stroke="#cc2222" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- ── MAJOR TICKS (every 20 kt) ────────────────────── -->
+  <line x1="142.5" y1="436.2"  x2="155.0" y2="414.54" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="57.87" y1="346.49" x2="80.21" y2="335.27" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="36.45" y1="225.04" x2="61.28" y2="227.94" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="85.3"  y1="111.8"  x2="104.45" y2="127.87" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="188.34" y1="44.03" x2="195.51" y2="67.98" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="311.66" y1="44.03" x2="304.49" y2="67.98" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="414.7"  y1="111.8"  x2="395.55" y2="127.87" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="463.55" y1="225.04" x2="438.72" y2="227.94" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="442.13" y1="346.49" x2="419.79" y2="335.27" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="357.5"  y1="436.2"  x2="345.0"  y2="414.54" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- ── MINOR TICKS (10 kt — medium) ─────────────────── -->
+  <line x1="93.61" y1="397.54"   x2="105.98" y2="385.88" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="38.27" y1="287.33"   x2="55.01"  y2="284.38" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="52.58" y1="164.84"   x2="68.19"  y2="171.58" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="131.86" y1="70.37"   x2="141.2"  y2="84.57"  stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="250.0"  y1="35.0"    x2="250.0"  y2="52.0"   stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="368.14" y1="70.37"   x2="358.8"  y2="84.57"  stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="447.42" y1="164.84"  x2="431.81" y2="171.58" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="461.73" y1="287.33"  x2="444.99" y2="284.38" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="406.39" y1="397.54"  x2="394.02" y2="385.88" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- ── 5-KT MINOR TICKS (short) ─────────────────────── -->
+  <line x1="116.65" y1="418.65" x2="123.47" y2="410.02" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="73.88"  y1="373.32" x2="82.89"  y2="367.01" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="45.91"  y1="317.63" x2="56.35"  y2="314.17" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="35.09"  y1="256.25" x2="46.09"  y2="255.93" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="42.33"  y1="194.35" x2="52.95"  y2="197.2"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="67.01"  y1="137.13" x2="76.37"  y2="142.9"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="107.07" y1="89.39"  x2="114.38" y2="97.61"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="159.14" y1="55.14"  x2="163.79" y2="65.11"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="218.84" y1="37.27"  x2="220.43" y2="48.15"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="281.16" y1="37.27"  x2="279.57" y2="48.15"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="340.86" y1="55.14"  x2="336.21" y2="65.11"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="392.93" y1="89.39"  x2="385.62" y2="97.61"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="432.99" y1="137.13" x2="423.63" y2="142.9"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="457.67" y1="194.35" x2="447.05" y2="197.2"  stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="464.91" y1="256.25" x2="453.91" y2="255.93" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="454.09" y1="317.63" x2="443.65" y2="314.17" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="426.12" y1="373.32" x2="417.11" y2="367.01" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+  <line x1="383.35" y1="418.65" x2="376.53" y2="410.02" stroke="#aaaaaa" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- ── SPEED LABELS ───────────────────────────────────── -->
+  <text x="164.0"  y="398.96" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">20</text>
+  <text x="96.3"   y="327.19" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">40</text>
+  <text x="79.16"  y="230.03" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">60</text>
+  <text x="118.24" y="139.44" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">80</text>
+  <text x="200.67" y="85.23"  text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">100</text>
+  <text x="299.33" y="85.23"  text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">120</text>
+  <text x="381.76" y="139.44" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">140</text>
+  <text x="420.84" y="230.03" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">160</text>
+  <text x="403.7"  y="327.19" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">180</text>
+  <text x="336.0"  y="398.96" text-anchor="middle" dominant-baseline="central" font-family="Arial Narrow,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff">200</text>
+
+  <!-- ── UNIT LABEL ─────────────────────────────────────── -->
+  <text x="250" y="300" text-anchor="middle" dominant-baseline="central"
+        font-family="Arial Narrow,Arial,sans-serif" font-size="16" font-weight="700"
+        letter-spacing="2" fill="#888888">KNOTS</text>
+
+  <!-- ── CENTER PIVOT HOLE ──────────────────────────────── -->
+  <circle cx="250" cy="250" r="8" fill="#0a0a0a" stroke="#333333" stroke-width="1"/>
 </svg>
