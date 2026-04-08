@@ -17,8 +17,8 @@ ApplicationWindow {
 			addDockWidget(leftPanel, KDDW.KDDockWidgets.Location_OnLeft);
 			addDockWidget(rightPanel, KDDW.KDDockWidgets.Location_OnRight);
 			addDockWidget(bottomPanel, KDDW.KDDockWidgets.Location_OnBottom);
-			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
 			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnTop);
+			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
 		}
 
 		KDDW.DockWidget {
