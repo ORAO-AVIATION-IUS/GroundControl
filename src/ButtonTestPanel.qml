@@ -12,23 +12,28 @@ Rectangle {
 		anchors.margins: 15
 		spacing: 15
 
-		SlidersButton {
+		IconButton {
+			iconSource: "qrc:/resources/icons/Sliders.svg"
 			onClicked: console.log("Sliders.")
 		}
 
-		EditButton {
+		IconButton {
+			iconSource: "qrc:/resources/icons/Edit.svg"
 			onClicked: console.log("Edit.")
 		}
 
-		CameraButton {
+		IconButton {
+			iconSource: "qrc:/resources/icons/Camera.svg"
 			onClicked: console.log("Camera.")
 		}
 
-		ArmedButton {
+		IconButton {
+			iconSource: "qrc:/resources/icons/Armed.svg"
 			onClicked: console.log("Armed.")
 		}
 
-		CancelButton {
+		IconButton {
+			iconSource: "qrc:/resources/icons/Cancel.svg"
 			onClicked: console.log("Cancel.")
 		}
 	}
@@ -42,7 +47,8 @@ Rectangle {
 		Row {
 			spacing: 10
 
-			SettingsButton {
+			IconButton {
+				iconSource: "qrc:/resources/icons/Settings.svg"
 				onClicked: console.log("Settings.")
 			}
 
@@ -50,19 +56,19 @@ Rectangle {
 		}
 
 		Column {
-			spacing: 15
+			spacing: 8
 
-			NormalButton {
+			Btn {
 				text: "Test1"
 				onClicked: console.log("Test1")
 			}
 
-			NormalButton {
+			Btn {
 				text: "Test2"
 				onClicked: console.log("Test2")
 			}
 
-			NormalButton {
+			Btn {
 				text: "Test3"
 				onClicked: console.log("Test3")
 			}
