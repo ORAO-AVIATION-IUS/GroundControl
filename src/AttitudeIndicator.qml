@@ -33,11 +33,10 @@ Item {
 		Image {
 			id: horizonBg
 			source: "qrc:/resources/assets/attitude_back.svg"
-			anchors.centerIn: parent
 			width: parent.width * 2.5
 			height: parent.height * 3
-			sourceSize.width: width
-			sourceSize.height: height
+			sourceSize.width: 1250
+			sourceSize.height: 1500
 			fillMode: Image.PreserveAspectCrop
 			asynchronous: true
 			antialiasing: true
