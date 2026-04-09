@@ -1,3 +1,5 @@
+#include "GStreamerVideoItem.h"
+
 #include <kddockwidgets/Config.h>
 #include <kddockwidgets/core/DockRegistry.h>
 #include <kddockwidgets/qtquick/Platform.h>
@@ -21,6 +23,8 @@ int main(int argc, char* argv[]) {
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
 
 	QQmlApplicationEngine appEngine;
+
+	qmlRegisterType<GStreamerVideoItem>("gc", 1, 0, "GStreamerVideoItem");
 
 	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
 	appEngine.load(QUrl("qrc:/src/Main.qml"));

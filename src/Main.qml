@@ -19,6 +19,7 @@ ApplicationWindow {
 			addDockWidget(bottomPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnTop);
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
+			addDockWidget(videoPanel, KDDW.KDDockWidgets.Location_OnRight);
 		}
 
 		KDDW.DockWidget {
@@ -54,6 +55,13 @@ ApplicationWindow {
 			uniqueName: "testPanel"
 			title: qsTr("Test Panel")
 			source: "qrc:/src/ButtonTestPanel.qml"
+		}
+
+		KDDW.DockWidget {
+			id: videoPanel
+			uniqueName: "videoPanel"
+			title: qsTr("Video Stream")
+			source: "qrc:/src/VideoStreamPanel.qml"
 		}
 	}
 

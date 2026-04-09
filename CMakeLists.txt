@@ -14,6 +14,9 @@ set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "" FORCE)
 
 find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GST REQUIRED gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0)
+
 qt_standard_project_setup(REQUIRES 6.10)
 
 add_subdirectory(third_party/KDDockWidgets EXCLUDE_FROM_ALL)
@@ -29,6 +32,8 @@ file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPE
 
 qt_add_executable(GroundControl
     src/main.cpp
+    src/GStreamerVideoItem.h
+    src/GStreamerVideoItem.cpp
 )
 
 qt_add_qml_module(GroundControl
@@ -42,7 +47,8 @@ qt_add_resources(GroundControl
     FILES ${QML_ASSETS}
 )
 
-target_link_libraries(GroundControl PRIVATE Qt6::Quick Qt6::QuickControls2 KDAB::kddockwidgets)
+target_link_libraries(GroundControl PRIVATE Qt6::Quick Qt6::QuickControls2 KDAB::kddockwidgets ${GST_LIBRARIES})
+target_include_directories(GroundControl PRIVATE ${GST_INCLUDE_DIRS})
 # set(KDDockWidgets_QT6 ON CACHE BOOL "" FORCE)
 # set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "" FORCE)
 # set(KDDockWidgets_QML_MODULE ON CACHE BOOL "" FORCE)
