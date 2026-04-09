@@ -12,7 +12,9 @@ set(CMAKE_INCLUDE_CURRENT_DIRS ON)
 
 set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "" FORCE)
 
-find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 REQUIRED)
+find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 Location Positioning REQUIRED)
+
+find_package(QMapLibre REQUIRED COMPONENTS Location)
 
 qt_standard_project_setup(REQUIRES 6.10)
 
@@ -42,7 +44,7 @@ qt_add_resources(GroundControl
     FILES ${QML_ASSETS}
 )
 
-target_link_libraries(GroundControl PRIVATE Qt6::Quick Qt6::QuickControls2 KDAB::kddockwidgets)
+target_link_libraries(GroundControl PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Location Qt6::Positioning QMapLibre::PluginQml KDAB::kddockwidgets)
 # set(KDDockWidgets_QT6 ON CACHE BOOL "" FORCE)
 # set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "" FORCE)
 # set(KDDockWidgets_QML_MODULE ON CACHE BOOL "" FORCE)
