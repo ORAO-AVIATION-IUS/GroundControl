@@ -12,7 +12,9 @@ set(CMAKE_INCLUDE_CURRENT_DIRS ON)
 
 set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "" FORCE)
 
-find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 REQUIRED)
+find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 Location Positioning REQUIRED)
+
+find_package(QMapLibre REQUIRED COMPONENTS Location)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GST REQUIRED gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0)
@@ -47,7 +49,7 @@ qt_add_resources(GroundControl
     FILES ${QML_ASSETS}
 )
 
-target_link_libraries(GroundControl PRIVATE Qt6::Quick Qt6::QuickControls2 KDAB::kddockwidgets ${GST_LIBRARIES})
+target_link_libraries(GroundControl PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Location Qt6::Positioning QMapLibre::PluginQml KDAB::kddockwidgets ${GST_LIBRARIES})
 target_include_directories(GroundControl PRIVATE ${GST_INCLUDE_DIRS})
 # set(KDDockWidgets_QT6 ON CACHE BOOL "" FORCE)
 # set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "" FORCE)

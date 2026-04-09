@@ -52,21 +52,21 @@ Rectangle {
 
 	Rectangle {
 		width: 560
-		height: 360
+		height: 260
 		color: "#f8f9fa"
 		border.color: "#dee2e6"
 		border.width: 1
 		radius: 12
 		anchors.bottom: parent.bottom
-		anchors.bottomMargin: 40
+		anchors.bottomMargin: 2
 		anchors.horizontalCenter: parent.horizontalCenter
 
 		Column {
 			anchors.centerIn: parent
-			spacing: 12
+			spacing: 5
 
 			Row {
-				spacing: 15
+				spacing: 5
 				Text {
 					text: "Pitch: " + Math.round(pitchSlider.value) + "°"
 					width: 130
@@ -85,7 +85,7 @@ Rectangle {
 			}
 
 			Row {
-				spacing: 15
+				spacing: 5
 				Text {
 					text: "Roll: " + Math.round(rollSlider.value) + "°"
 					width: 130
@@ -104,7 +104,7 @@ Rectangle {
 			}
 
 			Row {
-				spacing: 15
+				spacing: 5
 				Text {
 					text: "Heading: " + Math.round(headingSlider.value) + "°"
 					width: 130
@@ -123,7 +123,7 @@ Rectangle {
 			}
 
 			Row {
-				spacing: 15
+				spacing: 5
 				Text {
 					text: "Airspeed: " + Math.round(airspeedSlider.value) + " kt"
 					width: 130
@@ -142,7 +142,7 @@ Rectangle {
 			}
 
 			Row {
-				spacing: 15
+				spacing: 5
 				Text {
 					text: "Yawspeed: " + yawspeedSlider.value.toFixed(2) + " r/s"
 					width: 130
@@ -160,7 +160,7 @@ Rectangle {
 			}
 
 			Row {
-				spacing: 15
+				spacing: 5
 				Text {
 					text: "Yacc: " + yaccSlider.value.toFixed(2) + " mg"
 					width: 130

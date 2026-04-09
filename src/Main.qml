@@ -1,5 +1,5 @@
-import QtQuick 2.6
-import QtQuick.Controls 2.12
+import QtQuick
+import QtQuick.Controls
 import com.kdab.dockwidgets 2.0 as KDDW
 
 ApplicationWindow {
@@ -14,12 +14,14 @@ ApplicationWindow {
 		anchors.fill: parent
 		uniqueName: "MainLayout-3"
 		Component.onCompleted: {
-			addDockWidget(leftPanel, KDDW.KDDockWidgets.Location_OnLeft);
-			addDockWidget(rightPanel, KDDW.KDDockWidgets.Location_OnRight);
-			addDockWidget(bottomPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnTop);
+			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
 			addDockWidget(videoPanel, KDDW.KDDockWidgets.Location_OnRight);
+
+			mapPanel.addDockWidgetAsTab(leftPanel);
+			mapPanel.addDockWidgetAsTab(rightPanel);
+			mapPanel.raise();
 		}
 
 		KDDW.DockWidget {
@@ -37,10 +39,10 @@ ApplicationWindow {
 		}
 
 		KDDW.DockWidget {
-			id: bottomPanel
-			uniqueName: "bottomPanel"
-			title: qsTr("Bottom Panel")
-			source: "qrc:/src/BottomPanel.qml"
+			id: mapPanel
+			uniqueName: "mapPanel"
+			title: qsTr("Map")
+			source: "qrc:/src/MapView.qml"
 		}
 
 		KDDW.DockWidget {
