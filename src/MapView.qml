@@ -4,7 +4,6 @@ import QtQuick
 import QtQuick.Controls
 
 Item {
-	// MapLibre plugin with OpenFreeMap styles
 	Plugin {
 		id: mapPlugin
 		name: "maplibre"
@@ -31,7 +30,6 @@ Item {
 		tilt: 45
 		bearing: -17.6
 
-		// Auto-select liberty style (index 1)
 		Component.onCompleted: {
 			if (supportedMapTypes.length > 1)
 				activeMapType = supportedMapTypes[1];
@@ -52,7 +50,7 @@ Item {
 			model: map.supportedMapTypes
 			textRole: "name"
 			currentIndex: 1
-			onActivated: {
+			onActivated: function (index) {
 				map.activeMapType = map.supportedMapTypes[index];
 			}
 			background: Rectangle {
@@ -64,16 +62,17 @@ Item {
 		}
 
 		// Controls:
-		//   Left drag          → pan (with inertia)
-		//   Right drag         → rotate bearing
-		//   Middle drag        → tilt (legacy)
-		//   Mouse scroll       → zoom toward cursor
-		//   Touchpad scroll    → pan (pixel-level smooth)
-		//   Touchpad pinch     → zoom toward cursor (Ctrl+scroll)
+		//   Left drag            -> pan (with inertia)
+		//   Right drag H         -> rotate bearing
+		//   Right drag V         -> tilt
+		//   Mouse wheel          -> zoom toward cursor
+		//   Touchpad 2-finger H  -> rotate bearing
+		//   Touchpad 2-finger V  -> tilt
+		//   Ctrl + scroll        -> zoom toward cursor
 		MouseArea {
 			id: mouseArea
 			anchors.fill: parent
-			acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+			acceptedButtons: Qt.LeftButton | Qt.RightButton
 			preventStealing: true
 
 			property point lastPoint
@@ -81,7 +80,7 @@ Item {
 			property real velocityY: 0
 			property bool inertiaActive: false
 
-			onPressed: mouse => {
+			onPressed: function (mouse) {
 				lastPoint = Qt.point(mouse.x, mouse.y);
 				velocityX = 0;
 				velocityY = 0;
@@ -89,28 +88,23 @@ Item {
 				inertiaTimer.stop();
 			}
 
-			onPositionChanged: mouse => {
+			onPositionChanged: function (mouse) {
 				var dx = mouse.x - lastPoint.x;
 				var dy = mouse.y - lastPoint.y;
 
 				if (mouse.buttons & Qt.LeftButton) {
 					map.pan(-dx, -dy);
-					// Exponential moving average for velocity tracking
 					velocityX = velocityX * 0.6 + (-dx) * 0.4;
 					velocityY = velocityY * 0.6 + (-dy) * 0.4;
 				} else if (mouse.buttons & Qt.RightButton) {
-					// Drag → rotate bearing
 					map.bearing += dx * 0.3;
-				} else if (mouse.buttons & Qt.MiddleButton) {
-					// Vertical drag → tilt
-					var newTilt2 = map.tilt + dy * 0.3;
-					map.tilt = Math.max(0, Math.min(80, newTilt2));
+					map.tilt = Math.max(0, Math.min(80, map.tilt - dy * 0.3));
 				}
 
 				lastPoint = Qt.point(mouse.x, mouse.y);
 			}
 
-			onReleased: mouse => {
+			onReleased: function (mouse) {
 				if (mouse.button === Qt.LeftButton) {
 					if (Math.abs(velocityX) > 0.5 || Math.abs(velocityY) > 0.5) {
 						inertiaActive = true;
@@ -119,10 +113,9 @@ Item {
 				}
 			}
 
-			// Kinetic (inertia) panning
 			Timer {
 				id: inertiaTimer
-				interval: 16 // ~60fps
+				interval: 16
 				repeat: true
 
 				onTriggered: {
@@ -131,9 +124,8 @@ Item {
 						return;
 					}
 
-					var friction = 0.92;
-					mouseArea.velocityX *= friction;
-					mouseArea.velocityY *= friction;
+					mouseArea.velocityX *= 0.92;
+					mouseArea.velocityY *= 0.92;
 
 					if (Math.abs(mouseArea.velocityX) < 0.1 && Math.abs(mouseArea.velocityY) < 0.1) {
 						mouseArea.inertiaActive = false;
@@ -145,56 +137,50 @@ Item {
 				}
 			}
 
-			// Debug: uncomment to see what your touchpad sends
-			// onWheel: (wheel) => console.log("WHEEL pixelDelta=" + wheel.pixelDelta + " angleDelta=" + wheel.angleDelta + " mods=" + wheel.modifiers)
-
-			onWheel: wheel => {
-				// Ctrl + scroll → always zoom (explicit pinch shortcut)
+			onWheel: function (wheel) {
+				// Ctrl + scroll -> zoom toward cursor
 				if (wheel.modifiers & Qt.ControlModifier) {
 					var cz = (wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.pixelDelta.y) * 0.001;
 					zoomTowardPoint(wheel.x, wheel.y, cz);
 					return;
 				}
 
-				// Heuristic: real mouse wheel sends angleDelta in multiples of 120
-				// Touchpad sends smooth, non-multiple-of-120 values (or only pixelDelta)
+				// Mouse wheel sends angleDelta in multiples of 120.
+				// Touchpad sends smooth non-120 values or only pixelDelta.
 				var isDiscreteWheel = (wheel.angleDelta.y !== 0) && (wheel.angleDelta.y % 120 === 0) && (Math.abs(wheel.pixelDelta.y) < 1);
 
 				if (isDiscreteWheel) {
-					// Mouse wheel → zoom toward cursor
+					// Mouse wheel -> zoom toward cursor
 					var zoomDir = wheel.angleDelta.y > 0 ? 1 : -1;
 					zoomTowardPoint(wheel.x, wheel.y, zoomDir * 0.3);
 				} else {
-					// Touchpad two-finger scroll → pan (browser-like)
+					// Touchpad scroll
 					var dx = (wheel.pixelDelta.x !== 0) ? wheel.pixelDelta.x : wheel.angleDelta.x * 0.1;
 					var dy = (wheel.pixelDelta.y !== 0) ? wheel.pixelDelta.y : wheel.angleDelta.y * 0.1;
-					map.pan(-dx, -dy);
+
+					if (Math.abs(dx) > Math.abs(dy)) {
+						map.bearing += dx * 0.3;
+					} else {
+						map.tilt = Math.max(0, Math.min(80, map.tilt - dy * 0.2));
+					}
 				}
 			}
 		}
 	}
 
-	// Zoom toward a specific screen point so the map zooms into
-	// whatever is under the cursor.
-	// Uses center adjustment in geographic space (not pan()) to avoid:
-	//   - integer truncation causing drift over repeated zoom/unzoom
-	//   - sign/coordinate issues with fromCoordinate under tilt/bearing
+	// Zoom toward a screen point using geographic center adjustment
+	// to avoid integer truncation drift from pan().
 	function zoomTowardPoint(px, py, delta) {
-		var currentZoom = map.zoomLevel;
-		var newZoom = Math.max(map.minimumZoomLevel, Math.min(map.maximumZoomLevel, currentZoom + delta));
-		if (newZoom === currentZoom)
+		var newZoom = Math.max(map.minimumZoomLevel, Math.min(map.maximumZoomLevel, map.zoomLevel + delta));
+		if (newZoom === map.zoomLevel)
 			return;
 
-		// Coordinate under cursor before zoom
 		var targetCoord = map.toCoordinate(Qt.point(px, py), false);
 
-		// Apply zoom
 		map.zoomLevel = newZoom;
 
-		// What coordinate is now under the cursor after zoom?
 		var currentCoord = map.toCoordinate(Qt.point(px, py), false);
 
-		// Shift center so targetCoord ends up back under the cursor
 		map.center = QtPositioning.coordinate(map.center.latitude + targetCoord.latitude - currentCoord.latitude, map.center.longitude + targetCoord.longitude - currentCoord.longitude);
 	}
 }
