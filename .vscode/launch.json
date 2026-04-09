@@ -2,13 +2,36 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run AGS",
-      "type": "cppvsdbg",
+      "name": "Run GroundControl",
+      "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}\\build\\GroundControl.exe",
+      "program": "${workspaceFolder}/build/GroundControl",
       "args": [],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
+      "cwd": "${workspaceFolder}/build",
+      "environment": [
+        {
+          "name": "QML_IMPORT_PATH",
+          "value": "./com"
+        }
+      ],
+      "console": "integratedTerminal",
+      "preLaunchTask": "just build",
+      "linux": {
+        "type": "cppdbg",
+        "program": "${workspaceFolder}/build/GroundControl",
+        "environment": [
+          { "name": "QML_IMPORT_PATH", "value": "./com" },
+          { "name": "QT_QPA_PLATFORM", "value": "xcb" }
+        ]
+      },
+      "osx": {
+        "type": "cppdbg",
+        "program": "${workspaceFolder}/build/GroundControl"
+      },
+      "windows": {
+        "type": "cppvsdbg",
+        "program": "${workspaceFolder}\\build\\GroundControl.exe"
+      }
     }
   ]
 }

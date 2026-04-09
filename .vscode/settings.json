@@ -1,0 +1,16 @@
+{
+  "tasks.statusbar": [
+    {
+      "label": "Build",
+      "task": "just build"
+    },
+    {
+      "label": "Run",
+      "task": "just build and run"
+    },
+    {
+      "label": "Clean",
+      "task": "just clean"
+    }
+  ]
+}

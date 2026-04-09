@@ -5,9 +5,7 @@
       "label": "just build",
       "type": "shell",
       "command": "just",
-      "args": [
-        "build"
-      ],
+      "args": ["build"],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -15,7 +13,61 @@
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": "$msCompile"
+      "problemMatcher": ["$gcc", "$msCompile"]
+    },
+    {
+      "label": "just run",
+      "type": "shell",
+      "command": "just",
+      "args": ["run"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "just build and run",
+      "dependsOn": ["just build"],
+      "dependsOrder": "sequence",
+      "type": "shell",
+      "command": "just",
+      "args": ["run"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "just format",
+      "type": "shell",
+      "command": "just",
+      "args": ["format"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "just lint",
+      "type": "shell",
+      "command": "just",
+      "args": ["lint"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "just clean",
+      "type": "shell",
+      "command": "just",
+      "args": ["clean"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
     }
   ]
 }
