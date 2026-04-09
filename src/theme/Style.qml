@@ -2,12 +2,13 @@ pragma Singleton
 import QtQuick 2.6
 
 QtObject {
-	// --- ToolButton Styles ---
-	readonly property int iconBtnWidth: 24
-	readonly property int iconBtnHeight: 24
+	// --- Icon Button ---
+	readonly property int iconBtnSize: 20           // ← change icon button size from here
+	readonly property int iconBtnLabelSize: 8       // ← change icon button label size from here
+	readonly property color iconBtnLabelColor: "#cdd6e0"
 
-	// --- NormalButton Styles ---
-	readonly property int btnWidth: 64
+	// --- Normal Button ---
+	readonly property int btnWidth: 64              // ← change normal button size from here
 	readonly property int btnHeight: 24
 	readonly property color btnColor: "#b2d8ff"
 	readonly property color btnHoverColor: "#80bfff"
@@ -16,7 +17,7 @@ QtObject {
 	readonly property int btnRadius: 4
 	readonly property int btnTextSize: 10
 
-	// --- TelemetryBox Styles ---
+	// --- TelemetryBox ---
 	readonly property int boxWidth: 200
 	readonly property int boxHeight: 150
 	readonly property color boxColor: "#002f55"
