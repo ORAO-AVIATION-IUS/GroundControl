@@ -17,14 +17,14 @@ ApplicationWindow {
 			addDockWidget(leftPanel, KDDW.KDDockWidgets.Location_OnLeft);
 			addDockWidget(rightPanel, KDDW.KDDockWidgets.Location_OnRight);
 			addDockWidget(bottomPanel, KDDW.KDDockWidgets.Location_OnBottom);
-			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnTop);
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
+			addDockWidget(buttonTestPanel, KDDW.KDDockWidgets.Location_OnTop);
 		}
 
 		KDDW.DockWidget {
 			id: leftPanel
 			uniqueName: "leftPanel"
-			title: qsTr("Left Panel")
+			title: qsTr("Camera")
 			source: "qrc:/src/LeftPanel.qml"
 		}
 
@@ -50,9 +50,9 @@ ApplicationWindow {
 		}
 
 		KDDW.DockWidget {
-			id: testPanel
-			uniqueName: "testPanel"
-			title: qsTr("Test Panel")
+			id: buttonTestPanel
+			uniqueName: "buttonTestPanel"
+			title: qsTr("Button Test")
 			source: "qrc:/src/ButtonTestPanel.qml"
 		}
 	}

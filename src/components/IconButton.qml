@@ -3,22 +3,35 @@ import "qrc:/src/theme"
 
 Item {
 	id: root
-<<<<<<<< HEAD:src/components/IconButton.qml
-	width: Style.iconBtnWidth
-	height: Style.iconBtnHeight
+	width: Style.iconBtnSize
+	height: Style.iconBtnSize + (label !== "" ? labelText.implicitHeight + 2 : 0)
 
-	property alias iconSource: iconBtnImage.source
-========
-	width: Style.toolButtonWidth
-	height: Style.toolButtonHeight
->>>>>>>> b53e1d1 (feat: pragma singleton added.):src/components/ArmedToolButton.qml
+	property string iconName: ""
+	property string iconSource: ""
+	property string label: ""
+	property color labelColor: Style.iconBtnLabelColor
+	property int labelSize: Style.iconBtnLabelSize
 
 	signal clicked
 
 	Image {
-		id: iconBtnImage
-		anchors.fill: parent
+		id: iconImage
+		width: Style.iconBtnSize
+		height: Style.iconBtnSize
+		anchors.horizontalCenter: parent.horizontalCenter
 		fillMode: Image.PreserveAspectFit
+		source: root.iconName !== "" ? "image://icon/" + root.iconName : root.iconSource
+	}
+
+	Text {
+		id: labelText
+		anchors.top: iconImage.bottom
+		anchors.topMargin: 2
+		anchors.horizontalCenter: parent.horizontalCenter
+		text: root.label
+		color: root.labelColor
+		font.pixelSize: root.labelSize
+		visible: root.label !== ""
 	}
 
 	MouseArea {

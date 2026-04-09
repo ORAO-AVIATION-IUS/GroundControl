@@ -2,10 +2,37 @@
 #include <kddockwidgets/core/DockRegistry.h>
 #include <kddockwidgets/qtquick/Platform.h>
 
+#include <breezeicons.h>
+
 #include <QCommandLineParser>
 #include <QGuiApplication>
+#include <QIcon>
+#include <QPainter>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickImageProvider>
+
+class IconImageProvider : public QQuickImageProvider {
+public:
+    IconImageProvider()
+        : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
+
+    QPixmap requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) override {
+        const int w = requestedSize.width() > 0 ? requestedSize.width() : 32;
+        const int h = requestedSize.height() > 0 ? requestedSize.height() : 32;
+        if (size)
+            *size = QSize(w, h);
+
+        QPixmap px = QIcon::fromTheme(id).pixmap(w, h);
+
+        // Recolor to white so icons are visible on dark backgrounds
+        QPainter p(&px);
+        p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        p.fillRect(px.rect(), Qt::white);
+
+        return px;
+    }
+};
 
 int main(int argc, char* argv[]) {
 #ifdef Q_OS_WIN
@@ -18,9 +45,13 @@ int main(int argc, char* argv[]) {
 
 	QGuiApplication app(argc, argv);
 
+	BreezeIcons::initIcons();
+
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
 
 	QQmlApplicationEngine appEngine;
+
+	appEngine.addImageProvider("icon", new IconImageProvider());
 
 	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
 	appEngine.load(QUrl("qrc:/src/Main.qml"));
