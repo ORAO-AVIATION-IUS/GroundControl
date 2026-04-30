@@ -10,8 +10,10 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QPainter>
+#include <QPalette>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickStyle>
 #include <QQuickImageProvider>
 
 class IconImageProvider : public QQuickImageProvider {
@@ -46,6 +48,25 @@ int main(int argc, char* argv[]) {
 #endif
 
 	QGuiApplication app(argc, argv);
+
+	// Dark palette for Qt Quick Controls & KDDockWidgets chrome
+	QPalette darkPalette;
+	darkPalette.setColor(QPalette::Window, QColor(30, 33, 38));
+	darkPalette.setColor(QPalette::WindowText, QColor(205, 214, 224));
+	darkPalette.setColor(QPalette::Base, QColor(25, 28, 32));
+	darkPalette.setColor(QPalette::AlternateBase, QColor(35, 38, 43));
+	darkPalette.setColor(QPalette::ToolTipBase, QColor(42, 45, 50));
+	darkPalette.setColor(QPalette::ToolTipText, QColor(205, 214, 224));
+	darkPalette.setColor(QPalette::Text, QColor(205, 214, 224));
+	darkPalette.setColor(QPalette::Button, QColor(42, 45, 50));
+	darkPalette.setColor(QPalette::ButtonText, QColor(205, 214, 224));
+	darkPalette.setColor(QPalette::BrightText, QColor(255, 255, 255));
+	darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
+	darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+	darkPalette.setColor(QPalette::HighlightedText, QColor(0, 0, 0));
+	app.setPalette(darkPalette);
+
+	QQuickStyle::setStyle("Basic");
 
 	BreezeIcons::initIcons();
 

@@ -7,6 +7,7 @@ ApplicationWindow {
 	width: 1200
 	height: 800
 	title: qsTr("Ground Control")
+	color: "#1e2126"
 
 	KDDW.DockingArea {
 		id: root
@@ -14,7 +15,6 @@ ApplicationWindow {
 		anchors.fill: parent
 		uniqueName: "MainLayout-3"
 		Component.onCompleted: {
-			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnTop);
 			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
 			addDockWidget(videoPanel, KDDW.KDDockWidgets.Location_OnRight);
@@ -53,13 +53,6 @@ ApplicationWindow {
 		}
 
 		KDDW.DockWidget {
-			id: testPanel
-			uniqueName: "testPanel"
-			title: qsTr("Test Panel")
-			source: "qrc:/src/ButtonTestPanel.qml"
-		}
-
-		KDDW.DockWidget {
 			id: videoPanel
 			uniqueName: "videoPanel"
 			title: qsTr("Video Stream")
@@ -68,6 +61,19 @@ ApplicationWindow {
 	}
 
 	menuBar: MenuBar {
+		palette.windowText: "#cdd6e0"
+		palette.text: "#cdd6e0"
+		palette.buttonText: "#cdd6e0"
+		palette.highlightedText: "#ffffff"
+		palette.highlight: "#0e76ff"
+		palette.window: "#1e2126"
+		palette.base: "#25282d"
+		palette.button: "#303338"
+
+		background: Rectangle {
+			color: "#1e2126"
+		}
+
 		Menu {
 			title: qsTr("&File")
 

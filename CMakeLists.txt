@@ -25,13 +25,56 @@ qt_standard_project_setup(REQUIRES 6.10)
 
 add_subdirectory(third_party/KDDockWidgets EXCLUDE_FROM_ALL)
 
-file(GLOB_RECURSE QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
-    src/*.qml
+set(QML_FILES
+    src/AirspeedIndicator.qml
+    src/AttitudeIndicator.qml
+    src/ButtonTestPanel.qml
+    src/CompassIndicator.qml
+    src/CompassPanel.qml
+    src/HeadingIndicator.qml
+    src/LeftPanel.qml
+    src/Main.qml
+    src/MapView.qml
+    src/RightPanel.qml
+    src/TurnController.qml
+    src/VideoStreamPanel.qml
+    src/components/BatteryIndicator.qml
+    src/components/Btn.qml
+    src/components/IconButton.qml
+    src/components/TelemetryBox.qml
+    src/theme/Style.qml
     src/theme/qmldir
-    )
-file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
-    resources/*.svg
-    resources/*.png
+)
+
+set(QML_ASSETS
+    resources/assets/airspeed_background.svg
+    resources/assets/airspeed_pointer.svg
+    resources/assets/attitude_back.svg
+    resources/assets/attitude_frame.svg
+    resources/assets/attitude_pointer.svg
+    resources/assets/attitude_triangle.svg
+    resources/assets/compass_background.svg
+    resources/assets/compass_needle.svg
+    resources/assets/heading_background.svg
+    resources/assets/heading_face.svg
+    resources/assets/tc_airplane.svg
+    resources/assets/tc_ball.svg
+    resources/assets/tc_bezel.svg
+    resources/assets/tc_glass.svg
+    resources/assets/tc_inclinometer.svg
+    resources/assets/tc_scale.svg
+    resources/icons/Armed.svg
+    resources/icons/Battery.svg
+    resources/icons/BatteryCritical.svg
+    resources/icons/BatteryEMERGENCY.svg
+    resources/icons/BatteryGreen.svg
+    resources/icons/BatteryOrange.svg
+    resources/icons/BatteryYellow.svg
+    resources/icons/Camera.svg
+    resources/icons/Cancel.svg
+    resources/icons/Edit.svg
+    resources/icons/Settings.svg
+    resources/icons/Sliders.svg
 )
 
 qt_add_executable(GroundControl
