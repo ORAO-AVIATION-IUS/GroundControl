@@ -1,5 +1,5 @@
-import QtQuick 2.6
-import "qrc:/src/theme"
+import QtQuick
+import Agc.Style
 
 Rectangle {
 	id: rootBox

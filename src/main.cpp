@@ -7,6 +7,15 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
+#include <QtQml/QQmlExtensionPlugin>
+
+Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
+Q_IMPORT_QML_PLUGIN(Agc_ComponentsPlugin)
+Q_IMPORT_QML_PLUGIN(Agc_PanelsPlugin)
+Q_IMPORT_QML_PLUGIN(Agc_NetworkPlugin)
+Q_IMPORT_QML_PLUGIN(Agc_MavlinkPlugin)
+Q_IMPORT_QML_PLUGIN(Agc_CameraPlugin)
+
 int main(int argc, char* argv[]) {
 #ifdef Q_OS_WIN
 	QGuiApplication::setAttribute(Qt::AA_UseOpenGLES);
@@ -23,7 +32,7 @@ int main(int argc, char* argv[]) {
 	QQmlApplicationEngine appEngine;
 
 	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
-	appEngine.load(QUrl("qrc:/src/Main.qml"));
+	appEngine.loadFromModule("Agc", "Main");
 
 	return app.exec();
 }

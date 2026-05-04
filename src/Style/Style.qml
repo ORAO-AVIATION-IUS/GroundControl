@@ -1,5 +1,5 @@
 pragma Singleton
-import QtQuick 2.6
+import QtQuick
 
 QtObject {
 	// --- ToolButton Styles ---
