@@ -1,6 +1,6 @@
+import Agc.Components
 import QtQuick
 import com.kdab.dockwidgets as KDDW
-import Agc.Components
 
 KDDW.DockWidget {
 	id: root
@@ -8,8 +8,8 @@ KDDW.DockWidget {
 	title: qsTr("Test Panel")
 
 	Rectangle {
-		anchors.fill: parent
 		id: rootPanel
+		anchors.fill: parent
 		color: '#ffffff'
 
 		Row {

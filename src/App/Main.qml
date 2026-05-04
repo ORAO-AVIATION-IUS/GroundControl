@@ -1,7 +1,7 @@
+import Agc.Panels
 import QtQuick
 import QtQuick.Controls
 import com.kdab.dockwidgets as KDDW
-import Agc.Panels
 
 ApplicationWindow {
 	visible: true
@@ -24,11 +24,21 @@ ApplicationWindow {
 			mapPanel.raise();
 		}
 
-		LeftPanel       { id: leftPanel }
-		RightPanel      { id: rightPanel }
-		MapPanel        { id: mapPanel }
-		CompassPanel    { id: compassPanel }
-		ButtonTestPanel { id: testPanel }
+		LeftPanel {
+			id: leftPanel
+		}
+		RightPanel {
+			id: rightPanel
+		}
+		MapPanel {
+			id: mapPanel
+		}
+		CompassPanel {
+			id: compassPanel
+		}
+		ButtonTestPanel {
+			id: testPanel
+		}
 	}
 
 	menuBar: MenuBar {

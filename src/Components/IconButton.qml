@@ -1,5 +1,5 @@
-import QtQuick
 import Agc.Style
+import QtQuick
 
 Item {
 	id: root

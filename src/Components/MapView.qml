@@ -12,11 +12,7 @@ Item {
 
 		PluginParameter {
 			name: "maplibre.map.styles"
-			value: "https://tiles.openfreemap.org/styles/bright,"
-				+ "https://tiles.openfreemap.org/styles/liberty,"
-				+ "https://tiles.openfreemap.org/styles/positron,"
-				+ "https://tiles.openfreemap.org/styles/dark,"
-				+ "https://tiles.openfreemap.org/styles/fiord"
+			value: "https://tiles.openfreemap.org/styles/bright," + "https://tiles.openfreemap.org/styles/liberty," + "https://tiles.openfreemap.org/styles/positron," + "https://tiles.openfreemap.org/styles/dark," + "https://tiles.openfreemap.org/styles/fiord"
 		}
 	}
 
@@ -237,9 +233,6 @@ Item {
 
 		let currentCoord = map.toCoordinate(Qt.point(px, py), false);
 
-		map.center = QtPositioning.coordinate(
-			map.center.latitude + targetCoord.latitude - currentCoord.latitude,
-			map.center.longitude + targetCoord.longitude - currentCoord.longitude
-		);
+		map.center = QtPositioning.coordinate(map.center.latitude + targetCoord.latitude - currentCoord.latitude, map.center.longitude + targetCoord.longitude - currentCoord.longitude);
 	}
 }

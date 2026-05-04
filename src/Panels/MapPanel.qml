@@ -1,6 +1,6 @@
+import Agc.Components
 import QtQuick
 import com.kdab.dockwidgets as KDDW
-import Agc.Components
 
 KDDW.DockWidget {
 	id: dockRoot
