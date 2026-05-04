@@ -36,7 +36,7 @@ format:
 [unix]
 lint:
 	find src/ -name '*.cpp' -o -name '*.h' -exec clang-tidy -p build {} \;
-	find src/ -name '*.qml' -exec {{qmllint6}} {} \;
+	find src/ -name '*.qml' -exec {{qmllint6}} -I build -I src {} \;
 
 # Lint code using clang-tidy (C++/headers) and qmllint (QML)
 [windows]

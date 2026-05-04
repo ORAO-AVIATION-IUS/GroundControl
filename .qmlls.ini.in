@@ -1,0 +1,5 @@
+[General]
+CMakeJobs=1
+DisableDefaultImports=false
+buildDir=@CMAKE_BINARY_DIR@
+no-cmake-calls=true

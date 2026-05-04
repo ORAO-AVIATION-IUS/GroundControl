@@ -11,6 +11,14 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIRS ON)
 
 set(KDDockWidgets_FRONTENDS "qtquick" CACHE STRING "" FORCE)
+set(KDDockWidgets_QML_MODULE ON CACHE BOOL "" FORCE)
+
+# Generate editor-agnostic qmlls config with absolute build dir
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/.qmlls.ini.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/.qmlls.ini
+    @ONLY
+)
 
 find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 REQUIRED)
 
