@@ -43,3 +43,11 @@ Thumbs.db
 layout.json
 *.log
 .qmlls.ini
+
+# Source clone of maplibre-native-qt (used to produce the prebuilt below).
+# Not committed — too large. Recreated on demand via `just bootstrap-maplibre`.
+third_party/maplibre-native-qt/
+
+# Whitelist the committed prebuilt QMapLibre artifacts. These are normally
+# matched by *.cmake, *.dylib, *.a above; keep them tracked.
+!third_party/maplibre-prebuilt/**

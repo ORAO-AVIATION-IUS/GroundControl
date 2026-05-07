@@ -6,6 +6,30 @@ build:
     cmake -B build -S . -G Ninja
     cmake --build build
 
+# Rebuild the committed QMapLibre prebuilt under third_party/maplibre-prebuilt/macos.
+# The prebuilt artifacts are committed; only run this when the upstream version needs updating.
+[macos]
+bootstrap-maplibre:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    repo="third_party/maplibre-native-qt"
+    out="$PWD/third_party/maplibre-prebuilt/macos"
+    if [ ! -d "$repo" ]; then
+        git clone --depth 1 --recurse-submodules --shallow-submodules \
+            https://github.com/maplibre/maplibre-native-qt.git "$repo"
+    fi
+    qt-cmake -S "$repo" -B "$repo/build" -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_OSX_ARCHITECTURES=arm64 \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.19 \
+        -DMLN_WITH_METAL=ON \
+        -DMLN_QT_WITH_RENDERER_DEBUGGING=OFF \
+        -DCMAKE_INSTALL_PREFIX="$out"
+    cmake --build "$repo/build"
+    rm -rf "$out"
+    cmake --install "$repo/build"
+
 # Run
 [linux]
 run BACKEND="xcb":
@@ -13,7 +37,9 @@ run BACKEND="xcb":
 
 [macos]
 run:
-    cd build && ./GroundControl
+    QT_PLUGIN_PATH="$PWD/third_party/maplibre-prebuilt/macos/plugins" \
+    QML_IMPORT_PATH="$PWD/third_party/maplibre-prebuilt/macos/qml" \
+    ./build/GroundControl
 
 [windows]
 run:

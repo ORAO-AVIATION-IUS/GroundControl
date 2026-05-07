@@ -20,6 +20,20 @@ configure_file(
 )
 
 find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 Location Positioning REQUIRED)
+
+# Prefer the per-platform prebuilt QMapLibre tree committed under third_party/.
+# This keeps the project reproducible without a system-wide install.
+if(APPLE)
+    set(_qmaplibre_prebuilt "${CMAKE_CURRENT_SOURCE_DIR}/third_party/maplibre-prebuilt/macos")
+elseif(WIN32)
+    set(_qmaplibre_prebuilt "${CMAKE_CURRENT_SOURCE_DIR}/third_party/maplibre-prebuilt/windows")
+else()
+    set(_qmaplibre_prebuilt "${CMAKE_CURRENT_SOURCE_DIR}/third_party/maplibre-prebuilt/linux")
+endif()
+if(EXISTS "${_qmaplibre_prebuilt}")
+    list(PREPEND CMAKE_PREFIX_PATH "${_qmaplibre_prebuilt}")
+    set(QMAPLIBRE_RUNTIME_ROOT "${_qmaplibre_prebuilt}")
+endif()
 find_package(QMapLibre REQUIRED COMPONENTS Location)
 
 qt_standard_project_setup(REQUIRES 6.10)
@@ -60,7 +74,6 @@ target_link_libraries(GroundControl PRIVATE
     Qt6::QuickControls2
     Qt6::Location
     Qt6::Positioning
-    QMapLibre::PluginQml
     KDAB::kddockwidgets
     AgcStyleplugin
     AgcComponentsplugin
@@ -69,3 +82,12 @@ target_link_libraries(GroundControl PRIVATE
     AgcMavlinkplugin
     AgcCameraplugin
 )
+
+# The QMapLibre geoservices plugin links to the QMapLibre*.framework files via
+# @rpath. Point the loader at the prebuilt lib/ so dlopen resolves them.
+if(APPLE AND DEFINED QMAPLIBRE_RUNTIME_ROOT)
+    set_target_properties(GroundControl PROPERTIES
+        BUILD_RPATH "${QMAPLIBRE_RUNTIME_ROOT}/lib"
+        INSTALL_RPATH "${QMAPLIBRE_RUNTIME_ROOT}/lib"
+    )
+endif()
