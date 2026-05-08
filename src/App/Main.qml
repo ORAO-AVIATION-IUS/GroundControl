@@ -1,13 +1,20 @@
+pragma ComponentBehavior: Bound
+
 import Agc.Panels
 import QtQuick
 import QtQuick.Controls
 import com.kdab.dockwidgets as KDDW
 
 ApplicationWindow {
+	id: window
 	visible: true
 	width: 1200
 	height: 800
 	title: qsTr("Ground Control")
+
+	ListModel {
+		id: cameraModel
+	}
 
 	KDDW.DockingArea {
 		id: root
@@ -39,16 +46,47 @@ ApplicationWindow {
 		ButtonTestPanel {
 			id: testPanel
 		}
-	}
 
-	menuBar: MenuBar {
-		Menu {
-			title: qsTr("&File")
-
-			Action {
-				text: qsTr("&Quit")
-				onTriggered: Qt.quit()
+		Repeater {
+			id: cameraDocks
+			model: cameraModel
+			delegate: CameraPanel {
+				id: camDock
+				required property int index
+				required property string name
+				required property string connection
+				cameraName: name
+				connectionString: connection
+				uniqueName: "cameraConn_" + index
+				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
 			}
 		}
+	}
+
+	menuBar: MainMenuBar {
+		viewPanels: [
+			{
+				"label": qsTr("Map"),
+				"dock": mapPanel
+			},
+			{
+				"label": qsTr("Left Panel"),
+				"dock": leftPanel
+			},
+			{
+				"label": qsTr("Right Panel"),
+				"dock": rightPanel
+			},
+			{
+				"label": qsTr("Compass"),
+				"dock": compassPanel
+			},
+			{
+				"label": qsTr("Button Test"),
+				"dock": testPanel
+			}
+		]
+		cameraModel: cameraModel
+		cameraDocks: cameraDocks
 	}
 }
