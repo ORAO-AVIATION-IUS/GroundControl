@@ -20,8 +20,9 @@ Q_IMPORT_QML_PLUGIN(Agc_MavlinkPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_CameraPlugin)
 
 int main(int argc, char* argv[]) {
-    // MapLibre requires OpenGL; force Qt Quick's RHI to use it on all platforms.
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+#endif
 
 	QGuiApplication app(argc, argv);
 
