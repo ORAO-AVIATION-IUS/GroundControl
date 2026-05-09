@@ -48,7 +48,9 @@ run:
 
 [windows]
 run:
-    ./build/GroundControl.exe
+    $env:QT_PLUGIN_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\plugins"; \
+    $env:PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\bin;$env:PATH"; \
+    .\build\GroundControl.exe
 
 # Format code using clang-format and qmlformat
 [unix]

@@ -7,6 +7,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickWindow>
+#include <QSGRendererInterface>
 
 #include <QtQml/QQmlExtensionPlugin>
 
@@ -18,13 +20,8 @@ Q_IMPORT_QML_PLUGIN(Agc_MavlinkPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_CameraPlugin)
 
 int main(int argc, char* argv[]) {
-#ifdef Q_OS_WIN
-	QGuiApplication::setAttribute(Qt::AA_UseOpenGLES);
-#endif
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-	QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-#endif
+    // MapLibre requires OpenGL; force Qt Quick's RHI to use it on all platforms.
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
 	QGuiApplication app(argc, argv);
 
