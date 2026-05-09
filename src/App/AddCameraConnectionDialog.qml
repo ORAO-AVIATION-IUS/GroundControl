@@ -7,8 +7,10 @@ Dialog {
 
 	property alias cameraName: nameField.text
 	property alias connectionString: connectionField.text
+	// -1 = add mode; otherwise the id of the camera being edited.
+	property int editingId: -1
 
-	title: qsTr("Add Camera Connection")
+	title: editingId === -1 ? qsTr("Add Camera Connection") : qsTr("Edit Camera Connection")
 	modal: true
 	standardButtons: Dialog.Ok | Dialog.Cancel
 	anchors.centerIn: Overlay.overlay
@@ -16,9 +18,15 @@ Dialog {
 	padding: 16
 
 	onAboutToShow: {
-		nameField.clear();
-		connectionField.clear();
+		if (editingId === -1) {
+			nameField.clear();
+			connectionField.clear();
+		}
 		nameField.forceActiveFocus();
+	}
+
+	Component.onCompleted: {
+		standardButton(Dialog.Ok).enabled = Qt.binding(() => nameField.text.trim() !== "");
 	}
 
 	ColumnLayout {
