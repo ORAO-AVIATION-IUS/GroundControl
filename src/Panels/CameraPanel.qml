@@ -39,10 +39,6 @@ KDDW.DockWidget {
 		}
 
 		HamburgerMenu {
-			anchors.left: parent.left
-			anchors.top: parent.top
-			anchors.margins: 4
-
 			MenuItem {
 				text: qsTr("Edit…")
 				onTriggered: dockRoot.editRequested()
