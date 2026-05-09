@@ -12,8 +12,71 @@ ApplicationWindow {
 	height: 800
 	title: qsTr("Ground Control")
 
+	property int nextCameraId: 0
+
+	function rowForId(id) {
+		for (let i = 0; i < cameraModel.count; ++i) {
+			if (cameraModel.get(i).id === id)
+				return i;
+		}
+		return -1;
+	}
+
+	function openAddDialog() {
+		cameraDialog.editingId = -1;
+		cameraDialog.open();
+	}
+
+	function openEditDialog(id) {
+		const row = rowForId(id);
+		if (row === -1)
+			return;
+		const r = cameraModel.get(row);
+		cameraDialog.cameraName = r.name;
+		cameraDialog.connectionString = r.connection;
+		cameraDialog.editingId = id;
+		cameraDialog.open();
+	}
+
+	function removeCamera(id) {
+		const row = rowForId(id);
+		if (row === -1)
+			return;
+		const dock = cameraDocks.itemAt(row);
+		if (dock)
+			dock.deleteDockWidgetLater();
+		cameraModel.remove(row);
+	}
+
 	ListModel {
 		id: cameraModel
+	}
+
+	AddCameraConnectionDialog {
+		id: cameraDialog
+		onAccepted: {
+			const name = cameraName.trim();
+			if (name === "")
+				return;
+			if (editingId === -1) {
+				cameraModel.append({
+					"id": window.nextCameraId++,
+					"name": name,
+					"connection": connectionString
+				});
+			} else {
+				const row = window.rowForId(editingId);
+				if (row !== -1) {
+					cameraModel.set(row, {
+						"id": editingId,
+						"name": name,
+						"connection": connectionString
+					});
+				}
+				editingId = -1;
+			}
+		}
+		onRejected: editingId = -1
 	}
 
 	KDDW.DockingArea {
@@ -52,12 +115,14 @@ ApplicationWindow {
 			model: cameraModel
 			delegate: CameraPanel {
 				id: camDock
-				required property int index
+				required property int id
 				required property string name
 				required property string connection
 				cameraName: name
 				connectionString: connection
-				uniqueName: "cameraConn_" + index
+				uniqueName: "cameraConn_" + id
+				onEditRequested: window.openEditDialog(id)
+				onRemoveRequested: window.removeCamera(id)
 				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
 			}
 		}
@@ -88,5 +153,6 @@ ApplicationWindow {
 		]
 		cameraModel: cameraModel
 		cameraDocks: cameraDocks
+		onAddCameraRequested: window.openAddDialog()
 	}
 }

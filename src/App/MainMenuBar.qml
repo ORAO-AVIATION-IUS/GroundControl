@@ -9,6 +9,8 @@ MenuBar {
 	property ListModel cameraModel
 	property var cameraDocks
 
+	signal addCameraRequested
+
 	function toggleDock(dw) {
 		if (!dw)
 			return;
@@ -16,18 +18,6 @@ MenuBar {
 			dw.close();
 		else
 			dw.show();
-	}
-
-	AddCameraConnectionDialog {
-		id: addCameraDialog
-		onAccepted: {
-			if (cameraName.trim() === "")
-				return;
-			bar.cameraModel.append({
-				"name": cameraName,
-				"connection": connectionString
-			});
-		}
 	}
 
 	Menu {
@@ -59,7 +49,7 @@ MenuBar {
 
 		Action {
 			text: qsTr("Add Connection")
-			onTriggered: addCameraDialog.open()
+			onTriggered: bar.addCameraRequested()
 		}
 
 		MenuSeparator {}
