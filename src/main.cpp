@@ -3,6 +3,7 @@
 #include <kddockwidgets/qtquick/Platform.h>
 
 #include <QCommandLineParser>
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>

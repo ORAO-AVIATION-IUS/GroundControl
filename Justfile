@@ -33,7 +33,12 @@ bootstrap-maplibre:
 # Run
 [linux]
 run BACKEND="xcb":
-    cd build && QT_QPA_PLATFORM={{BACKEND}} ./GroundControl
+    cd build && \
+    QT_QPA_PLATFORM={{BACKEND}} \
+    LD_LIBRARY_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/lib" \
+    QT_PLUGIN_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/lib/qt6/plugins" \
+    QML_IMPORT_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/lib/qt6/qml" \
+    ./GroundControl
 
 [macos]
 run:

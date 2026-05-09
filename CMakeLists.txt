@@ -83,9 +83,9 @@ target_link_libraries(GroundControl PRIVATE
     AgcCameraplugin
 )
 
-# The QMapLibre geoservices plugin links to the QMapLibre*.framework files via
-# @rpath. Point the loader at the prebuilt lib/ so dlopen resolves them.
-if(APPLE AND DEFINED QMAPLIBRE_RUNTIME_ROOT)
+# Point the runtime linker at the prebuilt lib/ directory so that
+# QMapLibre shared libraries and Qt plugins are resolved correctly.
+if(DEFINED QMAPLIBRE_RUNTIME_ROOT)
     set_target_properties(GroundControl PROPERTIES
         BUILD_RPATH "${QMAPLIBRE_RUNTIME_ROOT}/lib"
         INSTALL_RPATH "${QMAPLIBRE_RUNTIME_ROOT}/lib"
