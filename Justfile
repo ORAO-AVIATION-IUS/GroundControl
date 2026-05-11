@@ -2,8 +2,15 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 qmlformat6 := if os() == "linux" { "/usr/lib/qt6/bin/qmlformat" } else { "qmlformat" }
 
 # Build project
+[unix]
 build:
     cmake -B build -S . -G Ninja
+    cmake --build build
+
+# Build project
+[windows]
+build:
+    cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
     cmake --build build
 
 # Rebuild the committed QMapLibre prebuilt under third_party/maplibre-prebuilt/macos.
@@ -48,8 +55,9 @@ run:
 
 [windows]
 run:
+    Copy-Item -Force "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\bin\*.dll" "{{justfile_directory()}}\build\"; \
     $env:QT_PLUGIN_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\plugins"; \
-    $env:PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\bin;$env:PATH"; \
+    $env:QML_IMPORT_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\qml"; \
     .\build\GroundControl.exe
 
 # Format code using clang-format and qmlformat
