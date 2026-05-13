@@ -64,6 +64,9 @@ ApplicationWindow {
 					"name": name,
 					"connection": connectionString
 				});
+				cameraManager.addCamera(window.nextCameraId-1, name, connectionString);
+				cameraManager.initialize()
+				cameraManager.startCamera(window.nextCameraId-1);
 			} else {
 				const row = window.rowForId(editingId);
 				if (row !== -1) {
@@ -72,6 +75,7 @@ ApplicationWindow {
 						"name": name,
 						"connection": connectionString
 					});
+					cameraManager.editCamera(editingId, name, connectionString)
 				}
 				editingId = -1;
 			}

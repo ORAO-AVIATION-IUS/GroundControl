@@ -20,8 +20,14 @@
         "type": "cppdbg",
         "program": "${workspaceFolder}/build/GroundControl",
         "environment": [
-          { "name": "QML_IMPORT_PATH", "value": "./com" },
-          { "name": "QT_QPA_PLATFORM", "value": "xcb" }
+          {
+            "name": "QML_IMPORT_PATH",
+            "value": "./com"
+          },
+          {
+            "name": "QT_QPA_PLATFORM",
+            "value": "xcb"
+          }
         ]
       },
       "osx": {
@@ -31,7 +37,8 @@
       "windows": {
         "type": "cppvsdbg",
         "program": "${workspaceFolder}\\build\\GroundControl.exe"
-      }
+      },
+      "visualizerFile": "/home/ammarcrnkic/.config/Code/User/workspaceStorage/84aa2d4d078e75dd93e98a3ee4c18baf/tonka3000.qtvsctools/qt.natvis.xml"
     }
   ]
 }

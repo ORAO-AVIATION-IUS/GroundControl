@@ -3,6 +3,10 @@ file(GLOB_RECURSE QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPEN
 
 qt_add_library(AgcCamera STATIC)
 
+target_link_libraries(AgcCamera PRIVATE
+    Qt6::Multimedia
+)
+
 qt_add_qml_module(AgcCamera
     URI Agc.Camera
     SOURCES ${SOURCES}

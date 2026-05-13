@@ -1,4 +1,5 @@
 import Agc.Components
+import Agc.Camera
 import QtQuick
 import QtQuick.Controls
 import com.kdab.dockwidgets as KDDW
@@ -20,22 +21,9 @@ KDDW.DockWidget {
 		implicitHeight: 300
 		color: "#222"
 
-		Column {
-			anchors.centerIn: parent
-			spacing: 8
 
-			Label {
-				anchors.horizontalCenter: parent.horizontalCenter
-				text: dockRoot.cameraName
-				color: "white"
-				font.bold: true
-				font.pixelSize: 18
-			}
-			Label {
-				anchors.horizontalCenter: parent.horizontalCenter
-				text: dockRoot.connectionString
-				color: "#aaa"
-			}
+		CameraStream {
+			playerId: dockRoot.cameraName
 		}
 
 		HamburgerMenu {

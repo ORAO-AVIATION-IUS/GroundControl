@@ -12,6 +12,8 @@
 
 #include <QtQml/QQmlExtensionPlugin>
 
+#include "Camera/CameraManager.h"
+
 Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
 Q_IMPORT_QML_PLUGIN(Agc_ComponentsPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_PanelsPlugin)
@@ -31,7 +33,12 @@ int main(int argc, char* argv[]) {
 	QQmlApplicationEngine appEngine;
 
 	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
-	appEngine.loadFromModule("Agc", "Main");
 
+	// camera manager
+	CameraManager cam_manager(&appEngine);
+	appEngine.rootContext()->setContextProperty("cameraManager", &cam_manager);
+
+	appEngine.loadFromModule("Agc", "Main");
+	
 	return app.exec();
 }

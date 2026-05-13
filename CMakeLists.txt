@@ -19,7 +19,7 @@ configure_file(
     @ONLY
 )
 
-find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 Location Positioning REQUIRED)
+find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 Multimedia Location Positioning REQUIRED)
 
 # Prefer the per-platform prebuilt QMapLibre tree committed under third_party/.
 # This keeps the project reproducible without a system-wide install.
@@ -49,6 +49,9 @@ file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPE
 
 qt_add_executable(GroundControl
     src/main.cpp
+    src/Camera/CameraInfo.h
+    src/Camera/CameraManager.h
+    src/Camera/CameraManager.cpp
 )
 
 file(GLOB ROOT_QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "src/App/*.qml")
@@ -74,6 +77,7 @@ target_link_libraries(GroundControl PRIVATE
     Qt6::QuickControls2
     Qt6::Location
     Qt6::Positioning
+    Qt6::Multimedia
     KDAB::kddockwidgets
     AgcStyleplugin
     AgcComponentsplugin
