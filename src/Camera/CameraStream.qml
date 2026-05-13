@@ -1,27 +1,25 @@
-import QtQuick
 import QtMultimedia
+import QtQuick
 
 Rectangle {
-    id: root
+	id: root
 
-    required property string playerId
-    objectName: playerId
+	required property string playerId
+	objectName: playerId
 
-    property alias mediaPlayer: player
-    property alias videoOutput: video
+	property alias mediaPlayer: player
+	property alias videoOutput: video
 
-    width: parent.parent.width;
-    height: parent.parent.height;
-    color: "black"
+	anchors.fill: parent
+	color: "black"
 
-    MediaPlayer {
-        id: player
-        videoOutput: video
-        playbackRate: 0
-    }
+	MediaPlayer {
+		id: player
+		videoOutput: video
+	}
 
-    VideoOutput {
-        id: video
-        anchors.fill: parent
-    }
+	VideoOutput {
+		id: video
+		anchors.fill: parent
+	}
 }

@@ -1,5 +1,5 @@
-import Agc.Components
 import Agc.Camera
+import Agc.Components
 import QtQuick
 import QtQuick.Controls
 import com.kdab.dockwidgets as KDDW
@@ -20,7 +20,6 @@ KDDW.DockWidget {
 		implicitWidth: 400
 		implicitHeight: 300
 		color: "#222"
-
 
 		CameraStream {
 			playerId: dockRoot.cameraName

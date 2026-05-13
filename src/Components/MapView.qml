@@ -203,11 +203,12 @@ Item {
 		var idx = 0;
 		if (_is3d)
 			idx = 1;
-			// liberty
-		else if (_isDark)
-			idx = 4;
-			// fiord
 		else
+		// liberty
+		if (_isDark)
+			idx = 4;
+		else
+			// fiord
 			idx = 0; // bright
 
 		if (idx < map.supportedMapTypes.length)

@@ -50,9 +50,6 @@ file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPE
 
 qt_add_executable(GroundControl
     src/main.cpp
-    src/Camera/CameraInfo.h
-    src/Camera/CameraManager.h
-    src/Camera/CameraManager.cpp
 )
 
 file(GLOB ROOT_QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "src/App/*.qml")
@@ -78,7 +75,6 @@ target_link_libraries(GroundControl PRIVATE
     Qt6::QuickControls2
     Qt6::Location
     Qt6::Positioning
-    Qt6::Multimedia
     KDAB::kddockwidgets
     AgcStyleplugin
     AgcComponentsplugin
