@@ -12,6 +12,7 @@
 
 #include <QtQml/QQmlExtensionPlugin>
 
+#include "BreezeIconProvider.h"
 #include "Camera/CameraManager.h"
 
 Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
@@ -23,7 +24,7 @@ Q_IMPORT_QML_PLUGIN(Agc_CameraPlugin)
 
 int main(int argc, char* argv[]) {
 #if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
-    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 #endif
 
 	QGuiApplication app(argc, argv);
@@ -31,6 +32,8 @@ int main(int argc, char* argv[]) {
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
 
 	QQmlApplicationEngine appEngine;
+
+	appEngine.addImageProvider("icon", createBreezeIconProvider());
 
 	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
 

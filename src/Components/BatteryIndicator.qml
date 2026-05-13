@@ -6,22 +6,23 @@ Item {
 	height: 30
 
 	property int _index: 0
-	property var _icons: ["qrc:/resources/icons/BatteryGreen.svg", "qrc:/resources/icons/BatteryYellow.svg", "qrc:/resources/icons/BatteryOrange.svg", "qrc:/resources/icons/BatteryCritical.svg", "qrc:/resources/icons/BatteryEMERGENCY.svg"]
+	property var _icons: ["battery-100", "battery-070", "battery-040", "battery-020", "battery-000"]
 
 	// TODO
 
 	Image {
 		anchors.fill: parent
-		source: root._icons[root._index]
+		source: "image://icon/" + root._icons[root._index]
 		fillMode: Image.PreserveAspectFit
 	}
-	// Test fonksiyonu
-	Timer {
-		interval: 1000
-		running: true
-		repeat: true
-		onTriggered: {
-			root._index = (root._index + 1) % root._icons.length;
-		}
-	}
+
+	// // Test function
+	// Timer {
+	// 	interval: 1000
+	// 	running: true
+	// 	repeat: true
+	// 	onTriggered: {
+	// 		root._index = (root._index + 1) % root._icons.length;
+	// 	}
+	// }
 }

@@ -29,38 +29,12 @@ Item {
 		maximumZoomLevel: 20
 
 		// 3D perspective
-		tilt: 45
+		tilt: 0
 		bearing: -17.6
 
 		Component.onCompleted: {
-			if (supportedMapTypes.length > 1)
-				activeMapType = supportedMapTypes[1];
-		}
-
-		// Style switcher overlay
-		ComboBox {
-			id: styleCombo
-			z: 1
-			anchors.top: parent.top
-			anchors.right: parent.right
-			anchors.margins: 8
-			width: 220
-			height: 40
-			font.pixelSize: 14
-			popup.width: 260
-			popup.height: 250
-			model: map.supportedMapTypes
-			textRole: "name"
-			currentIndex: 1
-			onActivated: function (index) {
-				map.activeMapType = map.supportedMapTypes[index];
-			}
-			background: Rectangle {
-				radius: 4
-				color: "#ccffffff"
-				border.color: "#aaa"
-				border.width: 1
-			}
+			if (supportedMapTypes.length > 0)
+				activeMapType = supportedMapTypes[0];
 		}
 
 		// Controls:
@@ -218,6 +192,37 @@ Item {
 				}
 			}
 		}
+	}
+
+	// Style indices: bright=0, liberty=1, positron=2, dark=3, fiord=4
+	// 2D+light=bright(0), 2D+dark=fiord(4), 3D=liberty(1)
+	property bool _is3d: false
+	property bool _isDark: false
+
+	function _updateStyle() {
+		var idx = 0;
+		if (_is3d)
+			idx = 1;
+			// liberty
+		else if (_isDark)
+			idx = 4;
+			// fiord
+		else
+			idx = 0; // bright
+
+		if (idx < map.supportedMapTypes.length)
+			map.activeMapType = map.supportedMapTypes[idx];
+	}
+
+	function setPerspective(enabled3d) {
+		_is3d = enabled3d;
+		map.tilt = enabled3d ? 45 : 0;
+		_updateStyle();
+	}
+
+	function setTheme(isDark) {
+		_isDark = isDark;
+		_updateStyle();
 	}
 
 	// Zoom toward a screen point using geographic center adjustment

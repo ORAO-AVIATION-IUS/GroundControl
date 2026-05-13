@@ -20,6 +20,7 @@ configure_file(
 )
 
 find_package(Qt6 6.10 COMPONENTS Quick QuickControls2 Multimedia Location Positioning REQUIRED)
+find_package(KF6BreezeIcons REQUIRED)
 
 # Prefer the per-platform prebuilt QMapLibre tree committed under third_party/.
 # This keeps the project reproducible without a system-wide install.

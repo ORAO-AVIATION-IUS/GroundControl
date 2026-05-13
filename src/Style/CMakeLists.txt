@@ -12,3 +12,6 @@ qt_add_qml_module(AgcStyle
     QML_FILES ${QML_FILES}
     IMPORT_PATH "${CMAKE_BINARY_DIR}"
 )
+
+target_link_libraries(AgcStyle PUBLIC Qt6::Quick KF6::BreezeIcons)
+target_include_directories(AgcStyleplugin INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

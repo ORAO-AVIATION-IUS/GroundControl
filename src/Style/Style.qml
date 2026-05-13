@@ -2,9 +2,29 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-	// --- ToolButton Styles ---
-	readonly property int iconBtnWidth: 24
-	readonly property int iconBtnHeight: 24
+	// --- Icon Button ---
+	readonly property int iconBtnSize: 28
+	readonly property int iconBtnLabelSize: 10
+	readonly property color iconBtnLabelColor: "#cdd6e0"
+	readonly property int iconBtnPadding: 4
+	readonly property int iconBtnRadius: 3
+	readonly property color iconBtnCheckedBg: "#2a5298"
+	readonly property color iconBtnCheckedLabelColor: "#8cb4f0"
+	readonly property color iconBtnHighlightBg: "#1e3a5f"
+	readonly property color iconBtnHoverBg: "#2a2f3a"
+	readonly property color iconBtnPressedBg: "#3a4050"
+
+	// --- Button Group Section ---
+	readonly property color sectionBgColor: "#1c1f26"
+	readonly property int sectionRadius: 5
+	readonly property int sectionPadding: 10
+	readonly property int sectionSpacing: 6
+	readonly property color sectionLabelColor: "#6b7a8d"
+	readonly property int sectionLabelSize: 7
+	readonly property int sectionRowSpacing: 10
+
+	// --- Map Panel Overlay ---
+	readonly property int overlayMargin: 6
 
 	// --- NormalButton Styles ---
 	readonly property int btnWidth: 64
