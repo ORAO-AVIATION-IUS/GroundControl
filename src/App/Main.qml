@@ -94,7 +94,9 @@ ApplicationWindow {
 		anchors.fill: parent
 		uniqueName: "MainLayout-3"
 		Component.onCompleted: {
-			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnTop);
+			addDockWidget(swarmPanel, KDDW.KDDockWidgets.Location_OnTop);
+			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnBottom);
+			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
 
 			mapPanel.addDockWidgetAsTab(leftPanel);
@@ -113,6 +115,12 @@ ApplicationWindow {
 		}
 		CompassPanel {
 			id: compassPanel
+		}
+		ButtonTestPanel {
+			id: testPanel
+		}
+		SwarmPanel {
+			id: swarmPanel
 		}
 
 		Repeater {
@@ -150,6 +158,14 @@ ApplicationWindow {
 				"label": qsTr("Compass"),
 				"dock": compassPanel
 			},
+			{
+				"label": qsTr("Button Test"),
+				"dock": testPanel
+			},
+			{
+				"label": qsTr("Swarm Control"),
+				"dock": swarmPanel
+			}
 		]
 		cameraModel: cameraModel
 		cameraDocks: cameraDocks
