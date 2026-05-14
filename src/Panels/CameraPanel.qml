@@ -7,6 +7,7 @@ import com.kdab.dockwidgets as KDDW
 KDDW.DockWidget {
 	id: dockRoot
 
+	required property int cameraId
 	property string cameraName: ""
 	property string connectionString: ""
 
@@ -23,6 +24,7 @@ KDDW.DockWidget {
 
 		CameraStream {
 			playerId: dockRoot.cameraName
+			streamId: dockRoot.cameraId
 		}
 
 		HamburgerMenu {

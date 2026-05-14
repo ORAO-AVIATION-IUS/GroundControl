@@ -71,17 +71,18 @@ qt_add_resources(GroundControl
 )
 
 target_link_libraries(GroundControl PRIVATE
-    Qt6::Quick
-    Qt6::QuickControls2
-    Qt6::Location
-    Qt6::Positioning
-    KDAB::kddockwidgets
-    AgcStyleplugin
-    AgcComponentsplugin
-    AgcPanelsplugin
-    AgcNetworkplugin
-    AgcMavlinkplugin
-    AgcCameraplugin
+	Qt6::Quick
+	Qt6::QuickControls2
+	Qt6::Location
+	Qt6::Positioning
+	Qt6::Multimedia
+	KDAB::kddockwidgets
+	AgcStyleplugin
+	AgcComponentsplugin
+	AgcPanelsplugin
+	AgcNetworkplugin
+	AgcMavlinkplugin
+	AgcCameraplugin
 )
 
 # Point the runtime linker at the prebuilt lib/ directory so that
