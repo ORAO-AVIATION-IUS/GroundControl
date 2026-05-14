@@ -20,27 +20,52 @@ KDDW.DockWidget {
 			// --- Connection Status ---
 			Rectangle {
 				Layout.fillWidth: true
-				Layout.preferredHeight: statusRow.height + 20
+				Layout.preferredHeight: statusContent.height + 20
 				color: droneManager.connected ? "#1b4332" : "#3c1361"
 				radius: 8
 
-				RowLayout {
-					id: statusRow
+				Column {
+					id: statusContent
 					anchors.centerIn: parent
-					spacing: 8
+					spacing: 4
 
-					Rectangle {
-						Layout.preferredWidth: 10
-						Layout.preferredHeight: 10
-						radius: 5
-						color: droneManager.connected ? "#2ecc71" : "#e74c3c"
+					RowLayout {
+						anchors.horizontalCenter: parent.horizontalCenter
+						spacing: 8
+
+						Rectangle {
+							Layout.preferredWidth: 10
+							Layout.preferredHeight: 10
+							radius: 5
+							color: droneManager.connected ? "#2ecc71" : "#e74c3c"
+						}
+
+						Label {
+							text: droneManager.connectionStatus
+							color: "#ffffff"
+							font.pixelSize: 14
+							font.bold: true
+						}
 					}
 
-					Label {
-						text: droneManager.connectionStatus
-						color: "#ffffff"
-						font.pixelSize: 14
-						font.bold: true
+					// Flight mode badge
+					Rectangle {
+						visible: droneManager.connected
+						anchors.horizontalCenter: parent.horizontalCenter
+						width: modeLabel.implicitWidth + 16
+						height: modeLabel.implicitHeight + 8
+						radius: 4
+						color: "#0d2818"
+
+						Label {
+							id: modeLabel
+							anchors.centerIn: parent
+							text: droneManager.flightMode || ""
+							color: "#8cb4f0"
+							font.pixelSize: 11
+							font.bold: true
+							font.letterSpacing: 1
+						}
 					}
 				}
 			}
@@ -53,19 +78,6 @@ KDDW.DockWidget {
 				columnSpacing: 10
 				enabled: droneManager.connected
 				opacity: droneManager.connected ? 1.0 : 0.4
-
-				Label {
-					text: qsTr("Mode")
-					color: "#aaa"
-					font.pixelSize: 12
-				}
-				Label {
-					text: droneManager.flightMode || "—"
-					color: "#fff"
-					font.pixelSize: 13
-					font.bold: true
-					Layout.fillWidth: true
-				}
 
 				Label {
 					text: qsTr("Armed")

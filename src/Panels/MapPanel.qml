@@ -111,24 +111,90 @@ KDDW.DockWidget {
 			}
 		}
 
-		// ── Top-right: Always-visible action blocks ──
+		// ── Top-right: Drone status + actions + map settings ──
 		Row {
 			anchors.top: parent.top
 			anchors.right: parent.right
 			anchors.margins: Style.overlayMargin
 			spacing: Style.sectionSpacing
 
+			// Drone status badge (left of actions)
+			Rectangle {
+				visible: droneManager.connected
+				opacity: visible ? 1.0 : 0.0
+				Behavior on opacity {
+					NumberAnimation {
+						duration: 200
+					}
+				}
+				width: statusRow.implicitWidth + 16
+				height: statusRow.implicitHeight + 10
+				color: "#1c1f26"
+				radius: 5
+
+				Row {
+					id: statusRow
+					anchors.centerIn: parent
+					spacing: 10
+
+					// Connection dot
+					Rectangle {
+						width: 6
+						height: 6
+						radius: 3
+						color: "#2ecc71"
+						anchors.verticalCenter: parent.verticalCenter
+					}
+
+					// Flight mode
+					Text {
+						text: droneManager.flightMode
+						color: "#cdd6e0"
+						font.pixelSize: 8
+						font.bold: true
+						anchors.verticalCenter: parent.verticalCenter
+					}
+
+					// Armed indicator
+					Text {
+						text: droneManager.armed ? "ARMED" : "DISARMED"
+						color: droneManager.armed ? "#e74c3c" : "#6b7a8d"
+						font.pixelSize: 7
+						font.bold: true
+						anchors.verticalCenter: parent.verticalCenter
+					}
+
+					// Altitude
+					Text {
+						text: droneManager.altitude.toFixed(0) + " m"
+						color: "#8cb4f0"
+						font.pixelSize: 8
+						anchors.verticalCenter: parent.verticalCenter
+					}
+
+					// Battery
+					Text {
+						text: droneManager.batteryPercent.toFixed(0) + "%"
+						color: droneManager.batteryPercent > 30 ? "#2ecc71" : droneManager.batteryPercent > 15 ? "#f39c12" : "#e74c3c"
+						font.pixelSize: 8
+						font.bold: true
+						anchors.verticalCenter: parent.verticalCenter
+					}
+				}
+			}
+
 			// Actions — flight commands
 			ButtonGroup {
+				id: actionsGroup
 				title: "ACTIONS"
 				horizontal: true
 
 				IconButton {
-					id: armBtn
 					iconName: droneManager.armed ? "security-high" : "security-low"
 					label: droneManager.armed ? "Disarm" : "Arm"
 					labelColor: droneManager.armed ? "#ff6b6b" : "#6bffb8"
 					highlighted: droneManager.armed
+					enabled: droneManager.connected
 					onClicked: droneManager.armed ? droneManager.disarm() : droneManager.arm()
 				}
 				IconButton {
@@ -160,14 +226,15 @@ KDDW.DockWidget {
 				title: "MAP"
 				horizontal: true
 
-				// Shared state
-				property bool is3d: false
+				property bool is3d: true
 				property bool isDark: false
 
 				function updateMap() {
 					mapView.setPerspective(mapSettings.is3d);
 					mapView.setTheme(mapSettings.isDark);
 				}
+
+				Component.onCompleted: updateMap()
 
 				IconButton {
 					iconName: mapSettings.is3d ? "map-gnomonic" : "map-flat"

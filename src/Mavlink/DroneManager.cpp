@@ -117,6 +117,7 @@ void DroneManager::setupSystem(std::shared_ptr<System> system) {
 	m_telemetry->set_rate_velocity_ned(10.0);
 	m_telemetry->set_rate_battery(1.0);
 	m_telemetry->set_rate_in_air(10.0);
+	m_telemetry->set_rate_imu(10.0);
 
 	m_telemetry->subscribe_attitude_euler([this](Telemetry::EulerAngle a) {
 		m_roll = a.roll_deg;
@@ -164,6 +165,17 @@ void DroneManager::setupSystem(std::shared_ptr<System> system) {
 		emit inAirChanged();
 	});
 
+	m_telemetry->subscribe_attitude_angular_velocity_body(
+		[this](Telemetry::AngularVelocityBody a) {
+			m_yawspeed = a.yaw_rad_s;
+			emit yawspeedChanged();
+		});
+
+	m_telemetry->subscribe_imu([this](Telemetry::Imu i) {
+		m_yacc = i.acceleration_frd.right_m_s2 / 9.81;
+		emit yaccChanged();
+	});
+
 	m_connected = true;
 	m_connectionStatus = tr("Connected");
 	emit connectedChanged();
@@ -180,12 +192,16 @@ void DroneManager::resetTelemetry() {
 	m_verticalSpeed = 0.0;
 	m_batteryPercent = 0.0;
 	m_batteryVoltage = 0.0;
+	m_yawspeed = 0.0;
+	m_yacc = 0.0;
 
 	emit attitudeChanged();
 	emit headingChanged();
 	emit altitudeChanged();
 	emit speedChanged();
 	emit batteryChanged();
+	emit yawspeedChanged();
+	emit yaccChanged();
 }
 
 void DroneManager::arm() {

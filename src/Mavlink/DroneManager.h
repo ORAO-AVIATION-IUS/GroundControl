@@ -34,6 +34,8 @@ class DroneManager : public QObject {
 	Q_PROPERTY(double verticalSpeed READ verticalSpeed NOTIFY speedChanged)
 	Q_PROPERTY(double batteryPercent READ batteryPercent NOTIFY batteryChanged)
 	Q_PROPERTY(double batteryVoltage READ batteryVoltage NOTIFY batteryChanged)
+	Q_PROPERTY(double yawspeed READ yawspeed NOTIFY yawspeedChanged)
+	Q_PROPERTY(double yacc READ yacc NOTIFY yaccChanged)
 
    public:
 	explicit DroneManager(QObject* parent = nullptr);
@@ -52,6 +54,8 @@ class DroneManager : public QObject {
 	double verticalSpeed() const { return m_verticalSpeed; }
 	double batteryPercent() const { return m_batteryPercent; }
 	double batteryVoltage() const { return m_batteryVoltage; }
+	double yawspeed() const { return m_yawspeed; }
+	double yacc() const { return m_yacc; }
 
 	Q_INVOKABLE void connectToDrone(const QString& url);
 	Q_INVOKABLE void disconnect();
@@ -72,6 +76,8 @@ class DroneManager : public QObject {
 	void altitudeChanged();
 	void speedChanged();
 	void batteryChanged();
+	void yawspeedChanged();
+	void yaccChanged();
 	void error(const QString& message);
 
    private:
@@ -97,4 +103,6 @@ class DroneManager : public QObject {
 	double m_verticalSpeed = 0.0;
 	double m_batteryPercent = 0.0;
 	double m_batteryVoltage = 0.0;
+	double m_yawspeed = 0.0;
+	double m_yacc = 0.0;
 };

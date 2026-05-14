@@ -23,6 +23,8 @@ AbstractButton {
 	background: Rectangle {
 		radius: Style.iconBtnRadius
 		color: {
+			if (!root.enabled)
+				return "transparent";
 			if (root.pressed)
 				return Style.iconBtnPressedBg;
 			if (root.checked)
@@ -41,6 +43,13 @@ AbstractButton {
 	}
 
 	contentItem: Item {
+		opacity: root.enabled ? 1.0 : 0.3
+		Behavior on opacity {
+			NumberAnimation {
+				duration: 150
+			}
+		}
+
 		Image {
 			id: iconImage
 			anchors.top: parent.top
