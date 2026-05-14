@@ -768,6 +768,11 @@ KDDW.DockWidget {
 			visible: root.altitudeDialogVisible
 			z: 100
 
+			onVisibleChanged: {
+				if (visible)
+					altitudeInput.text = root.altRel.toFixed(1);
+			}
+
 			MouseArea {
 				anchors.fill: parent
 				onClicked: root.altitudeDialogVisible = false
@@ -799,7 +804,6 @@ KDDW.DockWidget {
 						id: altitudeInput
 						Layout.fillWidth: true
 						placeholderText: "e.g. 10.0"
-						text: root.altRel.toFixed(1)
 						validator: DoubleValidator {
 							bottom: 0
 							top: 500
