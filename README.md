@@ -21,7 +21,21 @@ just run                             # Run application
 - Just (`cargo install just`)
 - clang-format (formatting)
 - clang-tidy (linting)
+- GStreamer 1.x
 - **Windows**: PowerShell (required for `just format`)
+
+### GStreamer
+
+GStreamer is required for camera/video streaming support.
+
+| Platform | Install |
+|---|---|
+| **Linux (Debian/Ubuntu)** | `sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-tools` |
+| **Linux (Fedora)** | `sudo dnf install gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-libav gstreamer1-tools` |
+| **macOS** | `brew install gstreamer` |
+| **Windows** | Download from [GStreamer downloads](https://gstreamer.freedesktop.org/download/) — install both runtime and dev packages. Set `GSTREAMER_ROOT_X86_64` env var to the install path (e.g. `C:\gstreamer\1.0\mingw_x86_64`). |
+
+Runtime plugins are also needed for stream decoding: `gst-plugins-good` (RTSP), `gst-plugins-bad` (hardware decode), `gst-libav` (H.264/H.265).
 
 ## All Commands
 

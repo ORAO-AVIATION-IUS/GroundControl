@@ -7,6 +7,8 @@ Dialog {
 
 	property alias cameraName: nameField.text
 	property alias connectionString: connectionField.text
+	property alias pipelineString: pipelineField.text
+	property alias useCustomPipeline: customToggle.checked
 	// -1 = add mode; otherwise the id of the camera being edited.
 	property int editingId: -1
 
@@ -14,13 +16,15 @@ Dialog {
 	modal: true
 	standardButtons: Dialog.Ok | Dialog.Cancel
 	anchors.centerIn: Overlay.overlay
-	width: 420
+	width: 480
 	padding: 16
 
 	onAboutToShow: {
 		if (editingId === -1) {
 			nameField.clear();
 			connectionField.clear();
+			pipelineField.clear();
+			customToggle.checked = false;
 		}
 		nameField.forceActiveFocus();
 	}
@@ -41,13 +45,34 @@ Dialog {
 			Layout.fillWidth: true
 			placeholderText: qsTr("e.g. Front Camera")
 		}
+
+		CheckBox {
+			id: customToggle
+			text: qsTr("Custom GStreamer Pipeline")
+		}
+
 		Label {
 			text: qsTr("Connection string")
+			visible: !customToggle.checked
 		}
 		TextField {
 			id: connectionField
 			Layout.fillWidth: true
+			visible: !customToggle.checked
 			placeholderText: qsTr("e.g. rtsp://192.168.1.10:554/stream")
+		}
+
+		Label {
+			text: qsTr("Pipeline")
+			visible: customToggle.checked
+		}
+		TextArea {
+			id: pipelineField
+			Layout.fillWidth: true
+			Layout.preferredHeight: 120
+			visible: customToggle.checked
+			placeholderText: qsTr("e.g. udpsrc port=5600 ! application/x-rtp ! rtph264depay ! decodebin")
+			wrapMode: TextArea.Wrap
 		}
 	}
 }

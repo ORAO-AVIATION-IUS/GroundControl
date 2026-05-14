@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Agc.Camera
 import Agc.Panels
 import QtQuick
 import QtQuick.Controls
@@ -11,8 +12,6 @@ ApplicationWindow {
 	width: 1200
 	height: 800
 	title: qsTr("Ground Control")
-
-	property int nextCameraId: 0
 
 	function rowForId(id) {
 		for (let i = 0; i < cameraModel.count; ++i) {
@@ -34,11 +33,14 @@ ApplicationWindow {
 		const r = cameraModel.get(row);
 		cameraDialog.cameraName = r.name;
 		cameraDialog.connectionString = r.connection;
+		cameraDialog.pipelineString = r.pipeline;
+		cameraDialog.useCustomPipeline = r.isCustom;
 		cameraDialog.editingId = id;
 		cameraDialog.open();
 	}
 
 	function removeCamera(id) {
+		cameraManager.removeStream(id);
 		const row = rowForId(id);
 		if (row === -1)
 			return;
@@ -59,23 +61,26 @@ ApplicationWindow {
 			if (name === "")
 				return;
 			if (editingId === -1) {
+				let streamId;
+				streamId = cameraManager.addStream(name, connectionString, pipelineString, useCustomPipeline);
 				cameraModel.append({
-					"id": window.nextCameraId++,
+					"id": streamId,
 					"name": name,
-					"connection": connectionString
+					"connection": connectionString,
+					"pipeline": pipelineString,
+					"isCustom": useCustomPipeline
 				});
-				cameraManager.addCamera(window.nextCameraId - 1, name, connectionString);
-				cameraManager.initialize();
-				cameraManager.startCamera(window.nextCameraId - 1);
 			} else {
 				const row = window.rowForId(editingId);
 				if (row !== -1) {
+					cameraManager.editStream(editingId, name, connectionString, pipelineString, useCustomPipeline);
 					cameraModel.set(row, {
 						"id": editingId,
 						"name": name,
-						"connection": connectionString
+						"connection": connectionString,
+						"pipeline": pipelineString,
+						"isCustom": useCustomPipeline
 					});
-					cameraManager.editCamera(editingId, name, connectionString);
 				}
 				editingId = -1;
 			}
@@ -118,6 +123,7 @@ ApplicationWindow {
 				required property int id
 				required property string name
 				required property string connection
+				cameraId: id
 				cameraName: name
 				connectionString: connection
 				uniqueName: "cameraConn_" + id

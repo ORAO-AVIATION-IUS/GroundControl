@@ -1,10 +1,14 @@
 #pragma once
 
-#include <QMap>
 #include <QObject>
 #include <QQmlApplicationEngine>
+#include <QString>
+#include <QVideoSink>
 
-#include "CameraInfo.h"
+#include <map>
+#include <memory>
+
+struct CameraInfo;
 
 class CameraManager : public QObject {
 	Q_OBJECT
@@ -12,20 +16,33 @@ class CameraManager : public QObject {
    public:
 	explicit CameraManager(QQmlApplicationEngine* engine,
 						   QObject* parent = nullptr);
+	~CameraManager() override;
 
-	Q_INVOKABLE void addCamera(int id, const QString& name, const QUrl& url);
-	Q_INVOKABLE void removeCamera(int id);
-	Q_INVOKABLE void editCamera(int id, const QString& name, const QUrl& url);
+	Q_INVOKABLE int addStream(const QString& name, const QString& url,
+							  const QString& customPipeline,
+							  bool useCustomPipeline);
+	Q_INVOKABLE void removeStream(int id);
+	Q_INVOKABLE void editStream(int id, const QString& name, const QString& url,
+								const QString& customPipeline,
+								bool useCustomPipeline);
+	Q_INVOKABLE void attachSink(int id, QVideoSink* sink);
+	Q_INVOKABLE void reconnectStream(int id);
 
-	Q_INVOKABLE void initialize();
+	Q_INVOKABLE QString streamStatus(int id) const;
+	Q_INVOKABLE bool streamConnected(int id) const;
 
-	Q_INVOKABLE void startCamera(int id);
+	void setStreamState(int id, const QString& status, bool connected);
+
+   signals:
+	void streamStatusChanged(int id, const QString& status);
+	void streamConnectedChanged(int id, bool connected);
+	void streamError(int id, const QString& message);
 
    private:
-	QObject* findPlayerItem(const QString& name);
+	void startPipeline(int id);
+	void stopPipeline(int id);
 
-   private:
 	QQmlApplicationEngine* m_engine;
-
-	QMap<int, CameraInfo> m_cameras;
+	std::map<int, std::unique_ptr<CameraInfo>> m_cameras;
+	int m_nextId = 0;
 };

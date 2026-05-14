@@ -1,10 +1,11 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 
 MenuBar {
 	id: bar
 
-	// Array of { label: string, dock: KDDW.DockWidget } for the View menu.
 	property var viewPanels: []
 	property ListModel cameraModel
 	property var cameraDocks
@@ -30,9 +31,10 @@ MenuBar {
 	}
 
 	Menu {
+		id: viewMenu
 		title: qsTr("&View")
 
-		Repeater {
+		Instantiator {
 			model: bar.viewPanels
 			delegate: MenuItem {
 				required property var modelData
@@ -41,10 +43,13 @@ MenuBar {
 				checked: modelData.dock.isOpen
 				onTriggered: bar.toggleDock(modelData.dock)
 			}
+			onObjectAdded: (index, object) => viewMenu.insertItem(index, object)
+			onObjectRemoved: (index, object) => viewMenu.removeItem(object)
 		}
 	}
 
 	Menu {
+		id: cameraMenu
 		title: qsTr("&Camera")
 
 		Action {
@@ -54,14 +59,23 @@ MenuBar {
 
 		MenuSeparator {}
 
-		Repeater {
+		Instantiator {
 			model: bar.cameraModel
 			delegate: MenuItem {
-				text: model.name
+				id: cameraMenuItem
+				required property int index
+				required property string name
+				required property int id
+				text: name
 				checkable: true
-				checked: bar.cameraDocks.itemAt(index) ? bar.cameraDocks.itemAt(index).isOpen : false
+				checked: {
+					let dock = bar.cameraDocks.itemAt(index);
+					return dock ? dock.isOpen : false;
+				}
 				onTriggered: bar.toggleDock(bar.cameraDocks.itemAt(index))
 			}
+			onObjectAdded: (index, object) => cameraMenu.insertItem(index + 2, object)
+			onObjectRemoved: (index, object) => cameraMenu.removeItem(object)
 		}
 	}
 }
