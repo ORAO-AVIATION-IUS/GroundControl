@@ -59,9 +59,9 @@ Item {
 		function droneBodyGeoJson() {
 			var c = position;
 			var h = heading;
-			var fwdArm = _polyRect(c, 18, 2, h);
-			var latArm = _polyRect(c, 2, 18, h);
-			var body = _polyRect(c, 6, 6, h);
+			var fwdArm = _polyRect(c, 6, 0.7, h);
+			var latArm = _polyRect(c, 0.7, 6, h);
+			var body = _polyRect(c, 2, 2, h);
 			return {
 				"type": "FeatureCollection",
 				"features": [
@@ -96,7 +96,7 @@ Item {
 			var h = heading;
 			function rotorRing(alongM, perpM) {
 				var rc = _offset(c, alongM, perpM, h);
-				return _polyRect(rc, 4, 4, h);
+				return _polyRect(rc, 1.5, 1.5, h);
 			}
 			return {
 				"type": "FeatureCollection",
@@ -105,28 +105,28 @@ Item {
 						"type": "Feature",
 						"geometry": {
 							"type": "Polygon",
-							"coordinates": [rotorRing(22, 0)]
+							"coordinates": [rotorRing(7.5, 0)]
 						}
 					},
 					{
 						"type": "Feature",
 						"geometry": {
 							"type": "Polygon",
-							"coordinates": [rotorRing(-22, 0)]
+							"coordinates": [rotorRing(-7.5, 0)]
 						}
 					},
 					{
 						"type": "Feature",
 						"geometry": {
 							"type": "Polygon",
-							"coordinates": [rotorRing(0, 22)]
+							"coordinates": [rotorRing(0, 7.5)]
 						}
 					},
 					{
 						"type": "Feature",
 						"geometry": {
 							"type": "Polygon",
-							"coordinates": [rotorRing(0, -22)]
+							"coordinates": [rotorRing(0, -7.5)]
 						}
 					}
 				]
@@ -138,7 +138,7 @@ Item {
 		// properties consumed by the layer via ["get", …] expressions.
 		function tetherSegmentsGeoJson() {
 			var c = position;
-			var poly = _polyRect(c, 2.5, 2.5, 0); // 5×5 m column
+			var poly = _polyRect(c, 0.5, 0.5, 0); // 5×5 m column
 			var features = [];
 			var pitch = 25, on = 18;
 			for (var base = 0; base < altitude; base += pitch) {
@@ -169,7 +169,7 @@ Item {
 		function gpsTrianglePath() {
 			var c = position;
 			var h = heading;
-			var size = 18 * Math.pow(2, 18 - map.zoomLevel);
+			var size = 6 * Math.pow(2, 18 - map.zoomLevel);
 			return [c.atDistanceAndAzimuth(size, h), c.atDistanceAndAzimuth(size * 0.8, h + 140), c.atDistanceAndAzimuth(size * 0.8, h - 140)];
 		}
 	}
@@ -203,6 +203,17 @@ Item {
 		}
 		function onHeadingChanged() {
 			drone.heading = droneManager.heading;
+		}
+	}
+
+	// Follow drone: pan map center to drone position when enabled and connected.
+	property bool followDrone: false
+
+	Connections {
+		target: drone
+		enabled: root.followDrone
+		function onPositionChanged() {
+			map.center = drone.position;
 		}
 	}
 
@@ -247,6 +258,9 @@ Item {
 				styleId: "drone-body-layer"
 				type: "fill-extrusion"
 				property string source: "drone-body-source"
+				layout: ({
+						"visibility": root._is3d ? "visible" : "none"
+					})
 				paint: ({
 						"fill-extrusion-color": "#2a2a2a",
 						"fill-extrusion-base": drone.altitude,
@@ -265,6 +279,9 @@ Item {
 				styleId: "drone-rotor-layer"
 				type: "fill-extrusion"
 				property string source: "drone-rotor-source"
+				layout: ({
+						"visibility": root._is3d ? "visible" : "none"
+					})
 				paint: ({
 						"fill-extrusion-color": "#ff3030",
 						"fill-extrusion-base": drone.altitude + 3,
@@ -283,6 +300,9 @@ Item {
 				styleId: "tether-layer"
 				type: "fill-extrusion"
 				property string source: "tether-source"
+				layout: ({
+						"visibility": root._is3d ? "visible" : "none"
+					})
 				paint: ({
 						"fill-extrusion-color": "#00d0ff",
 						"fill-extrusion-base": ["get", "base"],

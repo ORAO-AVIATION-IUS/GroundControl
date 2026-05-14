@@ -94,9 +94,13 @@ KDDW.DockWidget {
 				}
 
 				IconButton {
+					id: followBtn
 					iconName: "crosshairs"
 					label: "Follow"
-					onClicked: console.log("Follow vehicle")
+					checkable: true
+					checked: true
+					Component.onCompleted: mapView.followDrone = true
+					onClicked: mapView.followDrone = checked
 				}
 				IconButton {
 					iconName: "mark-location"

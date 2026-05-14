@@ -28,6 +28,8 @@ class DroneManager : public QObject {
 	// Position
 	Q_PROPERTY(double latitude READ latitude NOTIFY positionChanged)
 	Q_PROPERTY(double longitude READ longitude NOTIFY positionChanged)
+	Q_PROPERTY(
+		double absoluteAltitude READ absoluteAltitude NOTIFY positionChanged)
 
 	// Telemetry
 	Q_PROPERTY(double roll READ roll NOTIFY attitudeChanged)
@@ -52,6 +54,7 @@ class DroneManager : public QObject {
 	bool inAir() const { return m_inAir; }
 	double latitude() const { return m_latitude; }
 	double longitude() const { return m_longitude; }
+	double absoluteAltitude() const { return m_absoluteAltitude; }
 	double roll() const { return m_roll; }
 	double pitch() const { return m_pitch; }
 	double heading() const { return m_heading; }
@@ -70,6 +73,7 @@ class DroneManager : public QObject {
 	Q_INVOKABLE void takeoff();
 	Q_INVOKABLE void land();
 	Q_INVOKABLE void returnToLaunch();
+	Q_INVOKABLE void setAltitude(double altitudeMeters);
 
    signals:
 	void connectedChanged();
@@ -104,6 +108,7 @@ class DroneManager : public QObject {
 	bool m_inAir = false;
 	double m_latitude = 0.0;
 	double m_longitude = 0.0;
+	double m_absoluteAltitude = 0.0;
 	double m_roll = 0.0;
 	double m_pitch = 0.0;
 	double m_heading = 0.0;

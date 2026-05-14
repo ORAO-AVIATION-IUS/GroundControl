@@ -133,6 +133,7 @@ void DroneManager::setupSystem(std::shared_ptr<System> system) {
 	m_telemetry->subscribe_position([this](Telemetry::Position p) {
 		m_latitude = p.latitude_deg;
 		m_longitude = p.longitude_deg;
+		m_absoluteAltitude = p.absolute_altitude_m;
 		m_altitude = p.relative_altitude_m;
 		emit positionChanged();
 		emit altitudeChanged();
@@ -189,6 +190,7 @@ void DroneManager::setupSystem(std::shared_ptr<System> system) {
 void DroneManager::resetTelemetry() {
 	m_latitude = 0.0;
 	m_longitude = 0.0;
+	m_absoluteAltitude = 0.0;
 	m_roll = 0.0;
 	m_pitch = 0.0;
 	m_heading = 0.0;
@@ -284,6 +286,27 @@ void DroneManager::returnToLaunch() {
 				this,
 				[this, msg]() {
 					emit error(tr("RTL failed: %1").arg(msg));
+				},
+				Qt::QueuedConnection);
+		}
+	}).detach();
+}
+
+void DroneManager::setAltitude(double altitudeMeters) {
+	if (!m_action) return;
+	std::thread([this, altitudeMeters]() {
+		// Compute new absolute altitude from relative target
+		double newAbsolute = m_absoluteAltitude + (altitudeMeters - m_altitude);
+		auto result = m_action->goto_location(
+			m_latitude, m_longitude,
+			static_cast<float>(newAbsolute),
+			static_cast<float>(m_heading));
+		if (result != Action::Result::Success) {
+			QString msg = resultToString(result);
+			QMetaObject::invokeMethod(
+				this,
+				[this, msg]() {
+					emit error(tr("Set altitude failed: %1").arg(msg));
 				},
 				Qt::QueuedConnection);
 		}

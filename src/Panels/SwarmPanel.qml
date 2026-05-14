@@ -1,5 +1,6 @@
 import Agc.Components
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import com.kdab.dockwidgets as KDDW
 
@@ -25,6 +26,9 @@ KDDW.DockWidget {
 	property bool sensorMag: live
 
 	readonly property bool readyToFly: sensorImu && sensorGps && sensorBaro && sensorMag && battery > 20
+
+	// Dialog state
+	property bool altitudeDialogVisible: false
 
 	// ── Telemetry ──
 	property real roll: live ? droneManager.roll : 0.0
@@ -92,7 +96,8 @@ KDDW.DockWidget {
 		}
 	}
 
-	// Auto-log drone events
+	// Auto-log drone events (only connection state and errors —
+	// action results are already logged by button handlers)
 	Connections {
 		target: droneManager
 		function onConnectedChanged() {
@@ -100,12 +105,6 @@ KDDW.DockWidget {
 				addLog("SYS", "Drone connected", "info");
 			else
 				addLog("SYS", "Drone disconnected", "warn");
-		}
-		function onArmedChanged() {
-			addLog(root.droneId, droneManager.armed ? "Armed" : "Disarmed", "info");
-		}
-		function onFlightModeChanged() {
-			addLog(root.droneId, "Mode: " + droneManager.flightMode, "info");
 		}
 		function onError(message) {
 			addLog(root.droneId, message, "err");
@@ -170,6 +169,7 @@ KDDW.DockWidget {
 	Rectangle {
 		anchors.fill: parent
 		color: "#ffffff"
+		property var kddockwidgets_min_size: Qt.size(900, 250)
 
 		ColumnLayout {
 			anchors.fill: parent
@@ -588,7 +588,7 @@ KDDW.DockWidget {
 									label: "CONFIG"
 									bgColor: "#f0f0f4"
 									txtColor: "#3a4a5a"
-									onTapped: addLog(root.droneId, "CONFIG not implemented", "warn")
+									onTapped: root.altitudeDialogVisible = true
 								}
 							}
 
@@ -649,19 +649,6 @@ KDDW.DockWidget {
 								Layout.fillHeight: true
 							}
 						}
-					}
-
-					Rectangle {
-						width: 1
-						Layout.fillHeight: true
-						color: "#e8e8ec"
-					}
-
-					// AltitudeTape — right side
-					AltitudeTape {
-						Layout.preferredWidth: 90
-						Layout.fillHeight: true
-						altitude: root.altRel
 					}
 
 					Rectangle {
@@ -752,6 +739,126 @@ KDDW.DockWidget {
 										font.pixelSize: 9
 										font.family: "Segoe UI"
 										elide: Text.ElideRight
+									}
+								}
+							}
+						}
+					}
+
+					Rectangle {
+						width: 1
+						Layout.fillHeight: true
+						color: "#e8e8ec"
+					}
+
+					// AltitudeTape — far right
+					AltitudeTape {
+						Layout.preferredWidth: 90
+						Layout.fillHeight: true
+						altitude: root.altRel
+					}
+				}
+			}
+		}
+
+		// Altitude dialog overlay
+		Rectangle {
+			anchors.fill: parent
+			color: Qt.rgba(0, 0, 0, 0.35)
+			visible: root.altitudeDialogVisible
+			z: 100
+
+			MouseArea {
+				anchors.fill: parent
+				onClicked: root.altitudeDialogVisible = false
+			}
+
+			Rectangle {
+				anchors.centerIn: parent
+				width: 260
+				height: 150
+				color: "#ffffff"
+				radius: 4
+				border.color: "#e0e0e0"
+				border.width: 1
+
+				ColumnLayout {
+					anchors.fill: parent
+					anchors.margins: 16
+					spacing: 12
+
+					Text {
+						text: "Set Target Altitude"
+						font.pixelSize: 14
+						font.bold: true
+						font.family: "Segoe UI"
+						color: "#1a1a2e"
+					}
+
+					TextField {
+						id: altitudeInput
+						Layout.fillWidth: true
+						placeholderText: "e.g. 10.0"
+						text: root.altRel.toFixed(1)
+						validator: DoubleValidator {
+							bottom: 0
+							top: 500
+							decimals: 1
+						}
+					}
+
+					RowLayout {
+						Layout.fillWidth: true
+						spacing: 8
+
+						Rectangle {
+							Layout.fillWidth: true
+							height: 28
+							radius: 0
+							color: cancelMa.pressed ? Qt.darker("#f0f0f4", 1.12) : cancelMa.containsMouse ? Qt.darker("#f0f0f4", 1.06) : "#f0f0f4"
+							border.color: Qt.darker("#f0f0f4", 1.16)
+							border.width: 1
+							Text {
+								anchors.centerIn: parent
+								text: "CANCEL"
+								color: "#3a4a5a"
+								font.pixelSize: 11
+								font.bold: true
+								font.family: "Segoe UI"
+							}
+							MouseArea {
+								id: cancelMa
+								anchors.fill: parent
+								hoverEnabled: true
+								onClicked: root.altitudeDialogVisible = false
+							}
+						}
+
+						Rectangle {
+							Layout.fillWidth: true
+							height: 28
+							radius: 0
+							color: okMa.pressed ? Qt.darker("#edf7f1", 1.12) : okMa.containsMouse ? Qt.darker("#edf7f1", 1.06) : "#edf7f1"
+							border.color: Qt.darker("#edf7f1", 1.16)
+							border.width: 1
+							Text {
+								anchors.centerIn: parent
+								text: "OK"
+								color: "#1a5830"
+								font.pixelSize: 11
+								font.bold: true
+								font.family: "Segoe UI"
+							}
+							MouseArea {
+								id: okMa
+								anchors.fill: parent
+								hoverEnabled: true
+								onClicked: {
+									var val = parseFloat(altitudeInput.text);
+									if (!isNaN(val) && val >= 0) {
+										droneManager.setAltitude(val);
+										addLog(root.droneId, "Set altitude to " + val.toFixed(1) + " m", "info");
+										root.altitudeDialogVisible = false;
 									}
 								}
 							}

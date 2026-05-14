@@ -126,12 +126,18 @@ ApplicationWindow {
 		anchors.fill: parent
 		uniqueName: "MainLayout-3"
 		Component.onCompleted: {
+			// Primary layout: Swarm on top, Map on bottom
 			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnTop);
+			addDockWidget(swarmPanel, KDDW.KDDockWidgets.Location_OnTop, mapPanel);
+
+			// Other panels: added to layout but closed (hidden by default)
 			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
+			compassPanel.close();
 
 			mapPanel.addDockWidgetAsTab(leftPanel);
+			leftPanel.close();
 			mapPanel.addDockWidgetAsTab(rightPanel);
-			mapPanel.addDockWidgetAsTab(swarmPanel);
+			rightPanel.close();
 			mapPanel.raise();
 		}
 
