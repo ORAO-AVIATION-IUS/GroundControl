@@ -2,3 +2,6 @@
 	path = third_party/KDDockWidgets
 	url = https://github.com/KDAB/KDDockWidgets.git
 	branch = v2.4.0
+[submodule "third_party/MAVSDK"]
+	path = third_party/MAVSDK
+	url = https://github.com/mavlink/MAVSDK.git

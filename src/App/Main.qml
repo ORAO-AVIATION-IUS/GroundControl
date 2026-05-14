@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import Agc.Panels
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import com.kdab.dockwidgets as KDDW
 
 ApplicationWindow {
@@ -51,6 +52,30 @@ ApplicationWindow {
 
 	ListModel {
 		id: cameraModel
+	}
+
+	AddDroneConnectionDialog {
+		id: droneDialog
+		onAccepted: {
+			const url = connectionUrl.trim();
+			if (url !== "")
+				droneManager.connectToDrone(url);
+		}
+	}
+
+	Connections {
+		target: droneManager
+		function onError(message) {
+			errorDialog.text = message;
+			errorDialog.open();
+		}
+	}
+
+	MessageDialog {
+		id: errorDialog
+		title: qsTr("Drone Error")
+		buttons: MessageDialog.Ok
+		text: ""
 	}
 
 	AddCameraConnectionDialog {
@@ -163,5 +188,6 @@ ApplicationWindow {
 		cameraModel: cameraModel
 		cameraDocks: cameraDocks
 		onAddCameraRequested: window.openAddDialog()
+		onAddDroneRequested: droneDialog.open()
 	}
 }

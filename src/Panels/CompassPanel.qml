@@ -7,12 +7,14 @@ import com.kdab.dockwidgets as KDDW
 KDDW.DockWidget {
 	id: root
 	uniqueName: "compassPanel"
-	title: qsTr("Compass Panel")
+	title: qsTr("Instruments")
 
 	Rectangle {
 		id: panelBackground
 		anchors.fill: parent
 		color: "#ffffff"
+
+		readonly property bool live: droneManager.connected
 
 		ColumnLayout {
 			anchors.fill: parent
@@ -33,8 +35,8 @@ KDDW.DockWidget {
 					Layout.preferredWidth: height
 					Layout.minimumWidth: 80
 					Layout.minimumHeight: 80
-					pitch: pitchSlider.value
-					roll: rollSlider.value
+					pitch: panelBackground.live ? droneManager.pitch : pitchSlider.value
+					roll: panelBackground.live ? droneManager.roll : rollSlider.value
 				}
 
 				AirspeedIndicator {
@@ -43,7 +45,7 @@ KDDW.DockWidget {
 					Layout.preferredWidth: height
 					Layout.minimumWidth: 80
 					Layout.minimumHeight: 80
-					airspeedMs: airspeedSlider.value / 1.94384
+					airspeedMs: panelBackground.live ? droneManager.groundSpeed : airspeedSlider.value / 1.94384
 				}
 
 				TurnController {
@@ -62,7 +64,7 @@ KDDW.DockWidget {
 					Layout.preferredWidth: height
 					Layout.minimumWidth: 80
 					Layout.minimumHeight: 80
-					heading: headingSlider.value
+					heading: panelBackground.live ? droneManager.heading : headingSlider.value
 				}
 
 				HeadingIndicator {
@@ -71,7 +73,7 @@ KDDW.DockWidget {
 					Layout.preferredWidth: height
 					Layout.minimumWidth: 80
 					Layout.minimumHeight: 80
-					heading: headingSlider.value
+					heading: panelBackground.live ? droneManager.heading : headingSlider.value
 				}
 
 				Item {
@@ -99,10 +101,10 @@ KDDW.DockWidget {
 					rowSpacing: 5
 
 					Label {
-						text: "Pitch: " + Math.round(pitchSlider.value) + "°"
+						text: "Pitch: " + (panelBackground.live ? droneManager.pitch.toFixed(1) : Math.round(pitchSlider.value)) + "°"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
+						color: panelBackground.live ? "#27ae60" : "#2c3e50"
 						Layout.preferredWidth: 130
 					}
 					Slider {
@@ -113,13 +115,14 @@ KDDW.DockWidget {
 						stepSize: 1
 						Layout.fillWidth: true
 						Layout.minimumWidth: 150
+						enabled: !panelBackground.live
 					}
 
 					Label {
-						text: "Roll: " + Math.round(rollSlider.value) + "°"
+						text: "Roll: " + (panelBackground.live ? droneManager.roll.toFixed(1) : Math.round(rollSlider.value)) + "°"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
+						color: panelBackground.live ? "#27ae60" : "#2c3e50"
 						Layout.preferredWidth: 130
 					}
 					Slider {
@@ -130,13 +133,14 @@ KDDW.DockWidget {
 						stepSize: 1
 						Layout.fillWidth: true
 						Layout.minimumWidth: 150
+						enabled: !panelBackground.live
 					}
 
 					Label {
-						text: "Heading: " + Math.round(headingSlider.value) + "°"
+						text: "Heading: " + (panelBackground.live ? droneManager.heading.toFixed(1) : Math.round(headingSlider.value)) + "°"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
+						color: panelBackground.live ? "#27ae60" : "#2c3e50"
 						Layout.preferredWidth: 130
 					}
 					Slider {
@@ -147,13 +151,14 @@ KDDW.DockWidget {
 						stepSize: 1
 						Layout.fillWidth: true
 						Layout.minimumWidth: 150
+						enabled: !panelBackground.live
 					}
 
 					Label {
-						text: "Airspeed: " + Math.round(airspeedSlider.value) + " kt"
+						text: "Airspeed: " + (panelBackground.live ? (droneManager.groundSpeed * 1.94384).toFixed(1) : Math.round(airspeedSlider.value)) + " kt"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
+						color: panelBackground.live ? "#27ae60" : "#2c3e50"
 						Layout.preferredWidth: 130
 					}
 					Slider {
@@ -164,6 +169,7 @@ KDDW.DockWidget {
 						stepSize: 1
 						Layout.fillWidth: true
 						Layout.minimumWidth: 150
+						enabled: !panelBackground.live
 					}
 
 					Label {

@@ -10,6 +10,7 @@ MenuBar {
 	property var cameraDocks
 
 	signal addCameraRequested
+	signal addDroneRequested
 
 	function toggleDock(dw) {
 		if (!dw)
@@ -41,6 +42,23 @@ MenuBar {
 				checked: modelData.dock.isOpen
 				onTriggered: bar.toggleDock(modelData.dock)
 			}
+		}
+	}
+
+	Menu {
+		title: qsTr("&Drone")
+
+		Action {
+			text: qsTr("Connect…")
+			onTriggered: bar.addDroneRequested()
+		}
+
+		MenuSeparator {}
+
+		Action {
+			text: droneManager.connected ? qsTr("Disconnect") : qsTr("(Not Connected)")
+			enabled: droneManager.connected
+			onTriggered: droneManager.disconnect()
 		}
 	}
 

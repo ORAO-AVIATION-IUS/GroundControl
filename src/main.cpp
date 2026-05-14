@@ -14,6 +14,7 @@
 
 #include "BreezeIconProvider.h"
 #include "Camera/CameraManager.h"
+#include "Mavlink/DroneManager.h"
 
 Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
 Q_IMPORT_QML_PLUGIN(Agc_ComponentsPlugin)
@@ -40,6 +41,10 @@ int main(int argc, char* argv[]) {
 	// camera manager
 	CameraManager cam_manager(&appEngine);
 	appEngine.rootContext()->setContextProperty("cameraManager", &cam_manager);
+
+	// drone manager
+	DroneManager drone_manager;
+	appEngine.rootContext()->setContextProperty("droneManager", &drone_manager);
 
 	appEngine.loadFromModule("Agc", "Main");
 	

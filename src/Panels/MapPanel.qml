@@ -125,33 +125,32 @@ KDDW.DockWidget {
 
 				IconButton {
 					id: armBtn
-					property bool armed: false
-					iconName: armed ? "security-high" : "security-low"
-					label: armed ? "Disarm" : "Arm"
-					labelColor: armed ? "#ff6b6b" : "#6bffb8"
-					highlighted: armed
-					onClicked: {
-						armed = !armed;
-						console.log(armed ? "Armed" : "Disarmed");
-					}
+					iconName: droneManager.armed ? "security-high" : "security-low"
+					label: droneManager.armed ? "Disarm" : "Arm"
+					labelColor: droneManager.armed ? "#ff6b6b" : "#6bffb8"
+					highlighted: droneManager.armed
+					onClicked: droneManager.armed ? droneManager.disarm() : droneManager.arm()
 				}
 				IconButton {
 					iconName: "arrow-up-double"
 					label: "Takeoff"
 					labelColor: "#6bffb8"
-					onClicked: console.log("Takeoff")
+					enabled: droneManager.connected && droneManager.armed && !droneManager.inAir
+					onClicked: droneManager.takeoff()
 				}
 				IconButton {
 					iconName: "arrow-down-double"
 					label: "Land"
 					labelColor: "#ffd06b"
-					onClicked: console.log("Land")
+					enabled: droneManager.connected && droneManager.inAir
+					onClicked: droneManager.land()
 				}
 				IconButton {
 					iconName: "go-home-large"
 					label: "RTH"
 					labelColor: "#6bb8ff"
-					onClicked: console.log("Return to Home")
+					enabled: droneManager.connected && droneManager.inAir
+					onClicked: droneManager.returnToLaunch()
 				}
 			}
 

@@ -9,3 +9,8 @@ qt_add_qml_module(AgcMavlink
     QML_FILES ${QML_FILES}
     IMPORT_PATH "${CMAKE_BINARY_DIR}"
 )
+
+target_link_libraries(AgcMavlink
+    PUBLIC Qt6::Quick
+    PRIVATE MAVSDK::mavsdk
+)
