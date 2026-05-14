@@ -131,7 +131,10 @@ void DroneManager::setupSystem(std::shared_ptr<System> system) {
 	});
 
 	m_telemetry->subscribe_position([this](Telemetry::Position p) {
+		m_latitude = p.latitude_deg;
+		m_longitude = p.longitude_deg;
 		m_altitude = p.relative_altitude_m;
+		emit positionChanged();
 		emit altitudeChanged();
 	});
 
@@ -184,6 +187,8 @@ void DroneManager::setupSystem(std::shared_ptr<System> system) {
 }
 
 void DroneManager::resetTelemetry() {
+	m_latitude = 0.0;
+	m_longitude = 0.0;
 	m_roll = 0.0;
 	m_pitch = 0.0;
 	m_heading = 0.0;
@@ -195,6 +200,7 @@ void DroneManager::resetTelemetry() {
 	m_yawspeed = 0.0;
 	m_yacc = 0.0;
 
+	emit positionChanged();
 	emit attitudeChanged();
 	emit headingChanged();
 	emit altitudeChanged();

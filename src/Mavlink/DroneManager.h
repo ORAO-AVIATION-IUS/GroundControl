@@ -25,6 +25,10 @@ class DroneManager : public QObject {
 	Q_PROPERTY(QString flightMode READ flightMode NOTIFY flightModeChanged)
 	Q_PROPERTY(bool inAir READ inAir NOTIFY inAirChanged)
 
+	// Position
+	Q_PROPERTY(double latitude READ latitude NOTIFY positionChanged)
+	Q_PROPERTY(double longitude READ longitude NOTIFY positionChanged)
+
 	// Telemetry
 	Q_PROPERTY(double roll READ roll NOTIFY attitudeChanged)
 	Q_PROPERTY(double pitch READ pitch NOTIFY attitudeChanged)
@@ -46,6 +50,8 @@ class DroneManager : public QObject {
 	bool armed() const { return m_armed; }
 	QString flightMode() const { return m_flightMode; }
 	bool inAir() const { return m_inAir; }
+	double latitude() const { return m_latitude; }
+	double longitude() const { return m_longitude; }
 	double roll() const { return m_roll; }
 	double pitch() const { return m_pitch; }
 	double heading() const { return m_heading; }
@@ -71,6 +77,7 @@ class DroneManager : public QObject {
 	void armedChanged();
 	void flightModeChanged();
 	void inAirChanged();
+	void positionChanged();
 	void attitudeChanged();
 	void headingChanged();
 	void altitudeChanged();
@@ -95,6 +102,8 @@ class DroneManager : public QObject {
 	bool m_armed = false;
 	QString m_flightMode;
 	bool m_inAir = false;
+	double m_latitude = 0.0;
+	double m_longitude = 0.0;
 	double m_roll = 0.0;
 	double m_pitch = 0.0;
 	double m_heading = 0.0;

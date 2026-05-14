@@ -131,6 +131,7 @@ ApplicationWindow {
 
 			mapPanel.addDockWidgetAsTab(leftPanel);
 			mapPanel.addDockWidgetAsTab(rightPanel);
+			mapPanel.addDockWidgetAsTab(swarmPanel);
 			mapPanel.raise();
 		}
 
@@ -145,6 +146,9 @@ ApplicationWindow {
 		}
 		CompassPanel {
 			id: compassPanel
+		}
+		SwarmPanel {
+			id: swarmPanel
 		}
 
 		Repeater {
@@ -183,6 +187,10 @@ ApplicationWindow {
 			{
 				"label": qsTr("Compass"),
 				"dock": compassPanel
+			},
+			{
+				"label": qsTr("Swarm Control"),
+				"dock": swarmPanel
 			},
 		]
 		cameraModel: cameraModel
