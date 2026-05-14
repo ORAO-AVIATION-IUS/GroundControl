@@ -54,7 +54,7 @@ KDDW.DockWidget {
 	property real wpDist: 0.0
 	property int ping: 45
 
-	readonly property int instSz: 82
+	readonly property int instSz: 110
 
 	// ── Status log ──
 	ListModel {
@@ -421,48 +421,47 @@ KDDW.DockWidget {
 
 					// Instruments
 					Item {
-						Layout.preferredWidth: root.instSz * 3 + 16
+						Layout.fillWidth: true
 						Layout.fillHeight: true
 
 						GridLayout {
-							anchors.top: parent.top
-							anchors.horizontalCenter: parent.horizontalCenter
-							anchors.topMargin: 10
+							anchors.fill: parent
+							anchors.margins: 10
 							columns: 3
 							rowSpacing: 6
 							columnSpacing: 6
 
 							AttitudeIndicator {
-								Layout.preferredWidth: root.instSz
-								Layout.preferredHeight: root.instSz
+								Layout.fillWidth: true
+								Layout.fillHeight: true
 								pitch: root.pitch
 								roll: root.roll
 							}
 							AirspeedIndicator {
-								Layout.preferredWidth: root.instSz
-								Layout.preferredHeight: root.instSz
+								Layout.fillWidth: true
+								Layout.fillHeight: true
 								airspeedMs: root.airspeed
 							}
 							TurnController {
-								Layout.preferredWidth: root.instSz
-								Layout.preferredHeight: root.instSz
+								Layout.fillWidth: true
+								Layout.fillHeight: true
 								yawspeed: live ? droneManager.yawspeed : 0.0
 								yacc: live ? droneManager.yacc : 0.0
 							}
 							CompassIndicator {
-								Layout.preferredWidth: root.instSz
-								Layout.preferredHeight: root.instSz
+								Layout.fillWidth: true
+								Layout.fillHeight: true
 								heading: root.heading
 							}
 							HeadingIndicator {
-								Layout.preferredWidth: root.instSz
-								Layout.preferredHeight: root.instSz
+								Layout.fillWidth: true
+								Layout.fillHeight: true
 								heading: root.heading
 							}
 
 							Rectangle {
-								Layout.preferredWidth: root.instSz
-								Layout.preferredHeight: root.instSz
+								Layout.fillWidth: true
+								Layout.fillHeight: true
 								color: "#f8f8fa"
 								radius: 0
 								border.color: "#e8e8ec"
@@ -659,7 +658,7 @@ KDDW.DockWidget {
 
 					// Status Log
 					Item {
-						Layout.fillWidth: true
+						Layout.preferredWidth: 200
 						Layout.fillHeight: true
 
 						ColumnLayout {
