@@ -7,11 +7,44 @@ Item {
 	id: root
 
 	// ───── Public inputs (stateless DTO) ─────
-	// The view draws nothing unless `dronePosition` is a valid coordinate.
-	property var  dronePosition: QtPositioning.coordinate()  // invalid by default
-	property real droneAltitude: 0                            // meters AGL
-	property real droneHeading:  0                            // deg CW from north
-	property var  flightPath:    []                           // array<QGeoCoordinate>
+	// Bundled telemetry. The view draws nothing unless `drone.position` is valid.
+	//   position:   QGeoCoordinate
+	//   altitude:   meters AGL
+	//   heading:    deg CW from north
+	//   flightPath: array<QGeoCoordinate>
+	property var drone: ({})
+
+	readonly property var  _dronePosition: (drone && drone.position) ? drone.position : QtPositioning.coordinate()
+	readonly property real _droneAltitude: (drone && drone.altitude !== undefined) ? drone.altitude : 0
+	readonly property real _droneHeading:  (drone && drone.heading  !== undefined) ? drone.heading  : 0
+	readonly property var  _flightPath:    (drone && drone.flightPath) ? drone.flightPath : []
+
+	// ───── View modes ─────
+	property bool threeD: true
+	property bool lightMode: true
+
+	// Style index into supportedMapTypes (mirrors maplibre.map.styles order):
+	// 0=bright, 1=liberty, 2=positron, 3=dark, 4=fiord
+	readonly property int _styleIndex: threeD
+		? (lightMode ? 1 : 3)
+		: (lightMode ? 3 : 0)
+
+	property real _savedTilt: 45
+
+	onThreeDChanged: {
+		if (threeD) {
+			map.tilt = _savedTilt;
+		} else {
+			_savedTilt = map.tilt;
+			map.tilt = 0;
+		}
+	}
+
+	on_StyleIndexChanged: _applyStyle()
+	function _applyStyle() {
+		if (map.supportedMapTypes.length > _styleIndex)
+			map.activeMapType = map.supportedMapTypes[_styleIndex];
+	}
 
 	// ───── Camera defaults (overridable) ─────
 	property var  initialCenter: QtPositioning.coordinate(41.0082, 28.9784)
@@ -19,7 +52,7 @@ Item {
 	property real initialTilt:   45
 	property real initialBearing: -17.6
 
-	readonly property bool _hasDrone: dronePosition && dronePosition.isValid
+	readonly property bool _hasDrone: _dronePosition && _dronePosition.isValid
 
 	// ───── Pure geometry helpers (no state) ─────
 	QtObject {
@@ -140,12 +173,12 @@ Item {
 		minimumZoomLevel: 0
 		maximumZoomLevel: 20
 
-		tilt: root.initialTilt
+		tilt: root.threeD ? root.initialTilt : 0
 		bearing: root.initialBearing
 
 		Component.onCompleted: {
-			if (supportedMapTypes.length > 1)
-				activeMapType = supportedMapTypes[1];
+			root._savedTilt = root.initialTilt;
+			root._applyStyle();
 		}
 
 		// 3D drone geometry bound to root inputs via pure helpers.
@@ -153,7 +186,7 @@ Item {
 			SourceParameter {
 				styleId: "drone-body-source"
 				type: "geojson"
-				property var data: geometry.droneBodyGeoJson(root.dronePosition, root.droneHeading)
+				property var data: geometry.droneBodyGeoJson(root._dronePosition, root._droneHeading)
 			}
 			LayerParameter {
 				styleId: "drone-body-layer"
@@ -161,8 +194,8 @@ Item {
 				property string source: "drone-body-source"
 				paint: ({
 					"fill-extrusion-color": "#2a2a2a",
-					"fill-extrusion-base":   root.droneAltitude,
-					"fill-extrusion-height": root.droneAltitude + 1.67,
+					"fill-extrusion-base":   root._droneAltitude,
+					"fill-extrusion-height": root._droneAltitude + 1.67,
 					"fill-extrusion-opacity": 0.95
 				})
 			}
@@ -170,7 +203,7 @@ Item {
 			SourceParameter {
 				styleId: "drone-rotor-source"
 				type: "geojson"
-				property var data: geometry.rotorGeoJson(root.dronePosition, root.droneHeading)
+				property var data: geometry.rotorGeoJson(root._dronePosition, root._droneHeading)
 			}
 			LayerParameter {
 				styleId: "drone-rotor-layer"
@@ -178,8 +211,8 @@ Item {
 				property string source: "drone-rotor-source"
 				paint: ({
 					"fill-extrusion-color": "#ff3030",
-					"fill-extrusion-base":   root.droneAltitude + 1,
-					"fill-extrusion-height": root.droneAltitude + 2.33,
+					"fill-extrusion-base":   root._droneAltitude + 1,
+					"fill-extrusion-height": root._droneAltitude + 2.33,
 					"fill-extrusion-opacity": 0.95
 				})
 			}
@@ -187,7 +220,7 @@ Item {
 			SourceParameter {
 				styleId: "tether-source"
 				type: "geojson"
-				property var data: geometry.tetherSegmentsGeoJson(root.dronePosition, root.droneAltitude)
+				property var data: geometry.tetherSegmentsGeoJson(root._dronePosition, root._droneAltitude)
 			}
 			LayerParameter {
 				styleId: "tether-layer"
@@ -208,15 +241,15 @@ Item {
 			color: "#ff3030"
 			border.color: "white"
 			border.width: 3
-			path: geometry.gpsTrianglePath(root.dronePosition, root.droneHeading, map.zoomLevel)
+			path: geometry.gpsTrianglePath(root._dronePosition, root._droneHeading, map.zoomLevel)
 		}
 
 		// Flight path trail — only drawn when caller provides it.
 		MapPolyline {
-			visible: root.flightPath && root.flightPath.length > 1
+			visible: root._flightPath && root._flightPath.length > 1
 			line.width: 3
 			line.color: "#ffaa00"
-			path: root.flightPath
+			path: root._flightPath
 		}
 
 // Controls:
@@ -291,7 +324,8 @@ Item {
 					velocityY = velocityY * 0.6 + (-dy) * 0.4;
 				} else if (dragMode === modeRotateTilt) {
 					map.bearing += dx * kBearingSensitivity;
-					map.tilt = clampTilt(map.tilt - dy * kTiltSensitivity);
+					if (root.threeD)
+						map.tilt = clampTilt(map.tilt - dy * kTiltSensitivity);
 				}
 
 				lastPoint = Qt.point(mouse.x, mouse.y);
@@ -358,7 +392,8 @@ Item {
 
 				if (wheel.modifiers & Qt.ControlModifier) {
 					if (Math.abs(dy) >= Math.abs(dx)) {
-						map.tilt = clampTilt(map.tilt - dy * kTouchpadTiltSensitivity);
+						if (root.threeD)
+							map.tilt = clampTilt(map.tilt - dy * kTouchpadTiltSensitivity);
 					} else {
 						map.bearing += dx * kBearingSensitivity;
 					}
