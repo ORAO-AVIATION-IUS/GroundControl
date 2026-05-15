@@ -6,27 +6,19 @@ import MapLibre.Location
 Item {
 	id: root
 
-	// ───── Public inputs (stateless DTO) ─────
-	// Bundled telemetry. The view draws nothing unless `drone.position` is valid.
-	//   position:   QGeoCoordinate
-	//   altitude:   meters AGL
-	//   heading:    deg CW from north
-	//   flightPath: array<QGeoCoordinate>
-	property var drone: ({})
-
-	readonly property var  _dronePosition: (drone && drone.position) ? drone.position : QtPositioning.coordinate()
-	readonly property real _droneAltitude: (drone && drone.altitude !== undefined) ? drone.altitude : 0
-	readonly property real _droneHeading:  (drone && drone.heading  !== undefined) ? drone.heading  : 0
-	readonly property var  _flightPath:    (drone && drone.flightPath) ? drone.flightPath : []
+	// ───── Public inputs (stateless) ─────
+	// drones: array of { position: QGeoCoordinate, altitude: real (m AGL), heading: real (deg CW from north) }
+	property var drones: []
+	property var flightPaths: []                            // array<array<QGeoCoordinate>>
 
 	// ───── View modes ─────
 	property bool threeD: true
 	property bool lightMode: true
 
 	// Style index into supportedMapTypes (mirrors maplibre.map.styles order):
-	// 0=bright, 1=liberty, 2=positron, 3=dark, 4=fiord
+	// 0=bright, 1=liberty, 2=positron, 3=dark, 4=fiord, 5=night-3d (local)
 	readonly property int _styleIndex: threeD
-		? (lightMode ? 1 : 3)
+		? (lightMode ? 1 : 5)
 		: (lightMode ? 3 : 0)
 
 	property real _savedTilt: 45
@@ -52,7 +44,9 @@ Item {
 	property real initialTilt:   45
 	property real initialBearing: -17.6
 
-	readonly property bool _hasDrone: _dronePosition && _dronePosition.isValid
+	function _isValidDrone(d) {
+		return d && d.position && d.position.isValid;
+	}
 
 	// ───── Pure geometry helpers (no state) ─────
 	QtObject {
@@ -83,53 +77,61 @@ Item {
 			];
 		}
 
-		function droneBodyGeoJson(c, hdg) {
-			if (!c || !c.isValid)
-				return _emptyFC;
-			return {
-				"type": "FeatureCollection",
-				"features": [
-					{ "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 6,    0.67, hdg)] } },
-					{ "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 0.67, 6,    hdg)] } },
-					{ "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 2,    2,    hdg)] } }
-				]
-			};
-		}
-
-		function rotorGeoJson(c, hdg) {
-			if (!c || !c.isValid)
-				return _emptyFC;
-			function rotorRing(alongM, perpM) {
-				return _polyRect(_offset(c, alongM, perpM, hdg), 1.33, 1.33, hdg);
+		function droneBodyGeoJson(drones) {
+			const features = [];
+			for (let i = 0; i < (drones || []).length; ++i) {
+				const d = drones[i];
+				if (!root._isValidDrone(d))
+					continue;
+				const c = d.position, hdg = d.heading || 0, alt = d.altitude || 0;
+				const props = { "base": alt, "height": alt + 1.67 };
+				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 6,    0.67, hdg)] } });
+				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 0.67, 6,    hdg)] } });
+				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 2,    2,    hdg)] } });
 			}
-			return {
-				"type": "FeatureCollection",
-				"features": [
-					{ "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [rotorRing( 7.33,  0)] } },
-					{ "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [rotorRing(-7.33,  0)] } },
-					{ "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [rotorRing(  0,  7.33)] } },
-					{ "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [rotorRing(  0, -7.33)] } }
-				]
-			};
+			return { "type": "FeatureCollection", "features": features };
 		}
 
-		// Vertical dashed tether from ground up to `altitude`.
+		function rotorGeoJson(drones) {
+			const features = [];
+			for (let i = 0; i < (drones || []).length; ++i) {
+				const d = drones[i];
+				if (!root._isValidDrone(d))
+					continue;
+				const c = d.position, hdg = d.heading || 0, alt = d.altitude || 0;
+				const props = { "base": alt + 1, "height": alt + 2.33 };
+				const ring = function (alongM, perpM) {
+					return _polyRect(_offset(c, alongM, perpM, hdg), 1.33, 1.33, hdg);
+				};
+				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring( 7.33,  0)] } });
+				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring(-7.33,  0)] } });
+				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring(  0,  7.33)] } });
+				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring(  0, -7.33)] } });
+			}
+			return { "type": "FeatureCollection", "features": features };
+		}
+
+		// Vertical dashed tethers from ground up to each drone's altitude.
 		// 25 m pitch, 18 m segment. Each feature carries base/height for the layer.
-		function tetherSegmentsGeoJson(c, altitude) {
-			if (!c || !c.isValid || altitude <= 0)
-				return _emptyFC;
-			const poly = _polyRect(c, 0.83, 0.83, 0);
+		function tetherSegmentsGeoJson(drones) {
 			const features = [];
 			const pitch = 25, on = 18;
-			for (let base = 0; base < altitude; base += pitch) {
-				const top = Math.min(base + on, altitude);
-				if (top - base < 2)
-					break;
-				features.push({
-					"type": "Feature",
-					"properties": { "base": base, "height": top },
-					"geometry": { "type": "Polygon", "coordinates": [poly] }
-				});
+			for (let i = 0; i < (drones || []).length; ++i) {
+				const d = drones[i];
+				if (!root._isValidDrone(d) || (d.altitude || 0) <= 0)
+					continue;
+				const poly = _polyRect(d.position, 0.83, 0.83, 0);
+				const altitude = d.altitude;
+				for (let base = 0; base < altitude; base += pitch) {
+					const top = Math.min(base + on, altitude);
+					if (top - base < 2)
+						break;
+					features.push({
+						"type": "Feature",
+						"properties": { "base": base, "height": top },
+						"geometry": { "type": "Polygon", "coordinates": [poly] }
+					});
+				}
 			}
 			return { "type": "FeatureCollection", "features": features };
 		}
@@ -158,7 +160,8 @@ Item {
 				 + "https://tiles.openfreemap.org/styles/liberty,"
 				 + "https://tiles.openfreemap.org/styles/positron,"
 				 + "https://tiles.openfreemap.org/styles/dark,"
-				 + "https://tiles.openfreemap.org/styles/fiord"
+				 + "https://tiles.openfreemap.org/styles/fiord,"
+				 + "qrc:/resources/assets/night-3d-style.json"
 		}
 	}
 
@@ -186,7 +189,9 @@ Item {
 			SourceParameter {
 				styleId: "drone-body-source"
 				type: "geojson"
-				property var data: geometry.droneBodyGeoJson(root._dronePosition, root._droneHeading)
+				property var data: root.threeD
+					? geometry.droneBodyGeoJson(root.drones)
+					: ({ "type": "FeatureCollection", "features": [] })
 			}
 			LayerParameter {
 				styleId: "drone-body-layer"
@@ -194,8 +199,8 @@ Item {
 				property string source: "drone-body-source"
 				paint: ({
 					"fill-extrusion-color": "#2a2a2a",
-					"fill-extrusion-base":   root._droneAltitude,
-					"fill-extrusion-height": root._droneAltitude + 1.67,
+					"fill-extrusion-base":   ["get", "base"],
+					"fill-extrusion-height": ["get", "height"],
 					"fill-extrusion-opacity": 0.95
 				})
 			}
@@ -203,7 +208,9 @@ Item {
 			SourceParameter {
 				styleId: "drone-rotor-source"
 				type: "geojson"
-				property var data: geometry.rotorGeoJson(root._dronePosition, root._droneHeading)
+				property var data: root.threeD
+					? geometry.rotorGeoJson(root.drones)
+					: ({ "type": "FeatureCollection", "features": [] })
 			}
 			LayerParameter {
 				styleId: "drone-rotor-layer"
@@ -211,8 +218,8 @@ Item {
 				property string source: "drone-rotor-source"
 				paint: ({
 					"fill-extrusion-color": "#ff3030",
-					"fill-extrusion-base":   root._droneAltitude + 1,
-					"fill-extrusion-height": root._droneAltitude + 2.33,
+					"fill-extrusion-base":   ["get", "base"],
+					"fill-extrusion-height": ["get", "height"],
 					"fill-extrusion-opacity": 0.95
 				})
 			}
@@ -220,7 +227,9 @@ Item {
 			SourceParameter {
 				styleId: "tether-source"
 				type: "geojson"
-				property var data: geometry.tetherSegmentsGeoJson(root._dronePosition, root._droneAltitude)
+				property var data: root.threeD
+					? geometry.tetherSegmentsGeoJson(root.drones)
+					: ({ "type": "FeatureCollection", "features": [] })
 			}
 			LayerParameter {
 				styleId: "tether-layer"
@@ -235,21 +244,32 @@ Item {
 			}
 		}
 
-		// Ground GPS marker — only drawn when drone data is provided.
-		MapPolygon {
-			visible: root._hasDrone
-			color: "#ff3030"
-			border.color: "white"
-			border.width: 3
-			path: geometry.gpsTrianglePath(root._dronePosition, root._droneHeading, map.zoomLevel)
+		// Flight path trails — one polyline per entry in flightPaths.
+		// Declared before the GPS markers so trails render beneath them.
+		MapItemView {
+			model: root.flightPaths
+			delegate: MapPolyline {
+				required property var modelData
+				visible: modelData && modelData.length > 1
+				line.width: 3
+				line.color: "#ffaa00"
+				path: modelData || []
+			}
 		}
 
-		// Flight path trail — only drawn when caller provides it.
-		MapPolyline {
-			visible: root._flightPath && root._flightPath.length > 1
-			line.width: 3
-			line.color: "#ffaa00"
-			path: root._flightPath
+		// Ground GPS markers — one per drone.
+		MapItemView {
+			model: root.drones
+			delegate: MapPolygon {
+				required property var modelData
+				visible: root._isValidDrone(modelData)
+				color: "#ff3030"
+				border.color: "white"
+				border.width: 3
+				path: visible
+					? geometry.gpsTrianglePath(modelData.position, modelData.heading || 0, map.zoomLevel)
+					: []
+			}
 		}
 
 // Controls:

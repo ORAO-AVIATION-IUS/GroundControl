@@ -45,6 +45,7 @@ add_subdirectory(third_party/KDDockWidgets EXCLUDE_FROM_ALL)
 file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
     resources/*.svg
     resources/*.png
+    resources/*.json
 )
 
 qt_add_executable(GroundControl
