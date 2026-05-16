@@ -1,5 +1,3 @@
-pragma ComponentBehavior: Bound
-
 import Agc.Camera
 import Agc.Panels
 import QtQuick

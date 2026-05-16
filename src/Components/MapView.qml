@@ -1,7 +1,7 @@
+import MapLibre.Location
 import QtLocation
 import QtPositioning
 import QtQuick
-import MapLibre.Location
 
 Item {
 	id: root
@@ -17,9 +17,7 @@ Item {
 
 	// Style index into supportedMapTypes (mirrors maplibre.map.styles order):
 	// 0=bright, 1=liberty, 2=positron, 3=dark, 4=fiord, 5=night-3d (local)
-	readonly property int _styleIndex: threeD
-		? (lightMode ? 1 : 5)
-		: (lightMode ? 3 : 0)
+	readonly property int _styleIndex: threeD ? (lightMode ? 1 : 5) : (lightMode ? 0 : 4)
 
 	property real _savedTilt: 45
 
@@ -39,9 +37,9 @@ Item {
 	}
 
 	// ───── Camera defaults (overridable) ─────
-	property var  initialCenter: QtPositioning.coordinate(41.0082, 28.9784)
-	property real initialZoom:   15.5
-	property real initialTilt:   45
+	property var initialCenter: QtPositioning.coordinate(41.0082, 28.9784)
+	property real initialZoom: 15.5
+	property real initialTilt: 45
 	property real initialBearing: -17.6
 
 	function _isValidDrone(d) {
@@ -52,7 +50,10 @@ Item {
 	QtObject {
 		id: geometry
 
-		readonly property var _emptyFC: ({ "type": "FeatureCollection", "features": [] })
+		readonly property var _emptyFC: ({
+				"type": "FeatureCollection",
+				"features": []
+			})
 
 		function _offset(c, alongM, perpM, hdg) {
 			const d = Math.sqrt(alongM * alongM + perpM * perpM);
@@ -64,17 +65,11 @@ Item {
 
 		// Heading-rotated rectangle as a closed [lon,lat] ring.
 		function _polyRect(c, halfA, halfP, hdg) {
-			const p1 = _offset(c,  halfA,  halfP, hdg);
-			const p2 = _offset(c,  halfA, -halfP, hdg);
+			const p1 = _offset(c, halfA, halfP, hdg);
+			const p2 = _offset(c, halfA, -halfP, hdg);
 			const p3 = _offset(c, -halfA, -halfP, hdg);
-			const p4 = _offset(c, -halfA,  halfP, hdg);
-			return [
-				[p1.longitude, p1.latitude],
-				[p2.longitude, p2.latitude],
-				[p3.longitude, p3.latitude],
-				[p4.longitude, p4.latitude],
-				[p1.longitude, p1.latitude]
-			];
+			const p4 = _offset(c, -halfA, halfP, hdg);
+			return [[p1.longitude, p1.latitude], [p2.longitude, p2.latitude], [p3.longitude, p3.latitude], [p4.longitude, p4.latitude], [p1.longitude, p1.latitude]];
 		}
 
 		function droneBodyGeoJson(drones) {
@@ -84,12 +79,39 @@ Item {
 				if (!root._isValidDrone(d))
 					continue;
 				const c = d.position, hdg = d.heading || 0, alt = d.altitude || 0;
-				const props = { "base": alt, "height": alt + 1.67 };
-				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 6,    0.67, hdg)] } });
-				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 0.67, 6,    hdg)] } });
-				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [_polyRect(c, 2,    2,    hdg)] } });
+				const props = {
+					"base": alt,
+					"height": alt + 1.67
+				};
+				features.push({
+					"type": "Feature",
+					"properties": props,
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [_polyRect(c, 6, 0.67, hdg)]
+					}
+				});
+				features.push({
+					"type": "Feature",
+					"properties": props,
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [_polyRect(c, 0.67, 6, hdg)]
+					}
+				});
+				features.push({
+					"type": "Feature",
+					"properties": props,
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [_polyRect(c, 2, 2, hdg)]
+					}
+				});
 			}
-			return { "type": "FeatureCollection", "features": features };
+			return {
+				"type": "FeatureCollection",
+				"features": features
+			};
 		}
 
 		function rotorGeoJson(drones) {
@@ -99,16 +121,50 @@ Item {
 				if (!root._isValidDrone(d))
 					continue;
 				const c = d.position, hdg = d.heading || 0, alt = d.altitude || 0;
-				const props = { "base": alt + 1, "height": alt + 2.33 };
+				const props = {
+					"base": alt + 1,
+					"height": alt + 2.33
+				};
 				const ring = function (alongM, perpM) {
 					return _polyRect(_offset(c, alongM, perpM, hdg), 1.33, 1.33, hdg);
 				};
-				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring( 7.33,  0)] } });
-				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring(-7.33,  0)] } });
-				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring(  0,  7.33)] } });
-				features.push({ "type": "Feature", "properties": props, "geometry": { "type": "Polygon", "coordinates": [ring(  0, -7.33)] } });
+				features.push({
+					"type": "Feature",
+					"properties": props,
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [ring(7.33, 0)]
+					}
+				});
+				features.push({
+					"type": "Feature",
+					"properties": props,
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [ring(-7.33, 0)]
+					}
+				});
+				features.push({
+					"type": "Feature",
+					"properties": props,
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [ring(0, 7.33)]
+					}
+				});
+				features.push({
+					"type": "Feature",
+					"properties": props,
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [ring(0, -7.33)]
+					}
+				});
 			}
-			return { "type": "FeatureCollection", "features": features };
+			return {
+				"type": "FeatureCollection",
+				"features": features
+			};
 		}
 
 		// Vertical dashed tethers from ground up to each drone's altitude.
@@ -128,12 +184,21 @@ Item {
 						break;
 					features.push({
 						"type": "Feature",
-						"properties": { "base": base, "height": top },
-						"geometry": { "type": "Polygon", "coordinates": [poly] }
+						"properties": {
+							"base": base,
+							"height": top
+						},
+						"geometry": {
+							"type": "Polygon",
+							"coordinates": [poly]
+						}
 					});
 				}
 			}
-			return { "type": "FeatureCollection", "features": features };
+			return {
+				"type": "FeatureCollection",
+				"features": features
+			};
 		}
 
 		// Ground triangle marker, sized in meters but scaled inversely with
@@ -142,11 +207,7 @@ Item {
 			if (!c || !c.isValid)
 				return [];
 			const size = 6 * Math.pow(2, 18 - zoomLevel);
-			return [
-				c.atDistanceAndAzimuth(size,        hdg),
-				c.atDistanceAndAzimuth(size * 0.8,  hdg + 140),
-				c.atDistanceAndAzimuth(size * 0.8,  hdg - 140)
-			];
+			return [c.atDistanceAndAzimuth(size, hdg), c.atDistanceAndAzimuth(size * 0.8, hdg + 140), c.atDistanceAndAzimuth(size * 0.8, hdg - 140)];
 		}
 	}
 
@@ -156,12 +217,7 @@ Item {
 
 		PluginParameter {
 			name: "maplibre.map.styles"
-			value: "https://tiles.openfreemap.org/styles/bright,"
-				 + "https://tiles.openfreemap.org/styles/liberty,"
-				 + "https://tiles.openfreemap.org/styles/positron,"
-				 + "https://tiles.openfreemap.org/styles/dark,"
-				 + "https://tiles.openfreemap.org/styles/fiord,"
-				 + "qrc:/resources/assets/night-3d-style.json"
+			value: "https://tiles.openfreemap.org/styles/bright," + "https://tiles.openfreemap.org/styles/liberty," + "https://tiles.openfreemap.org/styles/positron," + "https://tiles.openfreemap.org/styles/dark," + "https://tiles.openfreemap.org/styles/fiord," + "qrc:/resources/assets/night-3d-style.json"
 		}
 	}
 
@@ -189,58 +245,61 @@ Item {
 			SourceParameter {
 				styleId: "drone-body-source"
 				type: "geojson"
-				property var data: root.threeD
-					? geometry.droneBodyGeoJson(root.drones)
-					: ({ "type": "FeatureCollection", "features": [] })
+				property var data: root.threeD ? geometry.droneBodyGeoJson(root.drones) : ({
+						"type": "FeatureCollection",
+						"features": []
+					})
 			}
 			LayerParameter {
 				styleId: "drone-body-layer"
 				type: "fill-extrusion"
 				property string source: "drone-body-source"
 				paint: ({
-					"fill-extrusion-color": "#2a2a2a",
-					"fill-extrusion-base":   ["get", "base"],
-					"fill-extrusion-height": ["get", "height"],
-					"fill-extrusion-opacity": 0.95
-				})
+						"fill-extrusion-color": "#2a2a2a",
+						"fill-extrusion-base": ["get", "base"],
+						"fill-extrusion-height": ["get", "height"],
+						"fill-extrusion-opacity": 0.95
+					})
 			}
 
 			SourceParameter {
 				styleId: "drone-rotor-source"
 				type: "geojson"
-				property var data: root.threeD
-					? geometry.rotorGeoJson(root.drones)
-					: ({ "type": "FeatureCollection", "features": [] })
+				property var data: root.threeD ? geometry.rotorGeoJson(root.drones) : ({
+						"type": "FeatureCollection",
+						"features": []
+					})
 			}
 			LayerParameter {
 				styleId: "drone-rotor-layer"
 				type: "fill-extrusion"
 				property string source: "drone-rotor-source"
 				paint: ({
-					"fill-extrusion-color": "#ff3030",
-					"fill-extrusion-base":   ["get", "base"],
-					"fill-extrusion-height": ["get", "height"],
-					"fill-extrusion-opacity": 0.95
-				})
+						"fill-extrusion-color": "#ff3030",
+						"fill-extrusion-base": ["get", "base"],
+						"fill-extrusion-height": ["get", "height"],
+						"fill-extrusion-opacity": 0.95
+					})
 			}
 
 			SourceParameter {
 				styleId: "tether-source"
 				type: "geojson"
-				property var data: root.threeD
-					? geometry.tetherSegmentsGeoJson(root.drones)
-					: ({ "type": "FeatureCollection", "features": [] })
+				property var data: root.threeD ? geometry.tetherSegmentsGeoJson(root.drones) : ({
+						"type": "FeatureCollection",
+						"features": []
+					})
 			}
 			LayerParameter {
 				styleId: "tether-layer"
 				type: "fill-extrusion"
 				property string source: "tether-source"
 				paint: ({
-					"fill-extrusion-color": "#00d0ff",
-					"fill-extrusion-base":   ["get", "base"],
-					"fill-extrusion-height": ["get", "height"],
-					"fill-extrusion-opacity": 0.9
-				})
+						"fill-extrusion-color": "#00d0ff",
+						"fill-extrusion-base": ["get", "base"],
+						"fill-extrusion-height": ["get", "height"],
+						"fill-extrusion-opacity": 0.9
+					})
 			}
 		}
 
@@ -266,13 +325,11 @@ Item {
 				color: "#ff3030"
 				border.color: "white"
 				border.width: 3
-				path: visible
-					? geometry.gpsTrianglePath(modelData.position, modelData.heading || 0, map.zoomLevel)
-					: []
+				path: visible ? geometry.gpsTrianglePath(modelData.position, modelData.heading || 0, map.zoomLevel) : []
 			}
 		}
 
-// Controls:
+		// Controls:
 		//   Left drag            -> pan (with inertia)
 		//   Ctrl + Left drag     -> rotate / tilt (same as right drag)
 		//   Right drag H         -> rotate bearing
@@ -383,8 +440,7 @@ Item {
 					mouseArea.velocityX *= mouseArea.kFriction;
 					mouseArea.velocityY *= mouseArea.kFriction;
 
-					if (Math.abs(mouseArea.velocityX) < mouseArea.kInertiaCutoff
-							&& Math.abs(mouseArea.velocityY) < mouseArea.kInertiaCutoff) {
+					if (Math.abs(mouseArea.velocityX) < mouseArea.kInertiaCutoff && Math.abs(mouseArea.velocityY) < mouseArea.kInertiaCutoff) {
 						mouseArea.inertiaActive = false;
 						stop();
 						return;
@@ -397,9 +453,7 @@ Item {
 			onWheel: function (wheel) {
 				// Mouse wheel sends angleDelta in multiples of 120.
 				// Touchpad sends smooth non-120 values or only pixelDelta.
-				const isDiscreteWheel = (wheel.angleDelta.y !== 0)
-						&& (wheel.angleDelta.y % 120 === 0)
-						&& (Math.abs(wheel.pixelDelta.y) < 1);
+				const isDiscreteWheel = (wheel.angleDelta.y !== 0) && (wheel.angleDelta.y % 120 === 0) && (Math.abs(wheel.pixelDelta.y) < 1);
 
 				if (isDiscreteWheel) {
 					const zoomDir = wheel.angleDelta.y > 0 ? 1 : -1;
@@ -431,8 +485,7 @@ Item {
 	// Zoom toward a screen point using geographic center adjustment
 	// to avoid integer truncation drift from pan().
 	function zoomTowardPoint(px, py, delta) {
-		const newZoom = Math.max(map.minimumZoomLevel,
-								 Math.min(map.maximumZoomLevel, map.zoomLevel + delta));
+		const newZoom = Math.max(map.minimumZoomLevel, Math.min(map.maximumZoomLevel, map.zoomLevel + delta));
 		if (newZoom === map.zoomLevel)
 			return;
 
@@ -440,8 +493,6 @@ Item {
 		map.zoomLevel = newZoom;
 		const currentCoord = map.toCoordinate(Qt.point(px, py), false);
 
-		map.center = QtPositioning.coordinate(
-			map.center.latitude  + targetCoord.latitude  - currentCoord.latitude,
-			map.center.longitude + targetCoord.longitude - currentCoord.longitude);
+		map.center = QtPositioning.coordinate(map.center.latitude + targetCoord.latitude - currentCoord.latitude, map.center.longitude + targetCoord.longitude - currentCoord.longitude);
 	}
 }
