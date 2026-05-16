@@ -118,15 +118,15 @@ ApplicationWindow {
 			model: cameraModel
 			delegate: CameraPanel {
 				id: camDock
-				required property int id
+				required property int cameraId
 				required property string name
 				required property string connection
-				cameraId: id
+				cameraId: cameraId
 				cameraName: name
 				connectionString: connection
-				uniqueName: "cameraConn_" + id
-				onEditRequested: window.openEditDialog(id)
-				onRemoveRequested: window.removeCamera(id)
+				uniqueName: "cameraConn_" + cameraId
+				onEditRequested: window.openEditDialog(cameraId)
+				onRemoveRequested: window.removeCamera(cameraId)
 				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
 			}
 		}

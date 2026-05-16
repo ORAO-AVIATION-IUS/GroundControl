@@ -63,7 +63,7 @@ MenuBar {
 				id: cameraMenuItem
 				required property int index
 				required property string name
-				required property int id
+				required property int cameraId
 				text: name
 				checkable: true
 				checked: {
