@@ -1,6 +1,4 @@
 // Generated code, do not modify this file!
-// Generated on 2023-04-04T01:24:40.539Z by mwilsnd using shaders/generate_shader_code.js
-
 #pragma once
 #include <mbgl/gfx/backend.hpp>
 
@@ -12,32 +10,37 @@ namespace shaders {
 enum class BuiltIn {
     None,
     Prelude,
-    BackgroundProgram,
-    BackgroundPatternProgram,
-    CircleProgram,
     ClippingMaskProgram,
-    CollisionBoxProgram,
-    CollisionCircleProgram,
-    DebugProgram,
-    FillExtrusionPatternProgram,
-    FillExtrusionProgram,
-    FillOutlinePatternProgram,
-    FillOutlineProgram,
-    FillPatternProgram,
-    FillProgram,
-    HeatmapTextureProgram,
-    HeatmapProgram,
-    HillshadePrepareProgram,
-    HillshadeProgram,
-    LineGradientProgram,
-    LinePatternProgram,
-    LineSDFProgram,
-    LineProgram,
-    RasterProgram,
-    SymbolIconProgram,
-    SymbolSDFTextProgram,
-    SymbolSDFIconProgram,
-    SymbolTextAndIconProgram
+    BackgroundShader,
+    BackgroundPatternShader,
+    CircleShader,
+    CollisionBoxShader,
+    CollisionCircleShader,
+    CustomGeometryShader,
+    CustomSymbolIconShader,
+    DebugShader,
+    FillShader,
+    FillOutlineShader,
+    FillPatternShader,
+    FillOutlinePatternShader,
+    FillOutlineTriangulatedShader,
+    FillExtrusionShader,
+    FillExtrusionPatternShader,
+    HeatmapShader,
+    HeatmapTextureShader,
+    HillshadePrepareShader,
+    HillshadeShader,
+    LineShader,
+    LineGradientShader,
+    LinePatternShader,
+    LocationIndicatorShader,
+    LocationIndicatorTexturedShader,
+    LineSDFShader,
+    RasterShader,
+    SymbolIconShader,
+    SymbolSDFShader,
+    SymbolTextAndIconShader,
+    WideVectorShader
 };
 
 /// @brief Select shader source based on a program type and a desired
@@ -51,6 +54,7 @@ struct ShaderSource;
 /// @brief A specialization of the ShaderSource template for no shader code.
 template <>
 struct ShaderSource<BuiltIn::None, gfx::Backend::Type::OpenGL> {
+    static constexpr const char* name = "";
     static constexpr const char* vertex = "";
     static constexpr const char* fragment = "";
 };

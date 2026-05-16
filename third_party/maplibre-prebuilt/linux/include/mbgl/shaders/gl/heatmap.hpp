@@ -1,6 +1,4 @@
 // Generated code, do not modify this file!
-// Generated on 2023-04-04T01:24:40.539Z by mwilsnd using shaders/generate_shader_code.js
-
 #pragma once
 #include <mbgl/shaders/shader_source.hpp>
 
@@ -8,29 +6,33 @@ namespace mbgl {
 namespace shaders {
 
 template <>
-struct ShaderSource<BuiltIn::HeatmapProgram, gfx::Backend::Type::OpenGL> {
-    static constexpr const char* vertex = R"(
-uniform mat4 u_matrix;
-uniform float u_extrude_scale;
-uniform float u_opacity;
-uniform float u_intensity;
+struct ShaderSource<BuiltIn::HeatmapShader, gfx::Backend::Type::OpenGL> {
+    static constexpr const char* name = "HeatmapShader";
+    static constexpr const char* vertex = R"(layout (location = 0) in vec2 a_pos;
+out vec2 v_extrude;
 
-attribute vec2 a_pos;
+layout (std140) uniform HeatmapDrawableUBO {
+    highp mat4 u_matrix;
+    highp float u_extrude_scale;
+    // Interpolations
+    lowp float u_weight_t;
+    lowp float u_radius_t;
+    lowp float drawable_pad1;
+};
 
-varying vec2 v_extrude;
+layout (std140) uniform HeatmapEvaluatedPropsUBO {
+    highp float u_weight;
+    highp float u_radius;
+    highp float u_intensity;
+    lowp float props_pad1;
+};
 
 #ifndef HAS_UNIFORM_u_weight
-uniform lowp float u_weight_t;
-attribute highp vec2 a_weight;
-varying highp float weight;
-#else
-uniform highp float u_weight;
+layout (location = 1) in highp vec2 a_weight;
+out highp float weight;
 #endif
 #ifndef HAS_UNIFORM_u_radius
-uniform lowp float u_radius_t;
-attribute mediump vec2 a_radius;
-#else
-uniform mediump float u_radius;
+layout (location = 2) in mediump vec2 a_radius;
 #endif
 
 // Effective "0" in the kernel density texture to adjust the kernel size to;
@@ -83,14 +85,17 @@ mediump float radius = u_radius;
     gl_Position = u_matrix * pos;
 }
 )";
-    static constexpr const char* fragment = R"(uniform highp float u_intensity;
+    static constexpr const char* fragment = R"(in vec2 v_extrude;
 
-varying vec2 v_extrude;
+layout (std140) uniform HeatmapEvaluatedPropsUBO {
+    highp float u_weight;
+    highp float u_radius;
+    highp float u_intensity;
+    lowp float props_pad1;
+};
 
 #ifndef HAS_UNIFORM_u_weight
-varying highp float weight;
-#else
-uniform highp float u_weight;
+in highp float weight;
 #endif
 
 // Gaussian kernel coefficient: 1 / sqrt(2 * PI)
@@ -105,10 +110,10 @@ highp float weight = u_weight;
     float d = -0.5 * 3.0 * 3.0 * dot(v_extrude, v_extrude);
     float val = weight * u_intensity * GAUSS_COEF * exp(d);
 
-    gl_FragColor = vec4(val, 1.0, 1.0, 1.0);
+    fragColor = vec4(val, 1.0, 1.0, 1.0);
 
 #ifdef OVERDRAW_INSPECTOR
-    gl_FragColor = vec4(1.0);
+    fragColor = vec4(1.0);
 #endif
 }
 )";

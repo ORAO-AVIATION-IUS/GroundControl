@@ -50,20 +50,31 @@ public:
                                          const std::vector<Immutable<style::LayerProperties>>&) noexcept;
 
     /**
-     * @brief a build-time flag to enable/disable annotations in mapbox-gl-native core.
+     * @brief a build-time flag to enable/disable annotations in
+     * mapbox-gl-native core.
      *
-     * At the moment, the annotations implementation in core is creating concrete
-     * layer instances apart from LayerManager/LayerFactory code path.
+     * At the moment, the annotations implementation in core is creating
+     * concrete layer instances apart from LayerManager/LayerFactory code path.
      *
      * So, annotations must be disabled if the LayerManager implementation does
      * not provide line, fill or symbol layers (those, used by the annotations
      * implementation).
      *
-     * Note: in future, annotations implemantation will be moved from the core to platform
-     * SDK (see https://github.com/mapbox/mapbox-plugins-android/tree/master/plugin-annotation)
+     * Note: in future, annotations implemantation will be moved from the core
+     * to platform SDK (see
+     * https://github.com/mapbox/mapbox-plugins-android/tree/master/plugin-annotation)
      * and this flag won't be needed any more.
      */
     static const bool annotationsEnabled;
+
+    /**
+     * Enables a layer type for JSON style only.
+     *
+     * We might not want to expose runtime API for some layer types
+     * in order to save binary size (the corresponding SDK layer wrappers
+     * should be excluded from the project build).
+     */
+    virtual void addLayerTypeCoreOnly(std::unique_ptr<mbgl::LayerFactory>);
 
 protected:
     virtual ~LayerManager() = default;

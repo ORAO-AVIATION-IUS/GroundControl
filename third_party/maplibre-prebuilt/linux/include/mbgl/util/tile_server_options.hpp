@@ -95,7 +95,8 @@ public:
      * @brief Sets the template for styles.
      *
      * @param styleTemplate The style template.
-     * @param domainName If set, the URL domain must contain the specified string to be matched as canonical style URL .
+     * @param domainName If set, the URL domain must contain the specified
+     * string to be matched as canonical style URL .
      *
      * @return TileServerOptions for chaining options together.
      */
@@ -126,7 +127,8 @@ public:
 
     /**
      * @brief Sets the template for sprites.
-     * @param domainName If set, the URL domain must contain the specified string to be matched as canonical sprite URL
+     * @param domainName If set, the URL domain must contain the specified
+     * string to be matched as canonical sprite URL
      * .
      *
      * @param spritesTemplate The sprites template.
@@ -161,7 +163,8 @@ public:
      * @brief Sets the template for glyphs.
      *
      * @param glyphsTemplate The glyphs template.
-     * @param domainName If set, the URL domain must contain the specified string to be matched as canonical glyphs URL
+     * @param domainName If set, the URL domain must contain the specified
+     * string to be matched as canonical glyphs URL
      * .
      *
      * @return TileServerOptions for chaining options together.
@@ -195,7 +198,8 @@ public:
      * @brief Sets the template for tiles.
      *
      * @param tileTemplate The tile template.
-     * @param domainName If set, the URL domain must contain the specified string to be matched as canonical tile URL .
+     * @param domainName If set, the URL domain must contain the specified
+     * string to be matched as canonical tile URL .
      *
      * @return TileServerOptions for chaining options together.
      */
@@ -261,7 +265,8 @@ public:
     TileServerOptions& withDefaultStyles(std::vector<mbgl::util::DefaultStyle> styles);
 
     /**
-     * @brief Sets the default style by name. The style name must exists in defaultStyles collection
+     * @brief Sets the default style by name. The style name must exist in
+     * defaultStyles collection
      *
      * @param defaultStyle The style name
      * @return TileServerOptions for chaining options together.

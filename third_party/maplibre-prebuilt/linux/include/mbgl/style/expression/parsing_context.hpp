@@ -53,17 +53,20 @@ public:
 } // namespace detail
 
 /**
-    Controls the annotation behavior of the parser when encountering an expression
-    whose type is not a subtype of the expected type. The default behavior, used
-    when optional<TypeAnnotationOption> is a nullopt, is as follows:
+    Controls the annotation behavior of the parser when encountering an
+   expression whose type is not a subtype of the expected type. The default
+   behavior, used when optional<TypeAnnotationOption> is a nullopt, is as
+   follows:
 
-    When we expect a number, string, boolean, or array but have a value, wrap it in an assertion.
-    When we expect a color or formatted string, but have a string or value, wrap it in a coercion.
-    Otherwise, we do static type-checking.
+    When we expect a number, string, boolean, or array but have a value, wrap it
+   in an assertion. When we expect a color or formatted string, but have a
+   string or value, wrap it in a coercion. Otherwise, we do static
+   type-checking.
 
     These behaviors are overridable for:
       * The "coalesce" operator, which needs to omit type annotations.
-      * String-valued properties (e.g. `text-field`), where coercion is more convenient than assertion.
+      * String-valued properties (e.g. `text-field`), where coercion is more
+   convenient than assertion.
 */
 enum class TypeAnnotationOption {
     coerce,
@@ -88,7 +91,7 @@ public:
 
     std::string getKey() const { return key; }
     std::optional<type::Type> getExpected() const { return expected; }
-    const std::vector<ParsingError>& getErrors() const { return *errors; }
+    const std::vector<ParsingError>& getErrors() const noexcept { return *errors; }
     std::string getCombinedErrors() const;
 
     /**
@@ -98,9 +101,9 @@ public:
                                 const std::optional<TypeAnnotationOption>& = std::nullopt);
 
     /**
-        Parse the given style-spec JSON value as an expression intended to be used
-        in a layout or paint property.  This entails checking additional constraints
-        that exist in that context but not, e.g., for filters.
+        Parse the given style-spec JSON value as an expression intended to be
+       used in a layout or paint property.  This entails checking additional
+       constraints that exist in that context but not, e.g., for filters.
     */
     ParseResult parseLayerPropertyExpression(const mbgl::style::conversion::Convertible& value);
 
@@ -147,7 +150,7 @@ public:
         ctx.errors->clear();
     }
 
-    void clearErrors() { errors->clear(); }
+    void clearErrors() noexcept { errors->clear(); }
 
 private:
     ParsingContext(std::string key_,
@@ -174,7 +177,7 @@ private:
     std::shared_ptr<std::vector<ParsingError>> errors;
 };
 
-bool isExpression(const std::string&);
+bool isExpression(const std::string&) noexcept;
 
 } // namespace expression
 } // namespace style

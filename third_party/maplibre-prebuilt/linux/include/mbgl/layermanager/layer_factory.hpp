@@ -19,7 +19,8 @@ class RenderLayer;
 /**
  * @brief The LayerFactory abstract class
  *
- * This class is responsible for creation of the layer objects that belong to a concrete layer type.
+ * This class is responsible for creation of the layer objects that belong to a
+ * concrete layer type.
  */
 class LayerFactory {
 public:
@@ -37,7 +38,7 @@ public:
     /// Returns a new Layout instance on success call; returns `nullptr` otherwise.
     virtual std::unique_ptr<Layout> createLayout(const LayoutParameters&,
                                                  std::unique_ptr<GeometryTileLayer>,
-                                                 const std::vector<Immutable<style::LayerProperties>>&) noexcept;
+                                                 const std::vector<Immutable<style::LayerProperties>>&);
 
 protected:
     std::optional<std::string> getSource(const style::conversion::Convertible& value) const noexcept;

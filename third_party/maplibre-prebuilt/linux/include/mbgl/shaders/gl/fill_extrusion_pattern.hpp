@@ -1,6 +1,4 @@
 // Generated code, do not modify this file!
-// Generated on 2023-04-04T01:24:40.539Z by mwilsnd using shaders/generate_shader_code.js
-
 #pragma once
 #include <mbgl/shaders/shader_source.hpp>
 
@@ -8,53 +6,81 @@ namespace mbgl {
 namespace shaders {
 
 template <>
-struct ShaderSource<BuiltIn::FillExtrusionPatternProgram, gfx::Backend::Type::OpenGL> {
-    static constexpr const char* vertex = R"(uniform mat4 u_matrix;
-uniform vec2 u_pixel_coord_upper;
-uniform vec2 u_pixel_coord_lower;
-uniform float u_height_factor;
-uniform vec4 u_scale;
-uniform float u_vertical_gradient;
-uniform lowp float u_opacity;
+struct ShaderSource<BuiltIn::FillExtrusionPatternShader, gfx::Backend::Type::OpenGL> {
+    static constexpr const char* name = "FillExtrusionPatternShader";
+    static constexpr const char* vertex = R"(layout (location = 0) in vec2 a_pos;
+layout (location = 1) in vec4 a_normal_ed;
 
-uniform vec3 u_lightcolor;
-uniform lowp vec3 u_lightpos;
-uniform lowp float u_lightintensity;
+out vec2 v_pos_a;
+out vec2 v_pos_b;
+out vec4 v_lighting;
 
-attribute vec2 a_pos;
-attribute vec4 a_normal_ed;
+layout (std140) uniform GlobalPaintParamsUBO {
+    highp vec2 u_pattern_atlas_texsize;
+    highp vec2 u_units_to_pixels;
+    highp vec2 u_world_size;
+    highp float u_camera_to_center_distance;
+    highp float u_symbol_fade_change;
+    highp float u_aspect_ratio;
+    highp float u_pixel_ratio;
+    highp float u_map_zoom;
+    lowp float global_pad1;
+};
 
-varying vec2 v_pos_a;
-varying vec2 v_pos_b;
-varying vec4 v_lighting;
+layout (std140) uniform FillExtrusionDrawableUBO {
+    highp mat4 u_matrix;
+    highp vec2 u_pixel_coord_upper;
+    highp vec2 u_pixel_coord_lower;
+    highp float u_height_factor;
+    highp float u_tile_ratio;
+    // Interpolations
+    highp float u_base_t;
+    highp float u_height_t;
+    highp float u_color_t;
+    highp float u_pattern_from_t;
+    highp float u_pattern_to_t;
+    lowp float drawable_pad1;
+};
+
+layout (std140) uniform FillExtrusionTilePropsUBO {
+    highp vec4 u_pattern_from;
+    highp vec4 u_pattern_to;
+    highp vec2 u_texsize;
+    lowp float tileprops_pad1;
+    lowp float tileprops_pad2;
+};
+
+layout (std140) uniform FillExtrusionPropsUBO {
+    highp vec4 u_color;
+    highp vec3 u_lightcolor;
+    lowp float props_pad1;
+    highp vec3 u_lightpos;
+    highp float u_base;
+    highp float u_height;
+    highp float u_lightintensity;
+    highp float u_vertical_gradient;
+    highp float u_opacity;
+    highp float u_fade;
+    highp float u_from_scale;
+    highp float u_to_scale;
+    lowp float props_pad2;
+};
 
 #ifndef HAS_UNIFORM_u_base
-uniform lowp float u_base_t;
-attribute lowp vec2 a_base;
-varying lowp float base;
-#else
-uniform lowp float u_base;
+layout (location = 2) in lowp vec2 a_base;
+out lowp float base;
 #endif
 #ifndef HAS_UNIFORM_u_height
-uniform lowp float u_height_t;
-attribute lowp vec2 a_height;
-varying lowp float height;
-#else
-uniform lowp float u_height;
+layout (location = 3) in lowp vec2 a_height;
+out lowp float height;
 #endif
 #ifndef HAS_UNIFORM_u_pattern_from
-uniform lowp float u_pattern_from_t;
-attribute lowp vec4 a_pattern_from;
-varying lowp vec4 pattern_from;
-#else
-uniform lowp vec4 u_pattern_from;
+layout (location = 4) in mediump vec4 a_pattern_from;
+out mediump vec4 pattern_from;
 #endif
 #ifndef HAS_UNIFORM_u_pattern_to
-uniform lowp float u_pattern_to_t;
-attribute lowp vec4 a_pattern_to;
-varying lowp vec4 pattern_to;
-#else
-uniform lowp vec4 u_pattern_to;
+layout (location = 5) in mediump vec4 a_pattern_to;
+out mediump vec4 pattern_to;
 #endif
 
 void main() {
@@ -84,10 +110,10 @@ mediump vec4 pattern_to = u_pattern_to;
     vec2 pattern_tl_b = pattern_to.xy;
     vec2 pattern_br_b = pattern_to.zw;
 
-    float pixelRatio = u_scale.x;
-    float tileRatio = u_scale.y;
-    float fromScale = u_scale.z;
-    float toScale = u_scale.w;
+    float pixelRatio = u_pixel_ratio;
+    float tileRatio = u_tile_ratio;
+    float fromScale = u_from_scale;
+    float toScale = u_to_scale;
 
     vec3 normal = a_normal_ed.xyz;
     float edgedistance = a_normal_ed.w;
@@ -126,34 +152,47 @@ mediump vec4 pattern_to = u_pattern_to;
     v_lighting *= u_opacity;
 }
 )";
-    static constexpr const char* fragment = R"(uniform vec2 u_texsize;
-uniform float u_fade;
+    static constexpr const char* fragment = R"(in vec2 v_pos_a;
+in vec2 v_pos_b;
+in vec4 v_lighting;
+
+layout (std140) uniform FillExtrusionTilePropsUBO {
+    highp vec4 u_pattern_from;
+    highp vec4 u_pattern_to;
+    highp vec2 u_texsize;
+    lowp float tileprops_pad1;
+    lowp float tileprops_pad2;
+};
+
+layout (std140) uniform FillExtrusionPropsUBO {
+    highp vec4 u_color;
+    highp vec3 u_lightcolor;
+    lowp float props_pad1;
+    highp vec3 u_lightpos;
+    highp float u_base;
+    highp float u_height;
+    highp float u_lightintensity;
+    highp float u_vertical_gradient;
+    highp float u_opacity;
+    highp float u_fade;
+    highp float u_from_scale;
+    highp float u_to_scale;
+    lowp float props_pad2;
+};
 
 uniform sampler2D u_image;
 
-varying vec2 v_pos_a;
-varying vec2 v_pos_b;
-varying vec4 v_lighting;
-
 #ifndef HAS_UNIFORM_u_base
-varying lowp float base;
-#else
-uniform lowp float u_base;
+in lowp float base;
 #endif
 #ifndef HAS_UNIFORM_u_height
-varying lowp float height;
-#else
-uniform lowp float u_height;
+in lowp float height;
 #endif
 #ifndef HAS_UNIFORM_u_pattern_from
-varying lowp vec4 pattern_from;
-#else
-uniform lowp vec4 u_pattern_from;
+in mediump vec4 pattern_from;
 #endif
 #ifndef HAS_UNIFORM_u_pattern_to
-varying lowp vec4 pattern_to;
-#else
-uniform lowp vec4 u_pattern_to;
+in mediump vec4 pattern_to;
 #endif
 
 void main() {
@@ -177,18 +216,18 @@ mediump vec4 pattern_to = u_pattern_to;
 
     vec2 imagecoord = mod(v_pos_a, 1.0);
     vec2 pos = mix(pattern_tl_a / u_texsize, pattern_br_a / u_texsize, imagecoord);
-    vec4 color1 = texture2D(u_image, pos);
+    vec4 color1 = texture(u_image, pos);
 
     vec2 imagecoord_b = mod(v_pos_b, 1.0);
     vec2 pos2 = mix(pattern_tl_b / u_texsize, pattern_br_b / u_texsize, imagecoord_b);
-    vec4 color2 = texture2D(u_image, pos2);
+    vec4 color2 = texture(u_image, pos2);
 
     vec4 mixedColor = mix(color1, color2, u_fade);
 
-    gl_FragColor = mixedColor * v_lighting;
+    fragColor = mixedColor * v_lighting;
 
 #ifdef OVERDRAW_INSPECTOR
-    gl_FragColor = vec4(1.0);
+    fragColor = vec4(1.0);
 #endif
 }
 )";

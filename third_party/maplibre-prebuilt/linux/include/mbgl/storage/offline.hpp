@@ -3,21 +3,21 @@
 #include <mbgl/util/geo.hpp>
 #include <mbgl/util/geometry.hpp>
 #include <mbgl/util/range.hpp>
-#include <mbgl/util/variant.hpp>
 #include <mbgl/style/types.hpp>
 #include <mbgl/storage/response.hpp>
 
 #include <string>
 #include <vector>
 #include <functional>
+#include <variant>
 
 namespace mbgl {
 
 class TileID;
 
 /*
- * An offline region defined by a style URL, geographic bounding box, zoom range, and
- * device pixel ratio.
+ * An offline region defined by a style URL, geographic bounding box, zoom
+ * range, and device pixel ratio.
  *
  * Both minZoom and maxZoom must be ≥ 0, and maxZoom must be ≥ minZoom.
  *
@@ -71,7 +71,7 @@ public:
 /*
  * The offline region definition types supported
  */
-using OfflineRegionDefinition = variant<OfflineTilePyramidRegionDefinition, OfflineGeometryRegionDefinition>;
+using OfflineRegionDefinition = std::variant<OfflineTilePyramidRegionDefinition, OfflineGeometryRegionDefinition>;
 
 /*
  * The encoded format is private.
@@ -80,11 +80,12 @@ std::string encodeOfflineRegionDefinition(const OfflineRegionDefinition&);
 OfflineRegionDefinition decodeOfflineRegionDefinition(const std::string&);
 
 /*
- * Arbitrary binary region metadata. The contents are opaque to the mbgl implementation;
- * it just stores and retrieves a BLOB. SDK bindings should leave the interpretation of
- * this data up to the application; they _should not_ enforce a higher-level data format.
- * In the future we want offline database to be portable across target platforms, and a
- * platform-specific metadata format would prevent that.
+ * Arbitrary binary region metadata. The contents are opaque to the mbgl
+ * implementation; it just stores and retrieves a BLOB. SDK bindings should
+ * leave the interpretation of this data up to the application; they _should
+ * not_ enforce a higher-level data format. In the future we want offline
+ * database to be portable across target platforms, and a platform-specific
+ * metadata format would prevent that.
  */
 using OfflineRegionMetadata = std::vector<uint8_t>;
 
@@ -121,14 +122,14 @@ public:
     uint64_t completedResourceCount = 0;
 
     /**
-     * The cumulative size, in bytes, of all resources (inclusive of tiles) that have
-     * been fully downloaded.
+     * The cumulative size, in bytes, of all resources (inclusive of tiles) that
+     * have been fully downloaded.
      */
     uint64_t completedResourceSize = 0;
 
     /**
-     * The number of tiles that are known to be required for this region. This is a
-     * subset of `completedResourceCount`.
+     * The number of tiles that are known to be required for this region. This
+     * is a subset of `completedResourceCount`.
      */
     uint64_t completedTileCount = 0;
 
@@ -138,15 +139,15 @@ public:
     uint64_t requiredTileCount = 0;
 
     /**
-     * The cumulative size, in bytes, of all tiles that have been fully downloaded.
-     * This is a subset of `completedResourceSize`.
+     * The cumulative size, in bytes, of all tiles that have been fully
+     * downloaded. This is a subset of `completedResourceSize`.
      */
     uint64_t completedTileSize = 0;
 
     /**
-     * The number of resources that are known to be required for this region. See the
-     * documentation for `requiredResourceCountIsPrecise` for an important caveat
-     * about this number.
+     * The number of resources that are known to be required for this region.
+     * See the documentation for `requiredResourceCountIsPrecise` for an
+     * important caveat about this number.
      */
     uint64_t requiredResourceCount = 0;
 
@@ -178,35 +179,36 @@ public:
      * of OfflineRegionStatus.
      *
      * Note that this method will be executed on the database thread; it is the
-     * responsibility of the SDK bindings to wrap this object in an interface that
-     * re-executes the user-provided implementation on the main thread.
+     * responsibility of the SDK bindings to wrap this object in an interface
+     * that re-executes the user-provided implementation on the main thread.
      */
     virtual void statusChanged(OfflineRegionStatus) {}
 
     /*
-     * Implement this method to be notified of errors encountered while downloading
-     * regional resources. Such errors may be recoverable; for example the implementation
-     * will attempt to re-request failed resources based on an exponential backoff
-     * algorithm, or when it detects that network access has been restored.
+     * Implement this method to be notified of errors encountered while
+     * downloading regional resources. Such errors may be recoverable; for
+     * example the implementation will attempt to re-request failed resources
+     * based on an exponential backoff algorithm, or when it detects that
+     * network access has been restored.
      *
      * Note that this method will be executed on the database thread; it is the
-     * responsibility of the SDK bindings to wrap this object in an interface that
-     * re-executes the user-provided implementation on the main thread.
+     * responsibility of the SDK bindings to wrap this object in an interface
+     * that re-executes the user-provided implementation on the main thread.
      */
     virtual void responseError(Response::Error) {} // NOLINT(performance-unnecessary-value-param)
 
     /*
-     * Implement this method to be notified when the limit on the number of Mapbox
-     * tiles stored for offline regions has been reached.
+     * Implement this method to be notified when the limit on the number of
+     * Mapbox tiles stored for offline regions has been reached.
      *
-     * Once the limit has been reached, the SDK will not download further offline
-     * tiles from Mapbox APIs until existing tiles have been removed.
+     * Once the limit has been reached, the SDK will not download further
+     * offline tiles from Mapbox APIs until existing tiles have been removed.
      *
      * This limit does not apply to non-Mapbox tile sources.
      *
      * Note that this method will be executed on the database thread; it is the
-     * responsibility of the SDK bindings to wrap this object in an interface that
-     * re-executes the user-provided implementation on the main thread.
+     * responsibility of the SDK bindings to wrap this object in an interface
+     * that re-executes the user-provided implementation on the main thread.
      */
     virtual void mapboxTileCountLimitExceeded(uint64_t /* limit */) {}
 };

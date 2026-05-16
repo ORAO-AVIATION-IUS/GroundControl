@@ -21,13 +21,14 @@ public:
 
     void eachChild(const std::function<void(const Expression&)>&) const override;
 
-    bool operator==(const Expression& e) const override;
+    bool operator==(const Expression&) const noexcept override;
 
     std::vector<std::optional<Value>> possibleOutputs() const override {
-        // Technically the set of possible outputs is the combinatoric set of Collators produced
-        // by all possibleOutputs of locale/caseSensitive/diacriticSensitive
-        // But for the primary use of Collators in comparison operators, we ignore the Collator's
-        // possibleOutputs anyway, so we can get away with leaving this undefined for now.
+        // Technically the set of possible outputs is the combinatoric set of
+        // Collators produced by all possibleOutputs of
+        // locale/caseSensitive/diacriticSensitive But for the primary use of
+        // Collators in comparison operators, we ignore the Collator's possibleOutputs
+        // anyway, so we can get away with leaving this undefined for now.
         return {std::nullopt};
     }
 

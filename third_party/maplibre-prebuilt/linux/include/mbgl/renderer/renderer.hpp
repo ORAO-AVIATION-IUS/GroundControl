@@ -90,16 +90,16 @@ public:
     void dumpDebugLogs();
 
     /**
-     * @brief In Tile map mode, enables or disables collecting of the placed symbols data,
-     * which can be obtained with `getPlacedSymbolsData()`.
+     * @brief In Tile map mode, enables or disables collecting of the placed
+     * symbols data, which can be obtained with `getPlacedSymbolsData()`.
      *
      * The placed symbols data collecting is disabled by default.
      */
     void collectPlacedSymbolData(bool enable);
 
     /**
-     * @brief If collecting of the placed symbols data is enabled, returns the reference
-     * to the `PlacedSymbolData` vector holding the collected data.
+     * @brief If collecting of the placed symbols data is enabled, returns the
+     * reference to the `PlacedSymbolData` vector holding the collected data.
      *
      * Note: the returned vector gets re-populated at every `render()` call.
      *
@@ -108,8 +108,14 @@ public:
     const std::vector<PlacedSymbolData>& getPlacedSymbolsData() const;
 
     // Memory
+    void setTileCacheEnabled(bool);
+    bool getTileCacheEnabled() const;
     void reduceMemoryUse();
     void clearData();
+
+#if MLN_RENDER_BACKEND_OPENGL
+    void enableAndroidEmulatorGoldfishMitigation(bool enable);
+#endif
 
 private:
     class Impl;

@@ -5,16 +5,6 @@
 
 get_filename_component(PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
 
-# Use original install prefix when loaded through a "/usr move"
-# cross-prefix symbolic link such as /lib -> /usr/lib.
-get_filename_component(_realCurr "${CMAKE_CURRENT_LIST_DIR}" REALPATH)
-get_filename_component(_realOrig "/usr/lib/cmake/QMapLibre/" REALPATH)
-if(_realCurr STREQUAL _realOrig)
-  set(PACKAGE_PREFIX_DIR "/usr")
-endif()
-unset(_realOrig)
-unset(_realCurr)
-
 macro(set_and_check _var _file)
   set(${_var} "${_file}")
   if(NOT EXISTS "${_file}")
@@ -26,7 +16,7 @@ endmacro()
 
 include(CMakeFindDependencyMacro)
 
-set(_QMapLibre_supported_components Core;Location;Widgets)
+set(_QMapLibre_supported_components Core;QuickPrivate;Location;Widgets)
 
 foreach(_comp ${QMapLibre_FIND_COMPONENTS})
     if(NOT _comp IN_LIST _QMapLibre_supported_components)
@@ -41,8 +31,19 @@ foreach(_comp ${QMapLibre_FIND_COMPONENTS})
         endif()
 
         include("${CMAKE_CURRENT_LIST_DIR}/QMapLibre${_comp}Targets.cmake")
-    elseif(_comp STREQUAL Location)
+    elseif(_comp STREQUAL Quick)
+        find_dependency(QMapLibre COMPONENTS QuickPrivate)
+
+        include("${CMAKE_CURRENT_LIST_DIR}/QMapLibreQuickMacros.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/QMapLibreQuickPluginQmlTargets.cmake")
+    elseif(_comp STREQUAL QuickPrivate)
         find_dependency(QMapLibre COMPONENTS Core)
+
+        find_dependency(Qt6 COMPONENTS Quick)
+
+        include("${CMAKE_CURRENT_LIST_DIR}/QMapLibre${_comp}Targets.cmake")
+    elseif(_comp STREQUAL Location)
+        find_dependency(QMapLibre COMPONENTS Core QuickPrivate)
 
         find_dependency(Qt6 COMPONENTS Location)
 
@@ -53,11 +54,7 @@ foreach(_comp ${QMapLibre_FIND_COMPONENTS})
     elseif(_comp STREQUAL Widgets)
         find_dependency(QMapLibre COMPONENTS Core)
 
-        if(6 EQUAL 6)
-            find_dependency(Qt6 COMPONENTS OpenGLWidgets Widgets)
-        else()
-            find_dependency(Qt6 COMPONENTS OpenGL Widgets)
-        endif()
+        find_dependency(Qt6 COMPONENTS Widgets)
 
         include("${CMAKE_CURRENT_LIST_DIR}/QMapLibre${_comp}Targets.cmake")
     endif()

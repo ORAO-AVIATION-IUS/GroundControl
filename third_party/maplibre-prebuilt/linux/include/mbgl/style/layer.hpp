@@ -10,12 +10,14 @@
 
 #include <cassert>
 #include <memory>
-#include <string>
-#include <stdexcept>
 #include <optional>
+#include <string>
 
 namespace mbgl {
 namespace style {
+namespace expression {
+enum class Dependency : uint32_t;
+} // namespace expression
 
 class LayerObserver;
 class Filter;
@@ -66,8 +68,9 @@ struct LayerTypeInfo {
     } fadingTiles;
 
     /**
-     * @brief contains \c CrossTileIndex::Required if the corresponding layer type
-     * requires cross-tile indexing and placement. Contains \c CrossTileIndex::NotRequired otherwise.
+     * @brief contains \c CrossTileIndex::Required if the corresponding layer
+     * type requires cross-tile indexing and placement. Contains \c
+     * CrossTileIndex::NotRequired otherwise.
      */
     const enum class CrossTileIndex {
         Required,
@@ -75,8 +78,8 @@ struct LayerTypeInfo {
     } crossTileIndex;
 
     /**
-     * @brief contains the Id of the supported tile type. Used for internal checks.
-     * The contained values correspond to \c Tile::Kind enum.
+     * @brief contains the Id of the supported tile type. Used for internal
+     * checks. The contained values correspond to \c Tile::Kind enum.
      */
     const enum class TileKind : uint8_t {
         Geometry,
@@ -86,21 +89,27 @@ struct LayerTypeInfo {
     } tileKind;
 };
 
+// Added this to support plugins and that their LayerTypeInfo isn't the same point
+// across the board
+bool layerTypeInfoEquals(const mbgl::style::LayerTypeInfo* one, const mbgl::style::LayerTypeInfo* other);
+
 /**
- * The runtime representation of a [layer](https://www.mapbox.com/mapbox-gl-style-spec/#layers) from the Mapbox Style
- * Specification.
+ * The runtime representation of a [layer](https://maplibre.org/maplibre-style-spec/#layers)
+ * from the MapLibre Style Spec.
  *
- * `Layer` is an abstract base class; concrete derived classes are provided for each layer type. `Layer` contains
- * functionality that is common to all layer types:
+ * `Layer` is an abstract base class; concrete derived classes are provided for
+ * each layer type. `Layer` contains functionality that is common to all layer types:
  *
  * * Runtime type information: type predicates and casting
  * * Accessors for properties common to all layer types: ID, visibility, etc.
  * * Cloning and copying
  *
- * All other functionality lives in the derived classes. To instantiate a layer, create an instance of the desired
- * type, calling `LayerManager`:
+ * All other functionality lives in the derived classes. To instantiate a layer,
+ * create an instance of the desired type, calling `LayerManager`:
  *
  *     auto circleLayer = LayerManager::get()->createLayer("circle", ...);
+ *
+ * NOTE: Derived class must invalidate `weakFactory` in their destructor
  */
 class Layer {
 public:
@@ -148,15 +157,23 @@ public:
 
     void setObserver(LayerObserver*);
 
-    // For use in SDK bindings, which store a reference to a platform-native peer
-    // object here, so that separately-obtained references to this object share
-    // identical platform-native peers.
+    // For use in SDK bindings, which store a reference to a platform-native
+    // peer object here, so that separately-obtained references to this object
+    // share identical platform-native peers.
     mapbox::base::TypeWrapper peer;
     Layer(Immutable<Impl>);
 
     const LayerTypeInfo* getTypeInfo() const noexcept;
 
     mapbox::base::WeakPtr<Layer> makeWeakPtr() { return weakFactory.makeWeakPtr(); }
+
+    /// Collect dependencies
+    expression::Dependency getDependencies() const noexcept;
+
+private:
+    std::optional<conversion::Error> setVisibility(const conversion::Convertible& value);
+    std::optional<conversion::Error> setMinZoom(const conversion::Convertible& value);
+    std::optional<conversion::Error> setMaxZoom(const conversion::Convertible& value);
 
 protected:
     virtual Mutable<Impl> mutableBaseImpl() const = 0;
@@ -165,11 +182,7 @@ protected:
                                                                  const conversion::Convertible& value) = 0;
     LayerObserver* observer;
     mapbox::base::WeakPtrFactory<Layer> weakFactory{this};
-
-private:
-    std::optional<conversion::Error> setVisibility(const conversion::Convertible& value);
-    std::optional<conversion::Error> setMinZoom(const conversion::Convertible& value);
-    std::optional<conversion::Error> setMaxZoom(const conversion::Convertible& value);
+    // Do not add members here, see `WeakPtrFactory`
 };
 
 } // namespace style

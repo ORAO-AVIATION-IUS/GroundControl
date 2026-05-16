@@ -29,6 +29,7 @@ struct GeoJSONOptions {
     bool cluster = false;
     uint16_t clusterRadius = 50;
     uint8_t clusterMaxZoom = 17;
+    size_t clusterMinPoints = 2;
     using ClusterExpression = std::pair<std::shared_ptr<mbgl::style::expression::Expression>,
                                         std::shared_ptr<mbgl::style::expression::Expression>>;
     using ClusterProperties = std::map<std::string, ClusterExpression>;
@@ -41,8 +42,8 @@ public:
     using TileFeatures = mapbox::feature::feature_collection<int16_t>;
     using Features = mapbox::feature::feature_collection<double>;
     static std::shared_ptr<GeoJSONData> create(const GeoJSON&,
-                                               const Immutable<GeoJSONOptions>& = GeoJSONOptions::defaultOptions(),
-                                               std::shared_ptr<Scheduler> scheduler = nullptr);
+                                               std::shared_ptr<Scheduler> sequencedScheduler,
+                                               const Immutable<GeoJSONOptions>& = GeoJSONOptions::defaultOptions());
 
     virtual ~GeoJSONData() = default;
     virtual void getTile(const CanonicalTileID&, const std::function<void(TileFeatures)>&) = 0;
@@ -51,10 +52,9 @@ public:
     virtual Features getChildren(std::uint32_t) = 0;
     virtual Features getLeaves(std::uint32_t, std::uint32_t limit, std::uint32_t offset) = 0;
     virtual std::uint8_t getClusterExpansionZoom(std::uint32_t) = 0;
-
-    virtual std::shared_ptr<Scheduler> getScheduler() { return nullptr; }
 };
 
+// NOTE: Any derived class must invalidate `weakFactory` in the destructor
 class GeoJSONSource final : public Source {
 public:
     GeoJSONSource(std::string id, Immutable<GeoJSONOptions> = GeoJSONOptions::defaultOptions());
@@ -82,8 +82,10 @@ protected:
 private:
     std::optional<std::string> url;
     std::unique_ptr<AsyncRequest> req;
-    std::shared_ptr<Scheduler> threadPool;
+    std::atomic<uint64_t> requestGeneration{0};
+    std::shared_ptr<Scheduler> sequencedScheduler;
     mapbox::base::WeakPtrFactory<Source> weakFactory{this};
+    // Do not add members here, see `WeakPtrFactory`
 };
 
 template <>

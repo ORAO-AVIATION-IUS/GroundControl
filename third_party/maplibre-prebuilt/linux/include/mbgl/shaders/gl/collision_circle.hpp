@@ -1,6 +1,4 @@
 // Generated code, do not modify this file!
-// Generated on 2023-04-04T01:24:40.539Z by mwilsnd using shaders/generate_shader_code.js
-
 #pragma once
 #include <mbgl/shaders/shader_source.hpp>
 
@@ -8,22 +6,40 @@ namespace mbgl {
 namespace shaders {
 
 template <>
-struct ShaderSource<BuiltIn::CollisionCircleProgram, gfx::Backend::Type::OpenGL> {
-    static constexpr const char* vertex = R"(attribute vec2 a_pos;
-attribute vec2 a_anchor_pos;
-attribute vec2 a_extrude;
-attribute vec2 a_placed;
+struct ShaderSource<BuiltIn::CollisionCircleShader, gfx::Backend::Type::OpenGL> {
+    static constexpr const char* name = "CollisionCircleShader";
+    static constexpr const char* vertex = R"(layout (location = 0) in vec2 a_pos;
+layout (location = 1) in vec2 a_anchor_pos;
+layout (location = 2) in vec2 a_extrude;
+layout (location = 3) in vec2 a_placed;
 
-uniform mat4 u_matrix;
-uniform vec2 u_extrude_scale;
-uniform float u_camera_to_center_distance;
+layout (std140) uniform GlobalPaintParamsUBO {
+    highp vec2 u_pattern_atlas_texsize;
+    highp vec2 u_units_to_pixels;
+    highp vec2 u_world_size;
+    highp float u_camera_to_center_distance;
+    highp float u_symbol_fade_change;
+    highp float u_aspect_ratio;
+    highp float u_pixel_ratio;
+    highp float u_map_zoom;
+    lowp float global_pad1;
+};
 
-varying float v_placed;
-varying float v_notUsed;
-varying float v_radius;
+layout (std140) uniform CollisionDrawableUBO {
+    highp mat4 u_matrix;
+};
 
-varying vec2 v_extrude;
-varying vec2 v_extrude_scale;
+layout (std140) uniform CollisionTilePropsUBO {
+    highp vec2 u_extrude_scale;
+    highp float u_overscale_factor;
+    lowp float drawable_pad1;
+};
+
+out float v_placed;
+out float v_notUsed;
+out float v_radius;
+out highp vec2 v_extrude;
+out vec2 v_extrude_scale;
 
 void main() {
     vec4 projectedPoint = u_matrix * vec4(a_anchor_pos, 0, 1);
@@ -46,13 +62,29 @@ void main() {
     v_extrude_scale = u_extrude_scale * u_camera_to_center_distance * collision_perspective_ratio;
 }
 )";
-    static constexpr const char* fragment = R"(uniform float u_overscale_factor;
+    static constexpr const char* fragment = R"(layout (std140) uniform GlobalPaintParamsUBO {
+    highp vec2 u_pattern_atlas_texsize;
+    highp vec2 u_units_to_pixels;
+    highp vec2 u_world_size;
+    highp float u_camera_to_center_distance;
+    highp float u_symbol_fade_change;
+    highp float u_aspect_ratio;
+    highp float u_pixel_ratio;
+    highp float u_map_zoom;
+    lowp float global_pad1;
+};
 
-varying float v_placed;
-varying float v_notUsed;
-varying float v_radius;
-varying vec2 v_extrude;
-varying vec2 v_extrude_scale;
+layout (std140) uniform CollisionTilePropsUBO {
+    highp vec2 u_extrude_scale;
+    highp float u_overscale_factor;
+    lowp float drawable_pad1;
+};
+
+in float v_placed;
+in float v_notUsed;
+in float v_radius;
+in highp vec2 v_extrude;
+in vec2 v_extrude_scale;
 
 void main() {
     float alpha = 0.5;
@@ -78,7 +110,7 @@ void main() {
     float distance_to_edge = abs(extrude_length - radius);
     float opacity_t = smoothstep(-stroke_width, 0.0, -distance_to_edge);
 
-    gl_FragColor = opacity_t * color;
+    fragColor = opacity_t * color;
 }
 )";
 };

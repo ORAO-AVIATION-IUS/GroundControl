@@ -20,6 +20,7 @@ using TileFunction = std::function<void(const CanonicalTileID&)>;
 
 class CustomTileLoader;
 
+// NOTE: Any derived class must invalidate `weakFactory` in the destructor
 class CustomGeometrySource final : public Source {
 public:
     struct TileOptions {
@@ -57,6 +58,7 @@ private:
     std::shared_ptr<ThreadPool> threadPool;
     std::unique_ptr<Actor<CustomTileLoader>> loader;
     mapbox::base::WeakPtrFactory<Source> weakFactory{this};
+    // Do not add members here, see `WeakPtrFactory`
 };
 
 template <>

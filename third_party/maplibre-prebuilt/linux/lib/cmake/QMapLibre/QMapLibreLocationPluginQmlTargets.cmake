@@ -7,7 +7,7 @@ if(CMAKE_VERSION VERSION_LESS "3.1.0")
    message(FATAL_ERROR "CMake >= 3.1.0 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.1.0...4.0)
+cmake_policy(VERSION 3.1.0...4.1)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -19,7 +19,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_cmake_targets_defined "")
 set(_cmake_targets_not_defined "")
 set(_cmake_expected_targets "")
-foreach(_cmake_expected_target IN ITEMS QMapLibre::PluginQml)
+foreach(_cmake_expected_target IN ITEMS QMapLibre::PluginQmlLocation)
   list(APPEND _cmake_expected_targets "${_cmake_expected_target}")
   if(TARGET "${_cmake_expected_target}")
     list(APPEND _cmake_targets_defined "${_cmake_expected_target}")
@@ -48,15 +48,6 @@ unset(_cmake_expected_targets)
 
 # Compute the installation prefix relative to this file.
 get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
-# Use original install prefix when loaded through a
-# cross-prefix symbolic link such as /lib -> /usr/lib.
-get_filename_component(_realCurr "${_IMPORT_PREFIX}" REALPATH)
-get_filename_component(_realOrig "/usr/lib/cmake/QMapLibre" REALPATH)
-if(_realCurr STREQUAL _realOrig)
-  set(_IMPORT_PREFIX "/usr/lib/cmake/QMapLibre")
-endif()
-unset(_realOrig)
-unset(_realCurr)
 get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
 get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
@@ -64,23 +55,23 @@ if(_IMPORT_PREFIX STREQUAL "/")
   set(_IMPORT_PREFIX "")
 endif()
 
-# Create imported target QMapLibre::PluginQml
-add_library(QMapLibre::PluginQml MODULE IMPORTED)
+# Create imported target QMapLibre::PluginQmlLocation
+add_library(QMapLibre::PluginQmlLocation MODULE IMPORTED)
 
-set_target_properties(QMapLibre::PluginQml PROPERTIES
+set_target_properties(QMapLibre::PluginQmlLocation PROPERTIES
   _qt_qml_backing_library_and_plugin_are_same_target "TRUE"
-  _qt_qml_module_backing_target "declarative_locationplugin_maplibre"
-  _qt_qml_module_class_name "MapLibreQmlModule"
+  _qt_qml_module_backing_target "declarative_maplibre_locationplugin"
+  _qt_qml_module_class_name "MapLibreQmlLocationModule"
   _qt_qml_module_has_plugin "TRUE"
-  _qt_qml_module_installed_plugin_target "declarative_locationplugin_maplibre"
+  _qt_qml_module_installed_plugin_target "declarative_maplibre_locationplugin"
   _qt_qml_module_installed_qmldir_path ""
   _qt_qml_module_is_backing_target "TRUE"
   _qt_qml_module_is_plugin_target "TRUE"
   _qt_qml_module_plugin_has_backing_library "TRUE"
-  _qt_qml_module_plugin_target "declarative_locationplugin_maplibre"
-  _qt_qml_module_target_path "MapLibre"
-  _qt_qml_module_uri "MapLibre"
-  _qt_qml_module_version "3.0"
+  _qt_qml_module_plugin_target "declarative_maplibre_locationplugin"
+  _qt_qml_module_target_path "MapLibre/Location"
+  _qt_qml_module_uri "MapLibre.Location"
+  _qt_qml_module_version "4.0"
 )
 
 # Load information for each installed configuration.
