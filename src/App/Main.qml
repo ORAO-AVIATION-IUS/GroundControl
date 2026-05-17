@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import Agc.Camera
 import Agc.Panels
 import QtQuick
@@ -38,11 +40,11 @@ ApplicationWindow {
 	}
 
 	function removeCamera(id) {
-		cameraManager.removeStream(id);
+		CameraManager.removeStream(id);
 		const row = rowForId(id);
 		if (row === -1)
 			return;
-		const dock = cameraDocks.itemAt(row);
+		const dock = cameraDocks.itemAt(row) as CameraPanel;
 		if (dock)
 			dock.deleteDockWidgetLater();
 		cameraModel.remove(row);
@@ -60,7 +62,7 @@ ApplicationWindow {
 				return;
 			if (editingId === -1) {
 				let streamId;
-				streamId = cameraManager.addStream(name, connectionString, pipelineString, useCustomPipeline);
+				streamId = CameraManager.addStream(name, connectionString, pipelineString, useCustomPipeline);
 				cameraModel.append({
 					"id": streamId,
 					"name": name,
@@ -71,7 +73,7 @@ ApplicationWindow {
 			} else {
 				const row = window.rowForId(editingId);
 				if (row !== -1) {
-					cameraManager.editStream(editingId, name, connectionString, pipelineString, useCustomPipeline);
+					CameraManager.editStream(editingId, name, connectionString, pipelineString, useCustomPipeline);
 					cameraModel.set(row, {
 						"id": editingId,
 						"name": name,
@@ -118,15 +120,13 @@ ApplicationWindow {
 			model: cameraModel
 			delegate: CameraPanel {
 				id: camDock
-				required property int cameraId
-				required property string name
-				required property string connection
-				cameraId: cameraId
-				cameraName: name
-				connectionString: connection
-				uniqueName: "cameraConn_" + cameraId
-				onEditRequested: window.openEditDialog(cameraId)
-				onRemoveRequested: window.removeCamera(cameraId)
+				required property var model
+				cameraId: model.id
+				cameraName: model.name
+				connectionString: model.connection
+				uniqueName: "cameraConn_" + model.id
+				onEditRequested: window.openEditDialog(model.id)
+				onRemoveRequested: window.removeCamera(model.id)
 				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
 			}
 		}

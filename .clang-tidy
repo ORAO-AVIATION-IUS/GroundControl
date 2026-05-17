@@ -23,6 +23,7 @@ Checks: >
   -readability-identifier-length,
   -misc-include-cleaner,
   -misc-const-correctness,
+  -portability-avoid-pragma-once,
   -readability-identifier-naming,
   -readability-static-accessed-through-instance
 
@@ -30,5 +31,3 @@ WarningsAsErrors: ''
 HeaderFilterRegex: '^(?!.*(third_party|build|/usr/|KDDockWidgets|Qt)).*'
 SystemHeaders: false
 FormatStyle: file
-ExtraArgs:
-  - -Wno-unknown-warning-option

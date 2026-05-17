@@ -1,3 +1,6 @@
+pragma ComponentBehavior: Bound
+
+import Agc.Camera
 import QtMultimedia
 import QtQuick
 import QtQuick.Controls
@@ -37,13 +40,13 @@ Item {
 				anchors.horizontalCenter: parent.horizontalCenter
 				text: qsTr("Reconnect")
 				visible: root.statusText !== ""
-				onClicked: cameraManager.reconnectStream(root.streamId)
+				onClicked: CameraManager.reconnectStream(root.streamId)
 			}
 		}
 	}
 
 	Connections {
-		target: cameraManager
+		target: CameraManager
 
 		function onStreamConnectedChanged(id, connected) {
 			if (id === root.streamId)
@@ -57,8 +60,8 @@ Item {
 	}
 
 	Component.onCompleted: {
-		cameraManager.attachSink(streamId, video.videoSink);
-		root.connected = cameraManager.streamConnected(streamId);
-		root.statusText = cameraManager.streamStatus(streamId);
+		CameraManager.attachSink(streamId, video.videoSink);
+		root.connected = CameraManager.streamConnected(streamId);
+		root.statusText = CameraManager.streamStatus(streamId);
 	}
 }

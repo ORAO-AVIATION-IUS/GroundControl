@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qqmlintegration.h>
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include <QString>
@@ -12,11 +13,18 @@ struct CameraInfo;
 
 class CameraManager : public QObject {
 	Q_OBJECT
+	QML_ELEMENT
+	QML_SINGLETON
 
    public:
 	explicit CameraManager(QQmlApplicationEngine* engine,
 						   QObject* parent = nullptr);
 	~CameraManager() override;
+
+	CameraManager(const CameraManager&) = delete;
+	CameraManager& operator=(const CameraManager&) = delete;
+	CameraManager(CameraManager&&) = delete;
+	CameraManager& operator=(CameraManager&&) = delete;
 
 	Q_INVOKABLE int addStream(const QString& name, const QString& url,
 							  const QString& customPipeline,
@@ -28,8 +36,8 @@ class CameraManager : public QObject {
 	Q_INVOKABLE void attachSink(int id, QVideoSink* sink);
 	Q_INVOKABLE void reconnectStream(int id);
 
-	Q_INVOKABLE QString streamStatus(int id) const;
-	Q_INVOKABLE bool streamConnected(int id) const;
+	[[nodiscard]] Q_INVOKABLE QString streamStatus(int id) const;
+	[[nodiscard]] Q_INVOKABLE bool streamConnected(int id) const;
 
 	void setStreamState(int id, const QString& status, bool connected);
 

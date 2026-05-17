@@ -7,5 +7,5 @@ qt_add_qml_module(AgcComponents
     URI Agc.Components
     SOURCES ${SOURCES}
     QML_FILES ${QML_FILES}
-    IMPORT_PATH "${CMAKE_BINARY_DIR}"
+    IMPORT_PATH "${CMAKE_BINARY_DIR}" "${QMAPLIBRE_RUNTIME_ROOT}/qml"
 )

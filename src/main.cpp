@@ -7,6 +7,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QJSEngine>
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 
@@ -21,6 +22,15 @@ Q_IMPORT_QML_PLUGIN(Agc_PanelsPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_NetworkPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_MavlinkPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_CameraPlugin)
+
+// Singleton provider for CameraManager
+static CameraManager* s_cameraManagerInstance = nullptr;
+
+static QObject* cameraManagerProvider(QQmlEngine* engine, QJSEngine* script) {
+	Q_UNUSED(engine);
+	Q_UNUSED(script);
+	return s_cameraManagerInstance;
+}
 
 int main(int argc, char* argv[]) {
 #if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
@@ -37,11 +47,12 @@ int main(int argc, char* argv[]) {
 
 	KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(&appEngine);
 
-	// camera manager
-	CameraManager cam_manager(&appEngine);
-	appEngine.rootContext()->setContextProperty("cameraManager", &cam_manager);
+	// camera manager singleton - owned by this function
+	s_cameraManagerInstance = new CameraManager(&appEngine);
+	qmlRegisterSingletonType<CameraManager>("Agc.Camera", 1, 0, "CameraManager",
+											cameraManagerProvider);
 
 	appEngine.loadFromModule("Agc", "Main");
-	
+
 	return app.exec();
 }

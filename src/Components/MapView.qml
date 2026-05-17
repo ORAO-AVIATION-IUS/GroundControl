@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import MapLibre.Location
 import QtLocation
 import QtPositioning
@@ -254,6 +256,8 @@ Item {
 				styleId: "drone-body-layer"
 				type: "fill-extrusion"
 				property string source: "drone-body-source"
+				// MapLibre converts QVariantMap to QJsonObject at runtime; qmllint cannot infer that.
+				// qmllint disable incompatible-type
 				paint: ({
 						"fill-extrusion-color": "#2a2a2a",
 						"fill-extrusion-base": ["get", "base"],
@@ -274,6 +278,8 @@ Item {
 				styleId: "drone-rotor-layer"
 				type: "fill-extrusion"
 				property string source: "drone-rotor-source"
+				// MapLibre converts QVariantMap to QJsonObject at runtime; qmllint cannot infer that.
+				// qmllint disable incompatible-type
 				paint: ({
 						"fill-extrusion-color": "#ff3030",
 						"fill-extrusion-base": ["get", "base"],
@@ -294,6 +300,8 @@ Item {
 				styleId: "tether-layer"
 				type: "fill-extrusion"
 				property string source: "tether-source"
+				// MapLibre converts QVariantMap to QJsonObject at runtime; qmllint cannot infer that.
+				// qmllint disable incompatible-type
 				paint: ({
 						"fill-extrusion-color": "#00d0ff",
 						"fill-extrusion-base": ["get", "base"],
