@@ -393,7 +393,9 @@ KDDW.DockWidget {
 						Layout.fillHeight: true
 
 						GridLayout {
-							anchors.fill: parent
+							anchors.top: parent.top
+							anchors.left: parent.left
+							anchors.right: parent.right
 							anchors.margins: 10
 							columns: 3
 							rowSpacing: 6
@@ -401,18 +403,18 @@ KDDW.DockWidget {
 
 							AttitudeIndicator {
 								Layout.fillWidth: true
-								Layout.fillHeight: true
+								Layout.preferredHeight: width
 								pitch: root.pitch
 								roll: root.roll
 							}
 							CompassIndicator {
 								Layout.fillWidth: true
-								Layout.fillHeight: true
+								Layout.preferredHeight: width
 								heading: root.heading
 							}
 							HeadingIndicator {
 								Layout.fillWidth: true
-								Layout.fillHeight: true
+								Layout.preferredHeight: width
 								heading: root.heading
 							}
 						}

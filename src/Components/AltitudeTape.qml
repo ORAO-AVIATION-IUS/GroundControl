@@ -97,23 +97,23 @@ Item {
 			anchors.verticalCenter: parent.verticalCenter
 		}
 
-		// Item {
-		// 	width: 20
-		// 	height: 16
-		//
-		// 	Image {
-		// 		id: indicatorImage
-		// 		anchors.fill: parent
-		// 		source: "image://icon/edit-clear-locationbar-ltr"
-		// 		fillMode: Image.PreserveAspectFit
-		// 	}
-		//
-		// 	MultiEffect {
-		// 		anchors.fill: parent
-		// 		source: indicatorImage
-		// 		colorization: 1.0
-		// 		colorizationColor: "#333333"
-		// 	}
-		// }
+		Item {
+			width: 20
+			height: 16
+
+			Image {
+				id: indicatorImage
+				anchors.fill: parent
+				source: "image://icon/edit-clear-locationbar-ltr"
+				fillMode: Image.PreserveAspectFit
+			}
+
+			MultiEffect {
+				anchors.fill: parent
+				source: indicatorImage
+				colorization: 1.0
+				colorizationColor: "#333333"
+			}
+		}
 	}
 }

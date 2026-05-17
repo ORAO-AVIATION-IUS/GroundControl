@@ -1,8 +1,9 @@
 #pragma once
 
 #include <qqmlintegration.h>
+#include <QJSEngine>
 #include <QObject>
-#include <QQmlApplicationEngine>
+#include <QQmlEngine>
 #include <QString>
 #include <QVideoSink>
 
@@ -17,8 +18,9 @@ class CameraManager : public QObject {
 	QML_SINGLETON
 
    public:
-	explicit CameraManager(QQmlApplicationEngine* engine,
-						   QObject* parent = nullptr);
+	explicit CameraManager(QQmlEngine* engine, QObject* parent = nullptr);
+
+	static CameraManager* create(QQmlEngine* qmlEngine, QJSEngine* jsEngine);
 	~CameraManager() override;
 
 	CameraManager(const CameraManager&) = delete;
@@ -50,7 +52,7 @@ class CameraManager : public QObject {
 	void startPipeline(int id);
 	void stopPipeline(int id);
 
-	QQmlApplicationEngine* m_engine;
+	QQmlEngine* m_engine;
 	std::map<int, std::unique_ptr<CameraInfo>> m_cameras;
 	int m_nextId = 0;
 };

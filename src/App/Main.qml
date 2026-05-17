@@ -15,7 +15,7 @@ ApplicationWindow {
 
 	function rowForId(id) {
 		for (let i = 0; i < cameraModel.count; ++i) {
-			if (cameraModel.get(i).id === id)
+			if (cameraModel.get(i).cameraId === id)
 				return i;
 		}
 		return -1;
@@ -64,7 +64,7 @@ ApplicationWindow {
 				let streamId;
 				streamId = CameraManager.addStream(name, connectionString, pipelineString, useCustomPipeline);
 				cameraModel.append({
-					"id": streamId,
+					"cameraId": streamId,
 					"name": name,
 					"connection": connectionString,
 					"pipeline": pipelineString,
@@ -75,7 +75,7 @@ ApplicationWindow {
 				if (row !== -1) {
 					CameraManager.editStream(editingId, name, connectionString, pipelineString, useCustomPipeline);
 					cameraModel.set(row, {
-						"id": editingId,
+						"cameraId": editingId,
 						"name": name,
 						"connection": connectionString,
 						"pipeline": pipelineString,
@@ -95,29 +95,12 @@ ApplicationWindow {
 		uniqueName: "MainLayout-3"
 		Component.onCompleted: {
 			addDockWidget(swarmPanel, KDDW.KDDockWidgets.Location_OnTop);
-			addDockWidget(testPanel, KDDW.KDDockWidgets.Location_OnBottom);
 			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnBottom);
-			addDockWidget(compassPanel, KDDW.KDDockWidgets.Location_OnLeft);
-
-			mapPanel.addDockWidgetAsTab(leftPanel);
-			mapPanel.addDockWidgetAsTab(rightPanel);
 			mapPanel.raise();
 		}
 
-		LeftPanel {
-			id: leftPanel
-		}
-		RightPanel {
-			id: rightPanel
-		}
 		MapPanel {
 			id: mapPanel
-		}
-		CompassPanel {
-			id: compassPanel
-		}
-		ButtonTestPanel {
-			id: testPanel
 		}
 		SwarmPanel {
 			id: swarmPanel
@@ -129,12 +112,12 @@ ApplicationWindow {
 			delegate: CameraPanel {
 				id: camDock
 				required property var model
-				cameraId: model.id
+				cameraId: model.cameraId
 				cameraName: model.name
 				connectionString: model.connection
-				uniqueName: "cameraConn_" + model.id
-				onEditRequested: window.openEditDialog(model.id)
-				onRemoveRequested: window.removeCamera(model.id)
+				uniqueName: "cameraConn_" + model.cameraId
+				onEditRequested: window.openEditDialog(model.cameraId)
+				onRemoveRequested: window.removeCamera(model.cameraId)
 				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
 			}
 		}
@@ -147,23 +130,7 @@ ApplicationWindow {
 				"dock": mapPanel
 			},
 			{
-				"label": qsTr("Left Panel"),
-				"dock": leftPanel
-			},
-			{
-				"label": qsTr("Right Panel"),
-				"dock": rightPanel
-			},
-			{
-				"label": qsTr("Compass"),
-				"dock": compassPanel
-			},
-			{
-				"label": qsTr("Button Test"),
-				"dock": testPanel
-			},
-			{
-				"label": qsTr("Swarm Control"),
+				"label": qsTr("Drone Control"),
 				"dock": swarmPanel
 			}
 		]

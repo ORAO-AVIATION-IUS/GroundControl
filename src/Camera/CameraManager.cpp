@@ -96,7 +96,10 @@ void onPadAdded(GstElement* /*src*/, GstPad* newPad, gpointer userData) {
 		return;
 	}
 
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wsentinel"
 	GstCaps* filter = gst_caps_new_simple("video/x-raw", nullptr);
+	#pragma GCC diagnostic pop
 	bool isVideo = gst_caps_can_intersect(newPadCaps, filter);
 	gst_caps_unref(filter);
 	gst_caps_unref(newPadCaps);
@@ -190,9 +193,14 @@ GstBusSyncReply onBusMessage(GstBus* /*bus*/, GstMessage* msg,
 
 }  // namespace
 
-CameraManager::CameraManager(QQmlApplicationEngine* engine, QObject* parent)
+CameraManager::CameraManager(QQmlEngine* engine, QObject* parent)
 	: QObject(parent), m_engine(engine) {
 	gst_init(nullptr, nullptr);
+}
+
+CameraManager* CameraManager::create(QQmlEngine* qmlEngine, QJSEngine* jsEngine) {
+	Q_UNUSED(jsEngine);
+	return new CameraManager(qmlEngine, qmlEngine);
 }
 
 CameraManager::~CameraManager() {
