@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import Agc.Components
 import Agc.Style
 import QtPositioning
@@ -10,6 +12,47 @@ KDDW.DockWidget {
 	title: qsTr("Map")
 
 	property int mapMode: 0
+	property int selectedDroneIndex: -1
+
+	// swap with DroneManager later
+	property var drones: [
+		{
+			"droneName": "SITL-1",
+			"connected": true,
+			"flightMode": "POSCTL",
+			"armed": true,
+			"altitude": 120.0,
+			"batteryPercent": 87.0,
+			"lat": 41.0082,
+			"lon": 28.9784,
+			"heading": 45
+		},
+		{
+			"droneName": "SITL-2",
+			"connected": true,
+			"flightMode": "STABILIZED",
+			"armed": false,
+			"altitude": 0.0,
+			"batteryPercent": 64.0,
+			"lat": 41.0078,
+			"lon": 28.9788,
+			"heading": -30
+		}
+	]
+
+	// TMP function
+	function toMapDrones(list) {
+		return list.map(d => ({
+					"position": QtPositioning.coordinate(d.lat, d.lon),
+					"altitude": d.altitude,
+					"heading": d.heading
+				}));
+	}
+
+	// TMP function
+	function toMapPaths(list) {
+		return list.map(d => [QtPositioning.coordinate(d.lat - 0.0002, d.lon - 0.0004), QtPositioning.coordinate(d.lat, d.lon), QtPositioning.coordinate(d.lat + 0.0003, d.lon + 0.0006), QtPositioning.coordinate(d.lat + 0.0007, d.lon + 0.0011), QtPositioning.coordinate(d.lat + 0.001, d.lon + 0.0016)]);
+	}
 
 	Item {
 		anchors.fill: parent
@@ -20,18 +63,8 @@ KDDW.DockWidget {
 
 			threeD: mapSettings.is3d
 			lightMode: !mapSettings.isDark
-
-			drones: [({
-						position: QtPositioning.coordinate(41.0082, 28.9784),
-						altitude: 120,
-						heading: 45
-					}), ({
-						position: QtPositioning.coordinate(41.0078, 28.9788),
-						altitude: 80,
-						heading: -30
-					})]
-
-			flightPaths: [[QtPositioning.coordinate(41.0080, 28.9780), QtPositioning.coordinate(41.0082, 28.9784), QtPositioning.coordinate(41.0085, 28.9790), QtPositioning.coordinate(41.0089, 28.9795), QtPositioning.coordinate(41.0092, 28.9800)], [QtPositioning.coordinate(41.0082, 28.9784), QtPositioning.coordinate(41.0078, 28.9788), QtPositioning.coordinate(41.0074, 28.9793), QtPositioning.coordinate(41.0070, 28.9799)]]
+			drones: dockRoot.toMapDrones(dockRoot.drones)
+			flightPaths: dockRoot.toMapPaths(dockRoot.drones)
 		}
 
 		Column {
@@ -128,6 +161,28 @@ KDDW.DockWidget {
 			anchors.right: parent.right
 			anchors.margins: Style.overlayMargin
 			spacing: Style.sectionSpacing
+
+			Column {
+				spacing: 4
+				anchors.top: parent.top
+
+				Repeater {
+					model: dockRoot.drones
+					delegate: DroneStatusBadge {
+						required property int index
+						required property var modelData
+
+						droneName: modelData.droneName
+						connected: modelData.connected
+						flightMode: modelData.flightMode
+						armed: modelData.armed
+						altitude: modelData.altitude
+						batteryPercent: modelData.batteryPercent
+						selected: index === dockRoot.selectedDroneIndex
+						onClicked: dockRoot.selectedDroneIndex = dockRoot.selectedDroneIndex === index ? -1 : index
+					}
+				}
+			}
 
 			ButtonGroup {
 				title: "ACTIONS"

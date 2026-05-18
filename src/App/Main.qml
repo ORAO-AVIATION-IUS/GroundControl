@@ -54,6 +54,15 @@ ApplicationWindow {
 		id: cameraModel
 	}
 
+	AddDroneConnectionDialog {
+		id: droneDialog
+		onAccepted: {
+			const url = connectionUrl.trim();
+			if (url !== "")
+				console.log("Drone connect requested:", url);
+		}
+	}
+
 	AddCameraConnectionDialog {
 		id: cameraDialog
 		onAccepted: {
@@ -137,5 +146,6 @@ ApplicationWindow {
 		cameraModel: cameraModel
 		cameraDocks: cameraDocks
 		onAddCameraRequested: window.openAddDialog()
+		onAddDroneRequested: droneDialog.open()
 	}
 }

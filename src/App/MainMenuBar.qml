@@ -11,6 +11,7 @@ MenuBar {
 	property var cameraDocks
 
 	signal addCameraRequested
+	signal addDroneRequested
 
 	function toggleDock(dw) {
 		if (!dw)
@@ -45,6 +46,15 @@ MenuBar {
 			}
 			onObjectAdded: (index, object) => viewMenu.insertItem(index, object)
 			onObjectRemoved: (index, object) => viewMenu.removeItem(object)
+		}
+	}
+
+	Menu {
+		title: qsTr("&Drone")
+
+		Action {
+			text: qsTr("Connect…")
+			onTriggered: bar.addDroneRequested()
 		}
 	}
 
