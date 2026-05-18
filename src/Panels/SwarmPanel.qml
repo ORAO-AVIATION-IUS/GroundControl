@@ -8,15 +8,15 @@ KDDW.DockWidget {
 	uniqueName: "swarmPanel"
 	title: qsTr("Drone Control")
 
-	property string droneId: "M1"
-	property string flightMode: "STBY"
+	property string droneId: "--"
+	property string flightMode: ""
 	property bool armed: false
 
-	property real cpuLoad: 38.0
-	property bool sensorImu: true
-	property bool sensorGps: true
-	property bool sensorBaro: true
-	property bool sensorMag: true
+	property real cpuLoad: 0.0
+	property bool sensorImu: false
+	property bool sensorGps: false
+	property bool sensorBaro: false
+	property bool sensorMag: false
 
 	property real roll: 0.0
 	property real pitch: 0.0
@@ -31,17 +31,17 @@ KDDW.DockWidget {
 	property real altRel: 0.0
 	property real altMsl: 0.0
 
-	property real voltage: 12.60
+	property real voltage: 0.0
 	property real current: 0.0
-	property int battery: 92
+	property int battery: 0
 
 	property int wpCurrent: 0
-	property int wpTotal: 8
+	property int wpTotal: 0
 	property real wpDist: 0.0
 
-	property int ping: 45
+	property int ping: 0
 
-	property string activeMode: "STBY"
+	property string activeMode: ""
 	readonly property bool readyToFly: sensorImu && sensorGps && sensorBaro && sensorMag && battery > 20
 
 	ListModel {
@@ -83,61 +83,9 @@ KDDW.DockWidget {
 		}
 	}
 
-	Component.onCompleted: {
-		addLog("SYS", "Drone control initialized", "info");
-		addLog("M1", "Compass calibration required", "warn");
-		addLog("M1", "GPS 3D Fix — 12 satellites", "info");
-		addLog("M1", "Prearm checks passed", "info");
-	}
-
-	component TelRow: RowLayout {
-		property string lbl: ""
-		property string val: ""
-		property bool warn: false
-		Layout.fillWidth: true
-		spacing: 0
-		Text {
-			text: lbl
-			color: "#9090a0"
-			font.pixelSize: 10
-			font.family: "Segoe UI"
-			Layout.preferredWidth: 46
-		}
-		Text {
-			text: val
-			Layout.fillWidth: true
-			color: warn ? "#7a5a00" : "#1a1a2e"
-			font.pixelSize: 10
-			font.family: "Segoe UI"
-			horizontalAlignment: Text.AlignRight
-		}
-	}
-
-	component ActBtn: Rectangle {
-		property string label: ""
-		property color bgColor: "#f0f0f4"
-		property color txtColor: "#3a4a5a"
-		signal tapped
-		Layout.fillWidth: true
-		height: 26
-		radius: 0
-		color: ma.pressed ? Qt.darker(bgColor, 1.12) : ma.containsMouse ? Qt.darker(bgColor, 1.06) : bgColor
-		border.color: Qt.darker(bgColor, 1.16)
-		border.width: 1
-		Text {
-			anchors.centerIn: parent
-			text: label
-			color: txtColor
-			font.pixelSize: 11
-			font.bold: true
-			font.family: "Segoe UI"
-		}
-		MouseArea {
-			id: ma
-			anchors.fill: parent
-			hoverEnabled: true
-			onClicked: parent.tapped()
-		}
+	function cycleMode() {
+		const modes = ["STBY", "GUIDED", "AUTO", "RTL", "LOITER", "LAND"];
+		root.setMode(modes[(modes.indexOf(root.activeMode) + 1) % modes.length]);
 	}
 
 	Rectangle {
@@ -148,158 +96,15 @@ KDDW.DockWidget {
 			anchors.fill: parent
 			spacing: 0
 
-			Item {
+			SwarmHeader {
 				Layout.fillWidth: true
-				height: 44
-
-				RowLayout {
-					anchors.fill: parent
-					anchors.leftMargin: 14
-					anchors.rightMargin: 14
-					spacing: 0
-
-					Text {
-						text: root.droneId
-						font.pixelSize: 15
-						font.bold: true
-						font.family: "Segoe UI"
-						color: "#1a1a2e"
-						Layout.alignment: Qt.AlignVCenter
-					}
-
-					Rectangle {
-						width: 1
-						height: 20
-						color: "#e4e4e8"
-						Layout.alignment: Qt.AlignVCenter
-						Layout.leftMargin: 12
-						Layout.rightMargin: 12
-					}
-
-					Text {
-						text: root.readyToFly ? "Ready To Fly" : "Not Ready"
-						font.pixelSize: 15
-						font.bold: true
-						font.family: "Segoe UI"
-						color: root.readyToFly ? "#1e7a40" : "#8a2010"
-						Layout.alignment: Qt.AlignVCenter
-					}
-
-					Rectangle {
-						width: 1
-						height: 20
-						color: "#e4e4e8"
-						Layout.alignment: Qt.AlignVCenter
-						Layout.leftMargin: 12
-						Layout.rightMargin: 12
-					}
-
-					Text {
-						text: root.activeMode
-						font.pixelSize: 15
-						font.bold: true
-						font.family: "Segoe UI"
-						color: modeMa.containsMouse ? "#1a50a0" : "#344878"
-						Layout.alignment: Qt.AlignVCenter
-
-						MouseArea {
-							id: modeMa
-							anchors.fill: parent
-							hoverEnabled: true
-							onClicked: {
-								const modes = ["STBY", "GUIDED", "AUTO", "RTL", "LOITER", "LAND"];
-								root.setMode(modes[(modes.indexOf(root.activeMode) + 1) % modes.length]);
-							}
-						}
-					}
-
-					Item {
-						Layout.fillWidth: true
-					}
-
-					Rectangle {
-						Layout.alignment: Qt.AlignVCenter
-						Layout.rightMargin: 6
-						width: 76
-						height: 30
-						radius: 0
-						color: "#f6f8fa"
-						border.color: "#e0e4ea"
-						border.width: 1
-
-						Rectangle {
-							width: 3
-							height: parent.height
-							radius: 0
-							color: root.battery > 50 ? "#1e7a40" : root.battery > 20 ? "#c08000" : "#c02010"
-						}
-
-						Column {
-							anchors.left: parent.left
-							anchors.leftMargin: 9
-							anchors.verticalCenter: parent.verticalCenter
-							spacing: 1
-							Text {
-								text: "BATTERY"
-								font.pixelSize: 8
-								font.family: "Segoe UI"
-								color: "#9090a0"
-							}
-							Text {
-								text: root.battery + "%  " + root.voltage.toFixed(1) + " V"
-								font.pixelSize: 9
-								font.bold: true
-								font.family: "Segoe UI"
-								color: "#1a1a2e"
-							}
-						}
-					}
-
-					Rectangle {
-						Layout.alignment: Qt.AlignVCenter
-						Layout.rightMargin: 12
-						width: 76
-						height: 30
-						radius: 0
-						color: root.armed ? "#edf7f1" : "#f6f6f8"
-						border.color: root.armed ? "#8ecaaa" : "#dcdce4"
-						border.width: 1
-
-						Rectangle {
-							width: 3
-							height: parent.height
-							radius: 0
-							color: root.armed ? "#1e7a40" : "#c0c4cc"
-						}
-
-						Column {
-							anchors.left: parent.left
-							anchors.leftMargin: 9
-							anchors.verticalCenter: parent.verticalCenter
-							spacing: 1
-							Text {
-								text: "STATUS"
-								font.pixelSize: 8
-								font.family: "Segoe UI"
-								color: "#9090a0"
-							}
-							Text {
-								text: root.armed ? "ARMED" : "DISARMED"
-								font.pixelSize: 9
-								font.bold: true
-								font.family: "Segoe UI"
-								color: root.armed ? "#1a6030" : "#606878"
-							}
-						}
-					}
-				}
-
-				Rectangle {
-					anchors.bottom: parent.bottom
-					width: parent.width
-					height: 1
-					color: "#e4e4e8"
-				}
+				droneId: root.droneId
+				activeMode: root.activeMode
+				readyToFly: root.readyToFly
+				armed: root.armed
+				battery: root.battery
+				voltage: root.voltage
+				onModeClicked: root.cycleMode()
 			}
 
 			Rectangle {
@@ -312,341 +117,73 @@ KDDW.DockWidget {
 					anchors.fill: parent
 					spacing: 0
 
-					Item {
+					TelemetrySidebar {
 						Layout.preferredWidth: 150
 						Layout.fillHeight: true
-
-						ColumnLayout {
-							anchors.fill: parent
-							anchors.margins: 10
-							anchors.topMargin: 10
-							spacing: 3
-
-							Text {
-								text: "TELEMETRY"
-								color: "#a0a8b0"
-								font.pixelSize: 9
-								font.bold: true
-								font.letterSpacing: 1.4
-								font.family: "Segoe UI"
-								Layout.bottomMargin: 4
-							}
-
-							TelRow {
-								lbl: "ROLL"
-								val: root.roll.toFixed(1) + " °"
-							}
-							TelRow {
-								lbl: "PITCH"
-								val: root.pitch.toFixed(1) + " °"
-							}
-							TelRow {
-								lbl: "YAW"
-								val: root.yaw.toFixed(1) + " °"
-							}
-							TelRow {
-								lbl: "ALT"
-								val: root.altRel.toFixed(1) + " m"
-							}
-							TelRow {
-								lbl: "CLIMB"
-								val: root.climbRate.toFixed(1) + " m/s"
-							}
-							TelRow {
-								lbl: "GSPD"
-								val: root.groundspeed.toFixed(1) + " m/s"
-							}
-							TelRow {
-								lbl: "HDG"
-								val: root.heading.toFixed(1) + " °"
-							}
-							TelRow {
-								lbl: "BAT"
-								val: root.battery + " %"
-								warn: root.battery < 20
-							}
-							TelRow {
-								lbl: "VOLT"
-								val: root.voltage.toFixed(2) + " V"
-								warn: root.voltage < 11.0
-							}
-							TelRow {
-								lbl: "PING"
-								val: root.ping + " ms"
-								warn: root.ping > 200
-							}
-
-							Item {
-								Layout.fillHeight: true
-							}
-						}
+						roll: root.roll
+						pitch: root.pitch
+						yaw: root.yaw
+						altRel: root.altRel
+						climbRate: root.climbRate
+						groundspeed: root.groundspeed
+						heading: root.heading
+						battery: root.battery
+						voltage: root.voltage
+						ping: root.ping
 					}
 
 					Rectangle {
-						width: 1
+						Layout.preferredWidth: 1
 						Layout.fillHeight: true
 						color: "#e8e8ec"
 					}
 
-					Item {
+					InstrumentGrid {
 						Layout.fillWidth: true
 						Layout.fillHeight: true
-
-						GridLayout {
-							anchors.top: parent.top
-							anchors.left: parent.left
-							anchors.right: parent.right
-							anchors.margins: 10
-							columns: 3
-							rowSpacing: 6
-							columnSpacing: 6
-
-							AttitudeIndicator {
-								Layout.fillWidth: true
-								Layout.preferredHeight: width
-								pitch: root.pitch
-								roll: root.roll
-							}
-							CompassIndicator {
-								Layout.fillWidth: true
-								Layout.preferredHeight: width
-								heading: root.heading
-							}
-							HeadingIndicator {
-								Layout.fillWidth: true
-								Layout.preferredHeight: width
-								heading: root.heading
-							}
-						}
+						pitch: root.pitch
+						roll: root.roll
+						heading: root.heading
 					}
 
 					Rectangle {
-						width: 1
+						Layout.preferredWidth: 1
 						Layout.fillHeight: true
 						color: "#e8e8ec"
 					}
 
-					Item {
+					DroneControls {
 						Layout.preferredWidth: 230
 						Layout.fillHeight: true
-
-						ColumnLayout {
-							anchors.fill: parent
-							anchors.top: parent.top
-							anchors.margins: 12
-							spacing: 0
-
-							Text {
-								text: "CONTROLS"
-								color: "#a0a8b0"
-								font.pixelSize: 9
-								font.bold: true
-								font.letterSpacing: 1.4
-								font.family: "Segoe UI"
-								Layout.bottomMargin: 6
-							}
-
-							GridLayout {
-								Layout.fillWidth: true
-								columns: 2
-								rowSpacing: 3
-								columnSpacing: 3
-
-								ActBtn {
-									label: "ARM"
-									bgColor: "#edf7f1"
-									txtColor: "#1a5830"
-									enabled: !root.armed
-									opacity: root.armed ? 0.38 : 1.0
-									onTapped: root.armDrone()
-								}
-								ActBtn {
-									label: "DISARM"
-									bgColor: "#fdf0ee"
-									txtColor: "#6a1e1e"
-									enabled: root.armed
-									opacity: root.armed ? 1.0 : 0.38
-									onTapped: root.disarmDrone()
-								}
-								ActBtn {
-									label: "TAKEOFF"
-									bgColor: "#edf2fa"
-									txtColor: "#1a3060"
-									onTapped: root.addLog(root.droneId, "TAKEOFF command sent", "info")
-								}
-								ActBtn {
-									label: "LAND"
-									bgColor: "#faf4ec"
-									txtColor: "#4a3010"
-									onTapped: root.addLog(root.droneId, "LAND command sent", "info")
-								}
-								ActBtn {
-									label: "RESET"
-									bgColor: "#f0f0f4"
-									txtColor: "#3a4a5a"
-									onTapped: root.addLog(root.droneId, "RESET command sent", "warn")
-								}
-								ActBtn {
-									label: "CONFIG"
-									bgColor: "#f0f0f4"
-									txtColor: "#3a4a5a"
-									onTapped: root.addLog(root.droneId, "CONFIG command sent", "info")
-								}
-							}
-
-							Rectangle {
-								Layout.fillWidth: true
-								height: 1
-								color: "#e8e8ec"
-								Layout.topMargin: 10
-								Layout.bottomMargin: 10
-							}
-
-							Text {
-								text: "FLIGHT MODE"
-								color: "#a0a8b0"
-								font.pixelSize: 9
-								font.bold: true
-								font.letterSpacing: 1.4
-								font.family: "Segoe UI"
-								Layout.bottomMargin: 6
-							}
-
-							GridLayout {
-								Layout.fillWidth: true
-								columns: 2
-								rowSpacing: 3
-								columnSpacing: 3
-
-								Repeater {
-									model: ["STBY", "GUIDED", "AUTO", "RTL", "LOITER", "LAND"]
-									delegate: Rectangle {
-										required property string modelData
-										Layout.fillWidth: true
-										height: 26
-										radius: 0
-										color: root.activeMode === modelData ? "#e8f0fa" : modeArea.containsMouse ? "#f4f6fa" : "#f8f8fa"
-										border.color: root.activeMode === modelData ? "#4070b0" : "#dcdce4"
-										border.width: 1
-										Text {
-											anchors.centerIn: parent
-											text: modelData
-											color: root.activeMode === modelData ? "#1a4890" : "#4a5060"
-											font.pixelSize: 11
-											font.bold: root.activeMode === modelData
-											font.family: "Segoe UI"
-										}
-										MouseArea {
-											id: modeArea
-											anchors.fill: parent
-											hoverEnabled: true
-											onClicked: root.setMode(modelData)
-										}
-									}
-								}
-							}
-
-							Item {
-								Layout.fillHeight: true
-							}
+						armed: root.armed
+						activeMode: root.activeMode
+						droneId: root.droneId
+						onArmClicked: root.armDrone()
+						onDisarmClicked: root.disarmDrone()
+						onTakeoffClicked: root.addLog(root.droneId, "TAKEOFF command sent", "info")
+						onLandClicked: root.addLog(root.droneId, "LAND command sent", "info")
+						onResetClicked: root.addLog(root.droneId, "RESET command sent", "warn")
+						onConfigClicked: root.addLog(root.droneId, "CONFIG command sent", "info")
+						onModeSelected: function (mode) {
+							root.setMode(mode);
 						}
 					}
 
 					Rectangle {
-						width: 1
+						Layout.preferredWidth: 1
 						Layout.fillHeight: true
 						color: "#e8e8ec"
 					}
 
-					Item {
+					StatusLog {
 						Layout.fillWidth: true
 						Layout.fillHeight: true
-
-						ColumnLayout {
-							anchors.fill: parent
-							anchors.margins: 12
-							spacing: 0
-
-							RowLayout {
-								Layout.fillWidth: true
-								Layout.bottomMargin: 6
-								Text {
-									text: "STATUS LOG"
-									color: "#a0a8b0"
-									font.pixelSize: 9
-									font.bold: true
-									font.letterSpacing: 1.4
-									font.family: "Segoe UI"
-								}
-								Item {
-									Layout.fillWidth: true
-								}
-								Text {
-									text: "CLR"
-									color: clrArea.containsMouse ? "#3a4a5a" : "#b0b8c0"
-									font.pixelSize: 9
-									font.family: "Segoe UI"
-									MouseArea {
-										id: clrArea
-										anchors.fill: parent
-										hoverEnabled: true
-										onClicked: logModel.clear()
-									}
-								}
-							}
-
-							Rectangle {
-								Layout.fillWidth: true
-								height: 1
-								color: "#e8e8ec"
-							}
-
-							ListView {
-								id: logView
-								Layout.fillWidth: true
-								Layout.fillHeight: true
-								model: logModel
-								clip: true
-								spacing: 2
-								Layout.topMargin: 6
-
-								delegate: RowLayout {
-									required property string ts
-									required property string src
-									required property string msg
-									required property string level
-									width: logView.width
-									spacing: 5
-
-									Text {
-										text: ts
-										color: "#b0b8c4"
-										font.pixelSize: 9
-										font.family: "Segoe UI"
-									}
-									Text {
-										text: "[" + src + "]"
-										width: 36
-										color: src === "SYS" ? "#2a5080" : "#6a4010"
-										font.pixelSize: 9
-										font.bold: true
-										font.family: "Segoe UI"
-									}
-									Text {
-										Layout.fillWidth: true
-										text: msg
-										color: level === "err" ? "#8a2010" : level === "warn" ? "#7a5a00" : "#4a5060"
-										font.pixelSize: 9
-										font.family: "Segoe UI"
-										elide: Text.ElideRight
-									}
-								}
-							}
-						}
+						model: logModel
+						onClearClicked: logModel.clear()
 					}
 
 					AltitudeTape {
-						Layout.preferredWidth: 90
+						Layout.preferredWidth: 110
 						Layout.fillHeight: true
 						altitude: root.altRel
 					}

@@ -41,8 +41,8 @@ Rectangle {
 			spacing: 5
 
 			Rectangle {
-				width: 8
-				height: 8
+				Layout.preferredWidth: 8
+				Layout.preferredHeight: 8
 				radius: 4
 				color: root.armed ? "#00dd66" : "#cc3333"
 				Behavior on color {
@@ -65,8 +65,8 @@ Rectangle {
 			}
 
 			Rectangle {
-				height: 14
-				width: modeLabel.implicitWidth + 10
+				Layout.preferredHeight: 14
+				Layout.preferredWidth: modeLabel.implicitWidth + 10
 				radius: 3
 				color: "#060e1a"
 				border.color: "#1b2d42"
@@ -85,8 +85,8 @@ Rectangle {
 
 			// sys-health dot: blue=ok  red=fault
 			Rectangle {
-				width: 6
-				height: 6
+				Layout.preferredWidth: 6
+				Layout.preferredHeight: 6
 				radius: 3
 				color: root.sysHealth ? "#2266dd" : "#dd3311"
 				opacity: 0.85
@@ -95,8 +95,8 @@ Rectangle {
 
 		AttitudeIndicator {
 			Layout.alignment: Qt.AlignHCenter
-			width: Math.min(root.width - 16, 96)
-			height: width
+			Layout.preferredWidth: Math.min(root.width - 16, 96)
+			Layout.preferredHeight: Math.min(root.width - 16, 96)
 			pitch: root.pitch
 			roll: root.roll
 		}
@@ -157,7 +157,7 @@ Rectangle {
 
 			Rectangle {
 				Layout.fillWidth: true
-				height: 20
+				Layout.preferredHeight: 20
 				radius: 3
 				color: armArea.pressed ? "#004d1e" : armArea.containsMouse ? "#003815" : "#00210d"
 				border.color: root.armed ? "#111" : "#007a3d"
@@ -187,7 +187,7 @@ Rectangle {
 
 			Rectangle {
 				Layout.fillWidth: true
-				height: 20
+				Layout.preferredHeight: 20
 				radius: 3
 				color: disarmArea.pressed ? "#4d1400" : disarmArea.containsMouse ? "#380e00" : "#220800"
 				border.color: root.armed ? "#aa2d00" : "#111"
