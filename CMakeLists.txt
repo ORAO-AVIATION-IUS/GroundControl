@@ -51,6 +51,8 @@ file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPE
 
 qt_add_executable(GroundControl
     src/main.cpp
+    src/MessageHandler.h
+    src/MessageHandler.cpp
 )
 
 file(GLOB ROOT_QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "src/App/*.qml")

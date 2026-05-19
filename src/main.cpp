@@ -15,6 +15,7 @@
 
 #include "BreezeIconProvider.h"
 #include "Camera/CameraManager.h"
+#include "MessageHandler.h"
 
 Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
 Q_IMPORT_QML_PLUGIN(Agc_ComponentsPlugin)
@@ -29,6 +30,8 @@ int main(int argc, char* argv[]) {
 #if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 #endif
+
+	installMessageHandler();
 
 	QGuiApplication app(argc, argv);
 
