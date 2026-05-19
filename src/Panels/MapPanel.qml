@@ -14,6 +14,21 @@ KDDW.DockWidget {
 	property int mapMode: 0
 	property int selectedDroneIndex: -1
 
+	// per-drone target state: { droneIndex: { alt, locked } }
+	property var _targetStore: ({})
+
+	onSelectedDroneIndexChanged: {
+		if (selectedDroneIndex >= 0) {
+			var entry = _targetStore[selectedDroneIndex];
+			if (entry && entry.locked)
+				altTape.setTarget(entry.alt);
+			else
+				altTape.clearTarget();
+		} else {
+			altTape.clearTarget();
+		}
+	}
+
 	// swap with DroneManager later
 	property var drones: [
 		{
@@ -157,6 +172,8 @@ KDDW.DockWidget {
 		}
 
 		Row {
+			id: topRightOverlay
+			z: 5
 			anchors.top: parent.top
 			anchors.right: parent.right
 			anchors.margins: Style.overlayMargin
@@ -242,6 +259,33 @@ KDDW.DockWidget {
 					checked: mapSettings.isDark
 					onClicked: mapSettings.isDark = !mapSettings.isDark
 				}
+			}
+		}
+
+		AltitudeTape {
+			id: altTape
+			enabled: dockRoot.selectedDroneIndex >= 0
+			anchors.right: parent.right
+			anchors.top: parent.top
+			anchors.bottom: parent.bottom
+			altitude: dockRoot.selectedDroneIndex >= 0 ? dockRoot.drones[dockRoot.selectedDroneIndex].altitude : 0
+			darkMode: mapSettings.isDark
+			z: 1
+			onTargetConfirmed: function (target) {
+				if (dockRoot.selectedDroneIndex >= 0)
+					dockRoot._targetStore[dockRoot.selectedDroneIndex] = {
+						"alt": target,
+						"locked": true
+					};
+				console.log("Target altitude confirmed:", target.toFixed(1), "m");
+			}
+			onTargetReset: {
+				if (dockRoot.selectedDroneIndex >= 0)
+					dockRoot._targetStore[dockRoot.selectedDroneIndex] = {
+						"alt": 0,
+						"locked": false
+					};
+				console.log("Target altitude reset");
 			}
 		}
 	}

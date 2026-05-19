@@ -1,12 +1,14 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
-import QtQuick.Layouts
 
 // AltitudeTape - vertical tape with drag-to-set target altitude
 //
 // Public API:
 //   altitude       : real  - current altitude in metres
+//   darkMode       : bool  - adapt colours for dark backgrounds
 //   targetAltitude : real  - confirmed target (0 = none)
 //   targetLocked   : bool  - true after SET
 //   setTarget(alt)         - programmatically lock a target
@@ -18,6 +20,7 @@ Item {
 	id: root
 
 	property real altitude: 0
+	property bool darkMode: false
 
 	readonly property real targetAltitude: _targetAlt
 	readonly property bool targetLocked: _targetLocked
@@ -29,6 +32,7 @@ Item {
 		_targetAlt = Math.max(0, alt);
 		_targetLocked = true;
 		_tapeOffsetPx = 0;
+		root.targetConfirmed(_targetAlt);
 	}
 
 	function clearTarget() {
@@ -45,8 +49,16 @@ Item {
 	property real _targetAlt: 0
 	readonly property real _tapeCenterAlt: altitude + _tapeOffsetPx / _ppm
 
+	// layout constants
+	readonly property real _rulerWidth: 14
+	readonly property real _labelWidth: 56
+	readonly property real _numberGap: 30
+	readonly property real _tickMajorRatio: 0.35
+	readonly property real _tickMinorRatio: 0.18
+
+	opacity: enabled ? 1.0 : 0.0
 	clip: true
-	implicitWidth: 110
+	implicitWidth: _labelWidth + _rulerWidth + _numberGap
 	implicitHeight: 200
 
 	function _fmtAlt(v) {
@@ -65,156 +77,160 @@ Item {
 				color: "transparent"
 			}
 			GradientStop {
+				position: 0.4
+				color: "transparent"
+			}
+			GradientStop {
 				position: 1.0
-				color: "#e0e0e0"
+				color: root.darkMode ? "#cc1a1a2e" : "#c8e0e0e0"
 			}
 		}
-		radius: 4
 	}
 
-	RowLayout {
-		anchors.fill: parent
-		spacing: 0
+	// Ruler canvas — rightmost strip, draws ticks + numbers
+	Canvas {
+		id: tapeCanvas
+		anchors.right: parent.right
+		anchors.top: parent.top
+		anchors.bottom: parent.bottom
+		width: root._rulerWidth + root._numberGap
+		z: 1
 
-		Item {
-			Layout.preferredWidth: 54
-			Layout.fillHeight: true
-			clip: true
+		onPaint: {
+			var ctx = getContext("2d");
+			ctx.reset();
 
-			// current altitude label
-			Row {
-				y: root.height / 2 - height / 2 + root._tapeOffsetPx
-				x: 2
-				spacing: 2
-				z: 10
+			var majorStep = 10;
+			var minorStep = 5;
+			var ppm = root._ppm;
+			var cy = root.height / 2;
+			var w = width;
+			var h = height;
+			var centerAlt = root._tapeCenterAlt;
+			var tickRight = w;
+			var tickLenMajor = w * root._tickMajorRatio;
+			var tickLenMinor = w * root._tickMinorRatio;
 
-				Text {
-					text: root._fmtAlt(root.altitude)
-					color: "#333333"
-					font {
-						pixelSize: 10
-						bold: true
-						family: "Courier New"
-					}
-					anchors.verticalCenter: parent.verticalCenter
-				}
+			var halfRange = h / (2 * ppm);
+			var minAlt = Math.max(0, centerAlt - halfRange);
+			var maxAlt = centerAlt + halfRange;
+			var startAlt = Math.floor(minAlt / minorStep) * minorStep;
 
-				Item {
-					width: 16
-					height: 14
-					anchors.verticalCenter: parent.verticalCenter
+			for (var a = startAlt; a <= maxAlt + minorStep; a += minorStep) {
+				var y = cy - (a - centerAlt) * ppm;
+				if (y < -12 || y > h + 12)
+					continue;
 
-					Image {
-						id: droneIcon
-						anchors.fill: parent
-						source: "image://icon/edit-clear-locationbar-ltr"
-						fillMode: Image.PreserveAspectFit
-					}
-					MultiEffect {
-						anchors.fill: parent
-						source: droneIcon
-						colorization: 1.0
-						colorizationColor: "#333333"
-					}
+				var isMajor = Math.abs(a % majorStep) < 0.001;
+
+				if (isMajor) {
+					// tick
+					ctx.strokeStyle = root.darkMode ? "#aaaaaa" : "#444444";
+					ctx.lineWidth = 1.2;
+					ctx.beginPath();
+					ctx.moveTo(tickRight - tickLenMajor, y);
+					ctx.lineTo(tickRight, y);
+					ctx.stroke();
+
+					// number — left of tick
+					ctx.fillStyle = root.darkMode ? "#cccccc" : "#333333";
+					ctx.font = "bold 8px monospace";
+					ctx.textAlign = "right";
+					ctx.fillText(a.toFixed(0), tickRight - tickLenMajor - 2, y + 3);
+				} else {
+					ctx.strokeStyle = root.darkMode ? "#666666" : "#888888";
+					ctx.lineWidth = 0.6;
+					ctx.beginPath();
+					ctx.moveTo(tickRight - tickLenMinor, y);
+					ctx.lineTo(tickRight, y);
+					ctx.stroke();
 				}
 			}
+		}
+	}
 
-			// target label
-			Row {
-				id: targetLabel
-				x: 2
-				spacing: 2
-				z: 10
+	// Indicator labels — full component width, above canvas
+	Item {
+		anchors.fill: parent
+		z: 5
 
-				visible: root._tapeOffsetPx !== 0 || root._targetLocked
+		// current altitude indicator
+		Row {
+			id: currentLabel
+			y: root.height / 2 - height / 2 + root._tapeOffsetPx
+			x: 2
+			spacing: 2
 
-				y: {
-					if (root._targetLocked)
-						return root.height / 2 - height / 2 - (root._targetAlt - root.altitude) * root._ppm;
-					return root.height / 2 - height / 2;
+			Text {
+				text: root._fmtAlt(root.altitude)
+				color: root.darkMode ? "#cccccc" : "#333333"
+				font {
+					pixelSize: 10
+					bold: true
 				}
+				anchors.verticalCenter: parent.verticalCenter
+			}
 
-				Text {
-					text: root._targetLocked ? root._fmtAlt(root._targetAlt) : root._fmtAlt(root._tapeCenterAlt)
-					color: "#1a50a0"
-					font {
-						pixelSize: 10
-						bold: true
-						family: "Courier New"
-					}
-					anchors.verticalCenter: parent.verticalCenter
+			Item {
+				width: 16
+				height: 14
+				anchors.verticalCenter: parent.verticalCenter
+
+				Image {
+					id: droneIcon
+					anchors.fill: parent
+					source: "image://icon/edit-clear-locationbar-ltr"
+					fillMode: Image.PreserveAspectFit
 				}
-
-				Item {
-					width: 16
-					height: 14
-					anchors.verticalCenter: parent.verticalCenter
-
-					Image {
-						id: targetIcon
-						anchors.fill: parent
-						source: "image://icon/edit-clear-locationbar-ltr"
-						fillMode: Image.PreserveAspectFit
-					}
-					MultiEffect {
-						anchors.fill: parent
-						source: targetIcon
-						colorization: 1.0
-						colorizationColor: "#1a50a0"
-					}
+				MultiEffect {
+					anchors.fill: parent
+					source: droneIcon
+					colorization: 1.0
+					colorizationColor: root.darkMode ? "#cccccc" : "#333333"
 				}
 			}
 		}
 
-		Canvas {
-			id: tapeCanvas
-			Layout.fillWidth: true
-			Layout.fillHeight: true
+		// target altitude indicator
+		Row {
+			id: targetLabel
+			x: 2
+			spacing: 2
 
-			onPaint: {
-				var ctx = getContext("2d");
-				ctx.reset();
+			visible: root._tapeOffsetPx !== 0 || root._targetLocked
 
-				var majorStep = 10;
-				var minorStep = 5;
-				var ppm = root._ppm;
-				var cy = root.height / 2;
-				var w = width;
-				var h = height;
-				var centerAlt = root._tapeCenterAlt;
+			y: {
+				if (root._targetLocked)
+					return root.height / 2 - height / 2 - (root._targetAlt - root.altitude) * root._ppm;
+				return root.height / 2 - height / 2;
+			}
 
-				var halfRange = h / (2 * ppm);
-				var minAlt = Math.max(0, centerAlt - halfRange);
-				var maxAlt = centerAlt + halfRange;
-				var startAlt = Math.floor(minAlt / minorStep) * minorStep;
+			Text {
+				text: root._targetLocked ? root._fmtAlt(root._targetAlt) : root._fmtAlt(root._tapeCenterAlt)
+				color: root.darkMode ? "#5a9aef" : "#1a50a0"
+				font {
+					pixelSize: 10
+					bold: true
+				}
+				anchors.verticalCenter: parent.verticalCenter
+			}
 
-				for (var a = startAlt; a <= maxAlt + minorStep; a += minorStep) {
-					var y = cy - (a - centerAlt) * ppm;
-					if (y < -12 || y > h + 12)
-						continue;
+			Item {
+				width: 16
+				height: 14
+				anchors.verticalCenter: parent.verticalCenter
 
-					var isMajor = Math.abs(a % majorStep) < 0.001;
-
-					if (isMajor) {
-						ctx.strokeStyle = "#444444";
-						ctx.lineWidth = 1.5;
-						ctx.beginPath();
-						ctx.moveTo(w * 0.55, y);
-						ctx.lineTo(w, y);
-						ctx.stroke();
-
-						ctx.fillStyle = "#333333";
-						ctx.font = "bold 9px monospace";
-						ctx.textAlign = "right";
-						ctx.fillText(a.toFixed(0), w * 0.50, y + 3);
-					} else {
-						ctx.strokeStyle = "#888888";
-						ctx.lineWidth = 0.8;
-						ctx.beginPath();
-						ctx.moveTo(w * 0.75, y);
-						ctx.lineTo(w, y);
-						ctx.stroke();
-					}
+				Image {
+					id: targetIcon
+					anchors.fill: parent
+					source: "image://icon/edit-clear-locationbar-ltr"
+					fillMode: Image.PreserveAspectFit
+				}
+				MultiEffect {
+					anchors.fill: parent
+					source: targetIcon
+					colorization: 1.0
+					colorizationColor: root.darkMode ? "#5a9aef" : "#1a50a0"
 				}
 			}
 		}
@@ -249,7 +265,7 @@ Item {
 		}
 	}
 
-	// fixed position buttons, no reflow
+	// fixed position buttons
 	Button {
 		id: setBtn
 		anchors.right: resetBtn.left
@@ -313,5 +329,6 @@ Item {
 	onAltitudeChanged: tapeCanvas.requestPaint()
 	onHeightChanged: tapeCanvas.requestPaint()
 	on_TapeOffsetPxChanged: tapeCanvas.requestPaint()
+	onDarkModeChanged: tapeCanvas.requestPaint()
 	Component.onCompleted: tapeCanvas.requestPaint()
 }
