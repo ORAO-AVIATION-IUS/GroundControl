@@ -16,10 +16,11 @@ Item {
 	// ───── View modes ─────
 	property bool threeD: true
 	property bool lightMode: true
+	property bool satelliteMode: false
 
 	// Style index into supportedMapTypes (mirrors maplibre.map.styles order):
-	// 0=bright, 1=liberty, 2=positron, 3=dark, 4=fiord, 5=night-3d (local)
-	readonly property int _styleIndex: threeD ? (lightMode ? 1 : 5) : (lightMode ? 0 : 4)
+	// 0=bright, 1=liberty, 2=positron, 3=dark, 4=fiord, 5=night-3d (local), 6=satellite (local)
+	readonly property int _styleIndex: satelliteMode ? 6 : (threeD ? (lightMode ? 1 : 5) : (lightMode ? 0 : 4))
 
 	property real _savedTilt: 45
 
@@ -219,7 +220,7 @@ Item {
 
 		PluginParameter {
 			name: "maplibre.map.styles"
-			value: "https://tiles.openfreemap.org/styles/bright," + "https://tiles.openfreemap.org/styles/liberty," + "https://tiles.openfreemap.org/styles/positron," + "https://tiles.openfreemap.org/styles/dark," + "https://tiles.openfreemap.org/styles/fiord," + "qrc:/resources/assets/night-3d-style.json"
+			value: "https://tiles.openfreemap.org/styles/bright," + "https://tiles.openfreemap.org/styles/liberty," + "https://tiles.openfreemap.org/styles/positron," + "https://tiles.openfreemap.org/styles/dark," + "https://tiles.openfreemap.org/styles/fiord," + "qrc:/resources/assets/night-3d-style.json," + "qrc:/resources/assets/satellite-style.json"
 		}
 	}
 

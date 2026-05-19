@@ -78,6 +78,7 @@ KDDW.DockWidget {
 
 			threeD: mapSettings.is3d
 			lightMode: !mapSettings.isDark
+			satelliteMode: mapSettings.isSatellite
 			drones: dockRoot.toMapDrones(dockRoot.drones)
 			flightPaths: dockRoot.toMapPaths(dockRoot.drones)
 		}
@@ -244,6 +245,7 @@ KDDW.DockWidget {
 
 				property bool is3d: false
 				property bool isDark: true
+				property bool isSatellite: false
 
 				IconButton {
 					iconName: mapSettings.is3d ? "map-gnomonic" : "map-flat"
@@ -253,11 +255,20 @@ KDDW.DockWidget {
 					onClicked: mapSettings.is3d = !mapSettings.is3d
 				}
 				IconButton {
+					enabled: !mapSettings.isSatellite
+					opacity: enabled ? 1.0 : 0.4
 					iconName: mapSettings.isDark ? "weather-clear-night-symbolic" : "contrast"
 					label: mapSettings.isDark ? "Dark" : "Light"
 					checkable: true
 					checked: mapSettings.isDark
 					onClicked: mapSettings.isDark = !mapSettings.isDark
+				}
+				IconButton {
+					iconName: mapSettings.isSatellite ? "kstars_satellites" : "map-globe"
+					label: mapSettings.isSatellite ? "Sat" : "Street"
+					checkable: true
+					checked: mapSettings.isSatellite
+					onClicked: mapSettings.isSatellite = !mapSettings.isSatellite
 				}
 			}
 		}

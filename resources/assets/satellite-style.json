@@ -1,0 +1,25 @@
+{
+	"version": 8,
+	"sources": {
+		"satellite": {
+			"type": "raster",
+			"tileSize": 256,
+			"maxzoom": 19,
+			"tiles": [
+				"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+				"https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+			],
+			"attribution": "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+		}
+	},
+	"layers": [
+		{
+			"id": "satellite-layer",
+			"type": "raster",
+			"source": "satellite",
+			"minzoom": 0,
+			"maxzoom": 22
+		}
+	],
+	"id": "satellite"
+}
