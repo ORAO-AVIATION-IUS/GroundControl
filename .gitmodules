@@ -2,3 +2,6 @@
 	path = third_party/KDDockWidgets
 	url = https://github.com/KDAB/KDDockWidgets.git
 	branch = v2.4.0
+[submodule "third_party/breeze-icons"]
+	path = third_party/breeze-icons
+	url = https://github.com/KDE/breeze-icons.git

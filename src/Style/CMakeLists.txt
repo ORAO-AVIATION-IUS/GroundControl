@@ -13,5 +13,12 @@ qt_add_qml_module(AgcStyle
     IMPORT_PATH "${CMAKE_BINARY_DIR}"
 )
 
-target_link_libraries(AgcStyle PUBLIC Qt6::Quick KF6::BreezeIcons)
+target_link_libraries(AgcStyle PUBLIC Qt6::Quick Qt6::Svg)
+target_compile_definitions(AgcStyle PRIVATE
+    AGC_BREEZE_ICON_ROOT="${CMAKE_SOURCE_DIR}/third_party/breeze-icons/icons"
+)
+if(KF6BreezeIcons_FOUND)
+    target_link_libraries(AgcStyle PUBLIC KF6::BreezeIcons)
+    target_compile_definitions(AgcStyle PRIVATE AGC_HAS_KF6_BREEZE_ICONS=1)
+endif()
 target_include_directories(AgcStyleplugin INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
