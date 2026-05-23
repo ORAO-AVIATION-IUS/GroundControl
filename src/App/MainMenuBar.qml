@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Agc.Mavlink
 import QtQuick
 import QtQuick.Controls
 
@@ -9,6 +10,7 @@ MenuBar {
 	property var viewPanels: []
 	property ListModel cameraModel
 	property var cameraDocks
+	property var dronePanelDocks
 
 	signal addCameraRequested
 	signal addDroneRequested
@@ -20,6 +22,43 @@ MenuBar {
 			dw.close();
 		else
 			dw.show();
+	}
+
+	function findDroneDock(uid) {
+		if (!dronePanelDocks)
+			return null;
+		for (let i = 0; i < dronePanelDocks.count; ++i) {
+			let dock = dronePanelDocks.itemAt(i);
+			if (dock && dock.drone && dock.drone.droneUid === uid)
+				return dock;
+		}
+		return null;
+	}
+
+	function allDronePanelsOpen() {
+		if (!dronePanelDocks || dronePanelDocks.count === 0)
+			return false;
+		for (let i = 0; i < dronePanelDocks.count; ++i) {
+			let dock = dronePanelDocks.itemAt(i);
+			if (!dock || !dock.isOpen)
+				return false;
+		}
+		return true;
+	}
+
+	function toggleAllDronePanels() {
+		if (!dronePanelDocks)
+			return;
+		let shouldClose = allDronePanelsOpen();
+		for (let i = 0; i < dronePanelDocks.count; ++i) {
+			let dock = dronePanelDocks.itemAt(i);
+			if (!dock)
+				continue;
+			if (shouldClose)
+				dock.close();
+			else if (!dock.isOpen)
+				dock.show();
+		}
 	}
 
 	Menu {
@@ -50,12 +89,69 @@ MenuBar {
 	}
 
 	Menu {
+		id: droneMenu
 		title: qsTr("&Drone")
 
 		Action {
-			text: qsTr("Connect…")
+			text: qsTr("New Connection…")
 			onTriggered: bar.addDroneRequested()
 		}
+
+		Action {
+			text: bar.allDronePanelsOpen() ? qsTr("Close All Panels") : qsTr("Show All Panels")
+			enabled: dronePanelDocks && dronePanelDocks.count > 0
+			onTriggered: bar.toggleAllDronePanels()
+		}
+
+		MenuSeparator {}
+
+		Instantiator {
+			model: SwarmManager.drones
+			delegate: Menu {
+				id: droneSubmenu
+
+				required property var modelData
+				required property int index
+
+				title: modelData.droneName
+
+				Action {
+					text: qsTr("Show Panel")
+					checkable: true
+					checked: {
+						let dock = bar.findDroneDock(droneSubmenu.modelData.droneUid);
+						return dock ? dock.isOpen : false;
+					}
+					onTriggered: bar.toggleDock(bar.findDroneDock(droneSubmenu.modelData.droneUid))
+				}
+
+				Action {
+					text: SwarmManager.selectedDroneIndex === droneSubmenu.index ? qsTr("Deselect") : qsTr("Select")
+					onTriggered: {
+						if (SwarmManager.selectedDroneIndex === droneSubmenu.index)
+							SwarmManager.clearSelection();
+						else
+							SwarmManager.selectDrone(droneSubmenu.index);
+					}
+				}
+
+				Action {
+					text: qsTr("Rename…")
+					onTriggered: renameDialog.openFor(droneSubmenu.modelData)
+				}
+
+				Action {
+					text: qsTr("Disconnect")
+					onTriggered: SwarmManager.removeDroneByUid(droneSubmenu.modelData.droneUid)
+				}
+			}
+			onObjectAdded: (index, object) => droneMenu.insertMenu(index + 3, object)
+			onObjectRemoved: (index, object) => droneMenu.removeMenu(object)
+		}
+	}
+
+	RenameDroneDialog {
+		id: renameDialog
 	}
 
 	Menu {

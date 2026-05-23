@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Agc.Camera
+import Agc.Mavlink
 import Agc.Panels
 import QtQuick
 import QtQuick.Controls
@@ -21,12 +22,12 @@ ApplicationWindow {
 		return -1;
 	}
 
-	function openAddDialog() {
+	function openAddCameraDialog() {
 		cameraDialog.editingId = -1;
 		cameraDialog.open();
 	}
 
-	function openEditDialog(id) {
+	function openEditCameraDialog(id) {
 		const row = rowForId(id);
 		if (row === -1)
 			return;
@@ -57,9 +58,10 @@ ApplicationWindow {
 	AddDroneConnectionDialog {
 		id: droneDialog
 		onAccepted: {
+			const name = droneName.trim();
 			const url = connectionUrl.trim();
-			if (url !== "")
-				console.log("Drone connect requested:", url);
+			if (name !== "" && url !== "")
+				SwarmManager.addDrone(name, url);
 		}
 	}
 
@@ -103,18 +105,81 @@ ApplicationWindow {
 		anchors.fill: parent
 		uniqueName: "MainLayout-3"
 		Component.onCompleted: {
-			addDockWidget(swarmPanel, KDDW.KDDockWidgets.Location_OnTop);
+			addDockWidget(dronePanel, KDDW.KDDockWidgets.Location_OnTop);
 			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnBottom);
+			dronePanel.show();
 			mapPanel.raise();
+		}
+
+		// Selected drone panel, bound to SwarmManager.selectedDrone
+		DronePanel {
+			id: dronePanel
+			drone: SwarmManager.selectedDrone
+
+			title: SwarmManager.selectedDrone ? qsTr("Selected: %1").arg(SwarmManager.selectedDrone.droneName) : qsTr("Selected Drone")
 		}
 
 		MapPanel {
 			id: mapPanel
 		}
-		SwarmPanel {
-			id: swarmPanel
+
+		// Per-drone panels (closed by default, toggled from Drone menu)
+
+		ListModel {
+			id: droneModel
 		}
 
+		Connections {
+			target: SwarmManager
+			function onDronesChanged() {
+				let i = 0;
+				while (i < droneModel.count && i < SwarmManager.droneCount) {
+					let d = SwarmManager.droneAt(i);
+					if (droneModel.get(i).uid !== d.droneUid) {
+						let found = false;
+						for (let j = i; j < droneModel.count; ++j) {
+							if (droneModel.get(j).uid === d.droneUid) {
+								found = true;
+								break;
+							}
+						}
+						if (!found)
+							droneModel.remove(i);
+						else
+							++i;
+					} else {
+						++i;
+					}
+				}
+				while (droneModel.count > SwarmManager.droneCount)
+					droneModel.remove(droneModel.count - 1);
+				for (let k = droneModel.count; k < SwarmManager.droneCount; ++k) {
+					let d = SwarmManager.droneAt(k);
+					droneModel.append({
+						"uid": d.droneUid,
+						"droneRef": d
+					});
+				}
+			}
+		}
+
+		Repeater {
+			id: dronePanelDocks
+			model: droneModel
+			delegate: DronePanel {
+				id: perDroneDock
+				required property var model
+
+				drone: model.droneRef
+				uniqueName: "dronePanel_" + model.uid
+				Component.onCompleted: {
+					root.addDockWidget(perDroneDock, KDDW.KDDockWidgets.Location_OnBottom, dronePanel);
+					close();
+				}
+			}
+		}
+
+		// Camera panels
 		Repeater {
 			id: cameraDocks
 			model: cameraModel
@@ -125,7 +190,7 @@ ApplicationWindow {
 				cameraName: model.name
 				connectionString: model.connection
 				uniqueName: "cameraConn_" + model.cameraId
-				onEditRequested: window.openEditDialog(model.cameraId)
+				onEditRequested: window.openEditCameraDialog(model.cameraId)
 				onRemoveRequested: window.removeCamera(model.cameraId)
 				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
 			}
@@ -139,13 +204,14 @@ ApplicationWindow {
 				"dock": mapPanel
 			},
 			{
-				"label": qsTr("Drone Control"),
-				"dock": swarmPanel
+				"label": qsTr("Selected Drone"),
+				"dock": dronePanel
 			}
 		]
 		cameraModel: cameraModel
 		cameraDocks: cameraDocks
-		onAddCameraRequested: window.openAddDialog()
+		dronePanelDocks: dronePanelDocks
+		onAddCameraRequested: window.openAddCameraDialog()
 		onAddDroneRequested: droneDialog.open()
 	}
 }

@@ -15,6 +15,7 @@
 
 #include "BreezeIconProvider.h"
 #include "Camera/CameraManager.h"
+#include "Mavlink/SwarmManager.h"
 #include "MessageHandler.h"
 
 Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
