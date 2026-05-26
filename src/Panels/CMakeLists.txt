@@ -3,6 +3,8 @@ file(GLOB_RECURSE QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPEN
 
 qt_add_library(AgcPanels STATIC)
 
+target_link_libraries(AgcPanels PRIVATE AgcLog)
+
 qt_add_qml_module(AgcPanels
     URI Agc.Panels
     SOURCES ${SOURCES}
