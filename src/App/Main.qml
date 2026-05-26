@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Agc.Camera
+import Agc.Log
 import Agc.Panels
 import QtQuick
 import QtQuick.Controls
@@ -101,10 +102,12 @@ ApplicationWindow {
 		id: root
 
 		anchors.fill: parent
-		uniqueName: "MainLayout-3"
+		uniqueName: "MainLayout-7"
 		Component.onCompleted: {
 			addDockWidget(swarmPanel, KDDW.KDDockWidgets.Location_OnTop);
 			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnBottom);
+			addDockWidget(logPanel, KDDW.KDDockWidgets.Location_OnBottom);
+			logPanel.close();
 			mapPanel.raise();
 		}
 
@@ -113,6 +116,26 @@ ApplicationWindow {
 		}
 		SwarmPanel {
 			id: swarmPanel
+
+			onDetachLogRequested: function (source) {
+				swarmPanel.logDetached = true;
+			}
+			onLogDetachedChanged: {
+				if (logDetached) {
+					logPanel.show();
+					try { logPanel.setFloating(true); } catch (e) { /* fallback */ }
+					logPanel.raise();
+				} else if (logPanel.isOpen) {
+					logPanel.close();
+				}
+			}
+		}
+		LogPanel {
+			id: logPanel
+			onIsOpenChanged: {
+				if (!isOpen && swarmPanel.logDetached)
+					swarmPanel.logDetached = false;
+			}
 		}
 
 		Repeater {

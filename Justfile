@@ -55,10 +55,7 @@ run:
 
 [windows]
 run:
-    Copy-Item -Force "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\bin\*.dll" "{{justfile_directory()}}\build\"; \
-    $env:QT_PLUGIN_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\plugins"; \
-    $env:QML_IMPORT_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\qml"; \
-    .\build\GroundControl.exe
+    $gst = if ($env:GSTREAMER_1_0_ROOT_MSVC_X86_64) { $env:GSTREAMER_1_0_ROOT_MSVC_X86_64 } else { "C:\Program Files\gstreamer\1.0\msvc_x86_64" }; Copy-Item -Force "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\bin\*.dll" "{{justfile_directory()}}\build\"; $env:QT_PLUGIN_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\plugins"; $env:QML_IMPORT_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\qml"; $env:PATH = "$gst\bin;" + $env:PATH; .\build\GroundControl.exe
 
 # Format code using clang-format and qmlformat
 [unix]
