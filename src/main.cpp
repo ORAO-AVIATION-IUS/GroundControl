@@ -8,6 +8,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QJSEngine>
+#include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 
@@ -15,9 +16,10 @@
 
 #include "BreezeIconProvider.h"
 #include "Camera/CameraManager.h"
-#include "MessageHandler.h"
+#include "Log/LogManager.h"
 
 Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
+Q_IMPORT_QML_PLUGIN(Agc_LogPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_ComponentsPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_PanelsPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_NetworkPlugin)
@@ -31,9 +33,11 @@ int main(int argc, char* argv[]) {
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 #endif
 
-	installMessageHandler();
+	QQuickStyle::setStyle(QStringLiteral("Fusion"));
 
 	QGuiApplication app(argc, argv);
+
+	agc::LogManager::instance().bootstrap();
 
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
 

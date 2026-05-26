@@ -51,8 +51,6 @@ file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPE
 
 qt_add_executable(GroundControl
     src/main.cpp
-    src/MessageHandler.h
-    src/MessageHandler.cpp
 )
 
 file(GLOB ROOT_QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "src/App/*.qml")
@@ -62,6 +60,7 @@ qt_add_qml_module(GroundControl
 )
 
 add_subdirectory(src/Style)
+add_subdirectory(src/Log)
 add_subdirectory(src/Components)
 add_subdirectory(src/Panels)
 add_subdirectory(src/Network)
@@ -81,6 +80,8 @@ target_link_libraries(GroundControl PRIVATE
 	Qt6::Multimedia
 	KDAB::kddockwidgets
 	AgcStyleplugin
+	AgcLog
+	AgcLogplugin
 	AgcComponentsplugin
 	AgcPanelsplugin
 	AgcNetworkplugin
