@@ -5,3 +5,6 @@
 [submodule "third_party/breeze-icons"]
 	path = third_party/breeze-icons
 	url = https://github.com/KDE/breeze-icons.git
+[submodule "third_party/MAVSDK"]
+	path = third_party/MAVSDK
+	url = https://github.com/mavlink/MAVSDK.git
