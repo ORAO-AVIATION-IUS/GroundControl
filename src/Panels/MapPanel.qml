@@ -18,6 +18,7 @@ KDDW.DockWidget {
 
 	readonly property int selectedDroneIndex: SwarmManager.selectedDroneIndex
 	readonly property var selectedDrone: SwarmManager.selectedDrone
+	readonly property alias hoveredCoordinate: mapView.hoveredCoordinate
 
 	onSelectedDroneChanged: {
 		if (selectedDrone) {

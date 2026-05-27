@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Agc.Style as AgcStyle
 import MapLibre.Location
 import QtLocation
 import QtPositioning
@@ -21,6 +22,9 @@ Item {
 	property real _savedTilt: 45
 	property var _pathStore: ({})
 	property var _trackedPaths: []
+	property point _lastPointerPoint: Qt.point(0, 0)
+	property bool _hasPointerOnMap: false
+	property var hoveredCoordinate: QtPositioning.coordinate()
 
 	property var initialCenter: QtPositioning.coordinate(41.0082, 28.9784)
 	property real initialZoom: 15.5
@@ -112,6 +116,30 @@ Item {
 	function _applyStyle() {
 		if (map.supportedMapTypes.length > _styleIndex)
 			map.activeMapType = map.supportedMapTypes[_styleIndex];
+	}
+
+	function clearHoveredCoordinate() {
+		_hasPointerOnMap = false;
+		hoveredCoordinate = QtPositioning.coordinate();
+	}
+
+	function formatCoordinate(coordinate) {
+		if (!coordinate || !coordinate.isValid)
+			return "";
+		return qsTr("%1, %2").arg(Number(coordinate.latitude).toFixed(6)).arg(Number(coordinate.longitude).toFixed(6));
+	}
+
+	function refreshHoveredCoordinate() {
+		if (_hasPointerOnMap)
+			updateHoveredCoordinate(_lastPointerPoint);
+	}
+
+	function updateHoveredCoordinate(point) {
+		_lastPointerPoint = point;
+		_hasPointerOnMap = true;
+
+		const coordinate = map.toCoordinate(point, false);
+		hoveredCoordinate = coordinate && coordinate.isValid ? coordinate : QtPositioning.coordinate();
 	}
 
 	onThreeDChanged: {
@@ -403,6 +431,10 @@ Item {
 			root._savedTilt = root.initialTilt;
 			root._applyStyle();
 		}
+		onBearingChanged: root.refreshHoveredCoordinate()
+		onCenterChanged: root.refreshHoveredCoordinate()
+		onTiltChanged: root.refreshHoveredCoordinate()
+		onZoomLevelChanged: root.refreshHoveredCoordinate()
 
 		MapLibre.style: Style {
 			SourceParameter {
@@ -524,6 +556,7 @@ Item {
 			id: mouseArea
 			anchors.fill: parent
 			acceptedButtons: Qt.LeftButton | Qt.RightButton
+			hoverEnabled: true
 			preventStealing: true
 			cursorShape: Qt.ArrowCursor
 
@@ -568,6 +601,7 @@ Item {
 
 			onPressed: function (mouse) {
 				lastPoint = Qt.point(mouse.x, mouse.y);
+				root.updateHoveredCoordinate(lastPoint);
 				pressPoint = lastPoint;
 				anchorCoord = map.toCoordinate(lastPoint, false);
 				velocityX = 0;
@@ -591,6 +625,7 @@ Item {
 
 			onPositionChanged: function (mouse) {
 				const point = Qt.point(mouse.x, mouse.y);
+				root.updateHoveredCoordinate(point);
 				const dx = point.x - lastPoint.x;
 				const dy = point.y - lastPoint.y;
 				const pressDx = point.x - pressPoint.x;
@@ -641,6 +676,8 @@ Item {
 				cursorShape = Qt.ArrowCursor;
 			}
 
+			onExited: root.clearHoveredCoordinate()
+
 			Timer {
 				id: inertiaTimer
 				interval: mouseArea.kInertiaInterval
@@ -666,6 +703,7 @@ Item {
 			}
 
 			onWheel: function (wheel) {
+				root.updateHoveredCoordinate(Qt.point(wheel.x, wheel.y));
 				root.userMovedMap();
 				const isDiscreteWheel = (wheel.angleDelta.y !== 0) && (wheel.angleDelta.y % 120 === 0) && (Math.abs(wheel.pixelDelta.y) < 1);
 
@@ -693,6 +731,20 @@ Item {
 					}
 				}
 			}
+		}
+
+		Text {
+			id: coordinateReadout
+			z: 10
+			anchors.left: parent.left
+			anchors.bottom: parent.bottom
+			anchors.margins: AgcStyle.Style.overlayMargin
+			color: "#d8dde6"
+			font.family: "monospace"
+			font.pixelSize: 11
+			style: Text.Outline
+			styleColor: "#99000000"
+			text: root.formatCoordinate(root.hoveredCoordinate)
 		}
 	}
 
