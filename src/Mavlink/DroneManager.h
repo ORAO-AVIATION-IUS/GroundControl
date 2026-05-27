@@ -22,7 +22,7 @@ class DroneManager : public QObject {
 
 	Q_PROPERTY(int droneUid READ droneUid CONSTANT)
 	Q_PROPERTY(QString droneName READ droneName WRITE setDroneName NOTIFY
-				   droneNameChanged)
+			droneNameChanged)
 	Q_PROPERTY(QString connectionUrl READ connectionUrl CONSTANT)
 	Q_PROPERTY(bool connected READ isConnected NOTIFY connectedChanged)
 	Q_PROPERTY(bool connecting READ isConnecting NOTIFY connectingChanged)
@@ -62,8 +62,8 @@ class DroneManager : public QObject {
 	Q_PROPERTY(double cpuLoad READ cpuLoad NOTIFY cpuLoadChanged)
 
    public:
-	explicit DroneManager(int uid, QString name, QString url,
-						  QObject* parent = nullptr);
+	explicit DroneManager(
+		int uid, QString name, QString url, QObject* parent = nullptr);
 	~DroneManager() override;
 
 	DroneManager(const DroneManager&) = delete;
@@ -123,8 +123,8 @@ class DroneManager : public QObject {
 	Q_INVOKABLE void land();
 	Q_INVOKABLE void rth();
 	Q_INVOKABLE void setAltitude(double altitudeMeters);
-	Q_INVOKABLE void log(const QString& source, const QString& message,
-						 const QString& level);
+	Q_INVOKABLE void log(
+		const QString& source, const QString& message, const QString& level);
 
    signals:
 	void droneNameChanged();
@@ -165,8 +165,8 @@ class DroneManager : public QObject {
 	void pingChanged();
 	void cpuLoadChanged();
 
-	void logMessage(const QString& source, const QString& message,
-					const QString& level);
+	void logMessage(
+		const QString& source, const QString& message, const QString& level);
 
    private:
 	void setupTelemetry();
@@ -177,8 +177,8 @@ class DroneManager : public QObject {
 	void onThread(T&& fn);
 
 	template <typename M, typename V>
-	void updateAndEmit(M& member, const V& value,
-					   void (DroneManager::*signal)());
+	void updateAndEmit(
+		M& member, const V& value, void (DroneManager::*signal)());
 
 	static QString flightModeToString(mavsdk::Telemetry::FlightMode mode);
 

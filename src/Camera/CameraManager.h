@@ -29,12 +29,10 @@ class CameraManager : public QObject {
 	CameraManager& operator=(CameraManager&&) = delete;
 
 	Q_INVOKABLE int addStream(const QString& name, const QString& url,
-							  const QString& customPipeline,
-							  bool useCustomPipeline);
+		const QString& customPipeline, bool useCustomPipeline);
 	Q_INVOKABLE void removeStream(int id);
 	Q_INVOKABLE void editStream(int id, const QString& name, const QString& url,
-								const QString& customPipeline,
-								bool useCustomPipeline);
+		const QString& customPipeline, bool useCustomPipeline);
 	Q_INVOKABLE void attachSink(int id, QVideoSink* sink);
 	Q_INVOKABLE void reconnectStream(int id);
 

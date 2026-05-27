@@ -67,8 +67,8 @@ GstFlowReturn onNewSample(GstAppSink* appsink, gpointer userData) {
 
 		QImage frame =
 			(image.bytesPerLine() == static_cast<qsizetype>(width) * 4)
-				? std::move(image)
-				: image.copy();
+			? std::move(image)
+			: image.copy();
 
 		QVideoSink* sink = cam->sink;
 		if (sink != nullptr) {
@@ -123,8 +123,8 @@ void onPadAdded(GstElement* /*src*/, GstPad* newPad, gpointer userData) {
 }
 
 // Bus handler running on GStreamer streaming thread; marshals to GUI thread.
-GstBusSyncReply onBusMessage(GstBus* /*bus*/, GstMessage* msg,
-							 gpointer userData) {
+GstBusSyncReply onBusMessage(
+	GstBus* /*bus*/, GstMessage* msg, gpointer userData) {
 	auto* mgr = static_cast<CameraManager*>(userData);
 
 	int streamId = findStreamId(GST_MESSAGE_SRC(msg)) - 1;
@@ -177,8 +177,8 @@ GstBusSyncReply onBusMessage(GstBus* /*bus*/, GstMessage* msg,
 			GstState oldState = GST_STATE_NULL;
 			GstState newState = GST_STATE_NULL;
 			GstState pending = GST_STATE_NULL;
-			gst_message_parse_state_changed(msg, &oldState, &newState,
-											&pending);
+			gst_message_parse_state_changed(
+				msg, &oldState, &newState, &pending);
 			if (newState == GST_STATE_PLAYING) {
 				QMetaObject::invokeMethod(
 					mgr,
@@ -209,21 +209,20 @@ void unrefElement(GstElement* element) {
 }
 
 void unrefCreatedElements(GstElement* uridecodebin, GstElement* convert,
-						  GstElement* capsfilter, GstElement* appsinkElem) {
+	GstElement* capsfilter, GstElement* appsinkElem) {
 	unrefElement(uridecodebin);
 	unrefElement(convert);
 	unrefElement(capsfilter);
 	unrefElement(appsinkElem);
 }
 
-PipelineSetup createCustomPipeline(CameraManager* manager, int id,
-								   const CameraInfo& camera) {
-	QString fullPipeline =
-		QStringLiteral(
-			"%1 ! videoconvert ! video/x-raw,format=RGBA ! "
-			"appsink name=sink sync=false drop=true max-buffers=1 "
-			"emit-signals=true")
-			.arg(camera.customPipeline);
+PipelineSetup createCustomPipeline(
+	CameraManager* manager, int id, const CameraInfo& camera) {
+	QString fullPipeline = QStringLiteral(
+		"%1 ! videoconvert ! video/x-raw,format=RGBA ! "
+		"appsink name=sink sync=false drop=true max-buffers=1 "
+		"emit-signals=true")
+							   .arg(camera.customPipeline);
 
 	GError* error = nullptr;
 	GstElement* pipeline =
@@ -251,8 +250,8 @@ PipelineSetup createCustomPipeline(CameraManager* manager, int id,
 		.pipeline = pipeline, .appSink = appsinkElem, .releaseAppSink = true};
 }
 
-PipelineSetup createUriPipeline(CameraManager* manager, int id,
-								const CameraInfo& camera) {
+PipelineSetup createUriPipeline(
+	CameraManager* manager, int id, const CameraInfo& camera) {
 	GstElement* uridecodebin =
 		gst_element_factory_make("uridecodebin", nullptr);
 	GstElement* convert = gst_element_factory_make("videoconvert", nullptr);
@@ -268,26 +267,25 @@ PipelineSetup createUriPipeline(CameraManager* manager, int id,
 	}
 
 	g_object_set(uridecodebin, "uri",
-				 camera.streamUrl.toString().toUtf8().constData(),
-				 "buffer-size", static_cast<gint64>(0), "buffer-duration",
-				 static_cast<gint64>(0), "download", FALSE, "use-buffering",
-				 FALSE, nullptr);
+		camera.streamUrl.toString().toUtf8().constData(), "buffer-size",
+		static_cast<gint64>(0), "buffer-duration", static_cast<gint64>(0),
+		"download", FALSE, "use-buffering", FALSE, nullptr);
 
-	GstCaps* caps = gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING,
-										"RGBA", nullptr);
+	GstCaps* caps = gst_caps_new_simple(
+		"video/x-raw", "format", G_TYPE_STRING, "RGBA", nullptr);
 	g_object_set(capsfilter, "caps", caps, nullptr);
 	gst_caps_unref(caps);
 
 	g_object_set(appsinkElem, "emit-signals", TRUE, "drop", TRUE, "max-buffers",
-				 1, "sync", FALSE, nullptr);
+		1, "sync", FALSE, nullptr);
 
 	GstElement* pipeline = gst_pipeline_new(nullptr);
 	gst_bin_add_many(GST_BIN(pipeline), uridecodebin, convert, capsfilter,
-					 appsinkElem, nullptr);
+		appsinkElem, nullptr);
 	gst_element_link_many(convert, capsfilter, appsinkElem, nullptr);
 
-	g_signal_connect(uridecodebin, "pad-added", G_CALLBACK(onPadAdded),
-					 convert);
+	g_signal_connect(
+		uridecodebin, "pad-added", G_CALLBACK(onPadAdded), convert);
 
 	return {.pipeline = pipeline, .appSink = appsinkElem};
 }
@@ -299,8 +297,8 @@ CameraManager::CameraManager(QQmlEngine* engine, QObject* parent)
 	gst_init(nullptr, nullptr);
 }
 
-CameraManager* CameraManager::create(QQmlEngine* qmlEngine,
-									 QJSEngine* jsEngine) {
+CameraManager* CameraManager::create(
+	QQmlEngine* qmlEngine, QJSEngine* jsEngine) {
 	Q_UNUSED(jsEngine);
 	// NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 	return new CameraManager(qmlEngine, qmlEngine);
@@ -313,8 +311,7 @@ CameraManager::~CameraManager() {
 }
 
 int CameraManager::addStream(const QString& name, const QString& url,
-							 const QString& customPipeline,
-							 bool useCustomPipeline) {
+	const QString& customPipeline, bool useCustomPipeline) {
 	int id = m_nextId++;
 	m_cameras[id] = std::make_unique<CameraInfo>();
 	auto* cam = m_cameras[id].get();
@@ -345,8 +342,7 @@ void CameraManager::removeStream(int id) {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void CameraManager::editStream(int id, const QString& name, const QString& url,
-							   const QString& customPipeline,
-							   bool useCustomPipeline) {
+	const QString& customPipeline, bool useCustomPipeline) {
 	auto it = m_cameras.find(id);
 	if (it == m_cameras.end()) {
 		qWarning() << "Stream not found:" << id;
@@ -416,8 +412,8 @@ bool CameraManager::streamConnected(int id) const {
 	return (it != m_cameras.end()) ? it->second->connected : false;
 }
 
-void CameraManager::setStreamState(int id, const QString& status,
-								   bool connected) {
+void CameraManager::setStreamState(
+	int id, const QString& status, bool connected) {
 	auto it = m_cameras.find(id);
 	if (it == m_cameras.end()) {
 		return;
@@ -450,15 +446,15 @@ void CameraManager::startPipeline(int id) {
 	}
 
 	PipelineSetup setup = cam->useCustomPipeline
-							  ? createCustomPipeline(this, id, *cam)
-							  : createUriPipeline(this, id, *cam);
+		? createCustomPipeline(this, id, *cam)
+		: createUriPipeline(this, id, *cam);
 	if (setup.pipeline == nullptr || setup.appSink == nullptr) {
 		return;
 	}
 
 	// Tag pipeline for bus message routing.
 	g_object_set_data(G_OBJECT(setup.pipeline), "agc-stream-id",
-					  GINT_TO_POINTER(id + 1));	 // +1 so 0 = not found
+		GINT_TO_POINTER(id + 1));  // +1 so 0 = not found
 
 	cam->pipeline = setup.pipeline;
 

@@ -26,8 +26,8 @@ QtMessageHandler& previousHandler() {
 	return handler;
 }
 
-void filteredHandler(QtMsgType type, const QMessageLogContext& ctx,
-					 const QString& msg) {
+void filteredHandler(
+	QtMsgType type, const QMessageLogContext& ctx, const QString& msg) {
 	if (shouldSuppress(type, msg)) {
 		return;
 	}

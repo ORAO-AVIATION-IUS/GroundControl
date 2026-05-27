@@ -25,8 +25,8 @@ SwarmManager::SwarmManager(QQmlEngine* engine, QObject* parent)
 		[this]() { onNewSystemDiscovered(); });
 }
 
-SwarmManager* SwarmManager::create(QQmlEngine* qmlEngine,
-								   QJSEngine* /*jsEngine*/) {
+SwarmManager* SwarmManager::create(
+	QQmlEngine* qmlEngine, QJSEngine* /*jsEngine*/) {
 	// NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 	return new SwarmManager(qmlEngine, qmlEngine);
 }
@@ -79,8 +79,7 @@ DroneManager* SwarmManager::droneByUid(int uid) const {
 
 bool SwarmManager::isSystemAttached(
 	const std::shared_ptr<mavsdk::System>& system) const {
-	return std::ranges::any_of(
-		m_impl->connections,
+	return std::ranges::any_of(m_impl->connections,
 		[&system](const Impl::DroneConnection& connection) {
 			return connection.system == system.get();
 		});

@@ -34,8 +34,8 @@ QHash<QString, QString> buildIconIndex(const QString& rootPath) {
 	}
 
 	const QStringList filters = {QStringLiteral("*.svg")};
-	QDirIterator it(rootPath, filters, QDir::Files,
-					QDirIterator::Subdirectories);
+	QDirIterator it(
+		rootPath, filters, QDir::Files, QDirIterator::Subdirectories);
 	while (it.hasNext()) {
 		const QString path = it.next();
 		const QFileInfo info(path);
@@ -137,8 +137,8 @@ void tintWhite(QPixmap* pixmap) {
 BreezeIconProvider::BreezeIconProvider()
 	: QQuickImageProvider(QQuickImageProvider::Pixmap) {}
 
-QPixmap BreezeIconProvider::requestPixmap(const QString& id, QSize* size,
-										  const QSize& requestedSize) {
+QPixmap BreezeIconProvider::requestPixmap(
+	const QString& id, QSize* size, const QSize& requestedSize) {
 	const int iconSize =
 		requestedSize.width() > 0 ? requestedSize.width() : kDefaultIconSize;
 	if (size != nullptr) {

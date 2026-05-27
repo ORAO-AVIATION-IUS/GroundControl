@@ -5,9 +5,9 @@
 Language: Cpp
 BasedOnStyle: Google
 AccessModifierOffset: -1
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: DontAlign
 AlignConsecutiveAssignments: None
-AlignOperands: Align
+AlignOperands: DontAlign
 AllowAllArgumentsOnNextLine: true
 AllowAllConstructorInitializersOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: false

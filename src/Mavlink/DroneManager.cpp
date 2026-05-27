@@ -52,8 +52,8 @@ void DroneManager::onThread(T&& fn) {
 }
 
 template <typename M, typename V>
-void DroneManager::updateAndEmit(M& member, const V& value,
-								 void (DroneManager::*signal)()) {
+void DroneManager::updateAndEmit(
+	M& member, const V& value, void (DroneManager::*signal)()) {
 	if (member == value) {
 		return;
 	}
@@ -96,8 +96,8 @@ void DroneManager::detachSystem() {
 	setConnecting(false);
 	updateAndEmit(m_armed, false, &DroneManager::armedChanged);
 	updateAndEmit(m_inFlight, false, &DroneManager::inFlightChanged);
-	updateAndEmit(m_flightMode, QString("STBY"),
-				  &DroneManager::flightModeChanged);
+	updateAndEmit(
+		m_flightMode, QString("STBY"), &DroneManager::flightModeChanged);
 	updateAndEmit(m_sensorImu, false, &DroneManager::sensorImuChanged);
 	updateAndEmit(m_sensorGps, false, &DroneManager::sensorGpsChanged);
 	updateAndEmit(m_sensorBaro, false, &DroneManager::sensorBaroChanged);
@@ -217,10 +217,10 @@ void DroneManager::arm() {
 				emit logMessage(m_name, "Armed", "info");
 			} else {
 				emit logMessage(m_name,
-								QString("Arm failed: %1")
-									.arg(QString::fromStdString(
-										std::string(to_string(result)))),
-								"error");
+					QString("Arm failed: %1")
+						.arg(QString::fromStdString(
+							std::string(to_string(result)))),
+					"error");
 			}
 		});
 	});
@@ -237,10 +237,10 @@ void DroneManager::disarm() {
 				emit logMessage(m_name, "Disarmed", "info");
 			} else {
 				emit logMessage(m_name,
-								QString("Disarm failed: %1")
-									.arg(QString::fromStdString(
-										std::string(to_string(result)))),
-								"error");
+					QString("Disarm failed: %1")
+						.arg(QString::fromStdString(
+							std::string(to_string(result)))),
+					"error");
 			}
 		});
 	});
@@ -257,10 +257,10 @@ void DroneManager::takeoff() {
 				emit logMessage(m_name, "Takeoff command sent", "info");
 			} else {
 				emit logMessage(m_name,
-								QString("Takeoff failed: %1")
-									.arg(QString::fromStdString(
-										std::string(to_string(result)))),
-								"error");
+					QString("Takeoff failed: %1")
+						.arg(QString::fromStdString(
+							std::string(to_string(result)))),
+					"error");
 			}
 		});
 	});
@@ -277,10 +277,10 @@ void DroneManager::land() {
 				emit logMessage(m_name, "Land command sent", "info");
 			} else {
 				emit logMessage(m_name,
-								QString("Land failed: %1")
-									.arg(QString::fromStdString(
-										std::string(to_string(result)))),
-								"error");
+					QString("Land failed: %1")
+						.arg(QString::fromStdString(
+							std::string(to_string(result)))),
+					"error");
 			}
 		});
 	});
@@ -297,10 +297,10 @@ void DroneManager::rth() {
 				emit logMessage(m_name, "RTH command sent", "info");
 			} else {
 				emit logMessage(m_name,
-								QString("RTH failed: %1")
-									.arg(QString::fromStdString(
-										std::string(to_string(result)))),
-								"error");
+					QString("RTH failed: %1")
+						.arg(QString::fromStdString(
+							std::string(to_string(result)))),
+					"error");
 			}
 		});
 	});
@@ -308,36 +308,36 @@ void DroneManager::rth() {
 
 void DroneManager::setAltitude(double altitudeMeters) {
 	if (!m_action) {
-		emit logMessage(m_name, "Cannot set altitude: not connected",
-						"warning");
+		emit logMessage(
+			m_name, "Cannot set altitude: not connected", "warning");
 		return;
 	}
 	if (!isConnected()) {
-		emit logMessage(m_name, "Cannot set altitude: no system connection",
-						"warning");
+		emit logMessage(
+			m_name, "Cannot set altitude: no system connection", "warning");
 		return;
 	}
 
 	const double absoluteAlt = m_altitudeMsl + (altitudeMeters - m_altitude);
-	m_action->goto_location_async(
-		m_latitude, m_longitude, static_cast<float>(absoluteAlt),
-		static_cast<float>(m_heading), [this](mavsdk::Action::Result result) {
+	m_action->goto_location_async(m_latitude, m_longitude,
+		static_cast<float>(absoluteAlt), static_cast<float>(m_heading),
+		[this](mavsdk::Action::Result result) {
 			onThread([this, result]() {
 				if (result == mavsdk::Action::Result::Success) {
 					emit logMessage(m_name, "Altitude target sent", "info");
 				} else {
 					emit logMessage(m_name,
-									QString("Set altitude failed: %1")
-										.arg(QString::fromStdString(
-											std::string(to_string(result)))),
-									"error");
+						QString("Set altitude failed: %1")
+							.arg(QString::fromStdString(
+								std::string(to_string(result)))),
+						"error");
 				}
 			});
 		});
 }
 
-void DroneManager::log(const QString& source, const QString& message,
-					   const QString& level) {
+void DroneManager::log(
+	const QString& source, const QString& message, const QString& level) {
 	emit logMessage(source, message, level);
 }
 
@@ -360,23 +360,23 @@ void DroneManager::setupTelemetry() {
 		[this](mavsdk::Telemetry::Position pos) {
 			onThread([this, pos]() {
 				updateAndEmit(m_latitude, pos.latitude_deg,
-							  &DroneManager::latitudeChanged);
+					&DroneManager::latitudeChanged);
 				updateAndEmit(m_longitude, pos.longitude_deg,
-							  &DroneManager::longitudeChanged);
+					&DroneManager::longitudeChanged);
 				updateAndEmit(m_altitude, pos.relative_altitude_m,
-							  &DroneManager::altitudeChanged);
+					&DroneManager::altitudeChanged);
 				updateAndEmit(m_altitudeMsl, pos.absolute_altitude_m,
-							  &DroneManager::altitudeMslChanged);
+					&DroneManager::altitudeMslChanged);
 			});
 		});
 
 	m_attitudeEulerHandle = m_telemetry->subscribe_attitude_euler(
 		[this](mavsdk::Telemetry::EulerAngle euler) {
 			onThread([this, euler]() {
-				updateAndEmit(m_roll, euler.roll_deg,
-							  &DroneManager::rollChanged);
-				updateAndEmit(m_pitch, euler.pitch_deg,
-							  &DroneManager::pitchChanged);
+				updateAndEmit(
+					m_roll, euler.roll_deg, &DroneManager::rollChanged);
+				updateAndEmit(
+					m_pitch, euler.pitch_deg, &DroneManager::pitchChanged);
 				updateAndEmit(m_yaw, euler.yaw_deg, &DroneManager::yawChanged);
 			});
 		});
@@ -384,21 +384,21 @@ void DroneManager::setupTelemetry() {
 	m_headingHandle =
 		m_telemetry->subscribe_heading([this](mavsdk::Telemetry::Heading hdg) {
 			onThread([this, hdg]() {
-				updateAndEmit(m_heading, hdg.heading_deg,
-							  &DroneManager::headingChanged);
+				updateAndEmit(
+					m_heading, hdg.heading_deg, &DroneManager::headingChanged);
 			});
 		});
 
 	m_batteryHandle =
 		m_telemetry->subscribe_battery([this](mavsdk::Telemetry::Battery bat) {
 			onThread([this, bat]() {
-				updateAndEmit(m_voltage, bat.voltage_v,
-							  &DroneManager::voltageChanged);
+				updateAndEmit(
+					m_voltage, bat.voltage_v, &DroneManager::voltageChanged);
 				updateAndEmit(m_current, bat.current_battery_a,
-							  &DroneManager::currentChanged);
+					&DroneManager::currentChanged);
 				double remaining = bat.remaining_percent;
-				auto pct = static_cast<int>(remaining <= 1.0 ? remaining * 100.0
-															 : remaining);
+				auto pct = static_cast<int>(
+					remaining <= 1.0 ? remaining * 100.0 : remaining);
 				if (m_battery != pct) {
 					m_battery = pct;
 					emit batteryChanged();
@@ -423,8 +423,8 @@ void DroneManager::setupTelemetry() {
 		[this](mavsdk::Telemetry::FlightMode mode) {
 			onThread([this, mode]() {
 				auto str = flightModeToString(mode);
-				updateAndEmit(m_flightMode, str,
-							  &DroneManager::flightModeChanged);
+				updateAndEmit(
+					m_flightMode, str, &DroneManager::flightModeChanged);
 			});
 		});
 
@@ -432,19 +432,19 @@ void DroneManager::setupTelemetry() {
 		m_telemetry->subscribe_health([this](mavsdk::Telemetry::Health health) {
 			onThread([this, health]() {
 				bool imu = health.is_gyrometer_calibration_ok &&
-						   health.is_accelerometer_calibration_ok;
+					health.is_accelerometer_calibration_ok;
 				bool gps = health.is_global_position_ok;
 				bool baro = health.is_local_position_ok;
 				bool mag = health.is_magnetometer_calibration_ok;
 
-				updateAndEmit(m_sensorImu, imu,
-							  &DroneManager::sensorImuChanged);
-				updateAndEmit(m_sensorGps, gps,
-							  &DroneManager::sensorGpsChanged);
-				updateAndEmit(m_sensorBaro, baro,
-							  &DroneManager::sensorBaroChanged);
-				updateAndEmit(m_sensorMag, mag,
-							  &DroneManager::sensorMagChanged);
+				updateAndEmit(
+					m_sensorImu, imu, &DroneManager::sensorImuChanged);
+				updateAndEmit(
+					m_sensorGps, gps, &DroneManager::sensorGpsChanged);
+				updateAndEmit(
+					m_sensorBaro, baro, &DroneManager::sensorBaroChanged);
+				updateAndEmit(
+					m_sensorMag, mag, &DroneManager::sensorMagChanged);
 				updateReadyToFly();
 			});
 		});
@@ -466,12 +466,12 @@ void DroneManager::setupTelemetry() {
 		[this](mavsdk::Telemetry::VelocityNed vel) {
 			onThread([this, vel]() {
 				double gs = std::sqrt((vel.north_m_s * vel.north_m_s) +
-									  (vel.east_m_s * vel.east_m_s));
-				updateAndEmit(m_groundspeed, gs,
-							  &DroneManager::groundspeedChanged);
+					(vel.east_m_s * vel.east_m_s));
+				updateAndEmit(
+					m_groundspeed, gs, &DroneManager::groundspeedChanged);
 				double climb = -vel.down_m_s;
-				updateAndEmit(m_climbRate, climb,
-							  &DroneManager::climbRateChanged);
+				updateAndEmit(
+					m_climbRate, climb, &DroneManager::climbRateChanged);
 			});
 		});
 
@@ -480,12 +480,12 @@ void DroneManager::setupTelemetry() {
 			onThread([this, fw]() {
 				if (!std::isnan(fw.airspeed_m_s)) {
 					updateAndEmit(m_airspeed, fw.airspeed_m_s,
-								  &DroneManager::airspeedChanged);
+						&DroneManager::airspeedChanged);
 				}
 				if (!std::isnan(fw.throttle_percentage)) {
 					updateAndEmit(m_throttle,
-								  static_cast<int>(fw.throttle_percentage),
-								  &DroneManager::throttleChanged);
+						static_cast<int>(fw.throttle_percentage),
+						&DroneManager::throttleChanged);
 				}
 			});
 		});
@@ -501,27 +501,26 @@ void DroneManager::setupTelemetry() {
 		updateAndEmit(m_inFlight, inAir, &DroneManager::inFlightChanged);
 		updateAndEmit(m_flightMode, mode, &DroneManager::flightModeChanged);
 
-		updateAndEmit(m_latitude, position.latitude_deg,
-					  &DroneManager::latitudeChanged);
+		updateAndEmit(
+			m_latitude, position.latitude_deg, &DroneManager::latitudeChanged);
 		updateAndEmit(m_longitude, position.longitude_deg,
-					  &DroneManager::longitudeChanged);
+			&DroneManager::longitudeChanged);
 		updateAndEmit(m_altitude, position.relative_altitude_m,
-					  &DroneManager::altitudeChanged);
+			&DroneManager::altitudeChanged);
 		updateAndEmit(m_altitudeMsl, position.absolute_altitude_m,
-					  &DroneManager::altitudeMslChanged);
-		updateAndEmit(m_heading, hdg.heading_deg,
-					  &DroneManager::headingChanged);
+			&DroneManager::altitudeMslChanged);
+		updateAndEmit(
+			m_heading, hdg.heading_deg, &DroneManager::headingChanged);
 	}
 
-	m_isConnectedHandle =
-		m_system->subscribe_is_connected([this](bool connected) {
-			onThread([this, connected]() {
-				emit logMessage(m_name,
-								connected ? "Connected" : "Disconnected",
-								connected ? "info" : "warning");
-				emit connectedChanged();
-			});
+	m_isConnectedHandle = m_system->subscribe_is_connected([this](
+															   bool connected) {
+		onThread([this, connected]() {
+			emit logMessage(m_name, connected ? "Connected" : "Disconnected",
+				connected ? "info" : "warning");
+			emit connectedChanged();
 		});
+	});
 }
 
 void DroneManager::teardownTelemetry() {

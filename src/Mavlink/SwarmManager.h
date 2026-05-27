@@ -25,9 +25,9 @@ class SwarmManager : public QObject {
 	Q_PROPERTY(QVariantList droneList READ droneList NOTIFY dronesChanged)
 	Q_PROPERTY(int droneCount READ droneCount NOTIFY dronesChanged)
 	Q_PROPERTY(int selectedDroneIndex READ selectedDroneIndex NOTIFY
-				   selectedDroneIndexChanged)
+			selectedDroneIndexChanged)
 	Q_PROPERTY(DroneManager* selectedDrone READ selectedDrone NOTIFY
-				   selectedDroneChanged)
+			selectedDroneChanged)
 
    public:
 	explicit SwarmManager(QQmlEngine* engine, QObject* parent = nullptr);
