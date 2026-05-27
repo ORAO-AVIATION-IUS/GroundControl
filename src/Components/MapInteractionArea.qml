@@ -8,6 +8,7 @@ MouseArea {
 
 	property var targetMap
 	property var drones: []
+	property int followedDroneUid: -1
 	property bool threeD: true
 	property var hoveredCoordinate: QtPositioning.coordinate()
 	property point _lastPointerPoint: Qt.point(0, 0)
@@ -113,16 +114,39 @@ MouseArea {
 		hoveredCoordinate = coordinate && coordinate.isValid ? coordinate : QtPositioning.coordinate();
 	}
 
+	function followedDroneCoordinate() {
+		for (let i = 0; i < (drones || []).length; ++i) {
+			const drone = drones[i];
+			if (drone && drone.droneUid === followedDroneUid && hasPosition(drone))
+				return coordinateFor(drone);
+		}
+		return QtPositioning.coordinate();
+	}
+
+	function zoomTowardCoordinate(coordinate, delta) {
+		const newZoom = Math.max(targetMap.minimumZoomLevel, Math.min(targetMap.maximumZoomLevel, targetMap.zoomLevel + delta));
+		if (newZoom === targetMap.zoomLevel)
+			return false;
+
+		targetMap.zoomLevel = newZoom;
+		targetMap.center = coordinate;
+		return true;
+	}
+
 	function zoomTowardPoint(px, py, delta) {
 		const newZoom = Math.max(targetMap.minimumZoomLevel, Math.min(targetMap.maximumZoomLevel, targetMap.zoomLevel + delta));
 		if (newZoom === targetMap.zoomLevel)
-			return;
+			return false;
 
 		const targetCoord = targetMap.toCoordinate(Qt.point(px, py), false);
 		targetMap.zoomLevel = newZoom;
-		const currentCoord = targetMap.toCoordinate(Qt.point(px, py), false);
+		if (!targetCoord || !targetCoord.isValid)
+			return true;
 
-		targetMap.center = QtPositioning.coordinate(targetMap.center.latitude + targetCoord.latitude - currentCoord.latitude, targetMap.center.longitude + targetCoord.longitude - currentCoord.longitude);
+		const currentCoord = targetMap.toCoordinate(Qt.point(px, py), false);
+		if (currentCoord && currentCoord.isValid)
+			targetMap.center = QtPositioning.coordinate(targetMap.center.latitude + targetCoord.latitude - currentCoord.latitude, targetMap.center.longitude + targetCoord.longitude - currentCoord.longitude);
+		return true;
 	}
 
 	onPressed: function (mouse) {
@@ -159,7 +183,8 @@ MouseArea {
 
 		if (Math.sqrt(pressDx * pressDx + pressDy * pressDy) > kClickMoveThreshold) {
 			movedSincePress = true;
-			noteMapMovement();
+			if (dragMode === modePan)
+				noteMapMovement();
 		}
 
 		if (dragMode === modePan) {
@@ -230,12 +255,18 @@ MouseArea {
 
 	onWheel: function (wheel) {
 		updateHoveredCoordinate(Qt.point(wheel.x, wheel.y));
-		userMovedMap();
+		const focusedCoordinate = followedDroneCoordinate();
+		const shouldZoomToDrone = focusedCoordinate && focusedCoordinate.isValid;
 		const isDiscreteWheel = (wheel.angleDelta.y !== 0) && (wheel.angleDelta.y % 120 === 0) && (Math.abs(wheel.pixelDelta.y) < 1);
 
 		if (isDiscreteWheel) {
 			const zoomDir = wheel.angleDelta.y > 0 ? 1 : -1;
-			zoomTowardPoint(wheel.x, wheel.y, zoomDir * kZoomStep);
+			if (shouldZoomToDrone)
+				zoomTowardCoordinate(focusedCoordinate, zoomDir * kZoomStep);
+			else {
+				userMovedMap();
+				zoomTowardPoint(wheel.x, wheel.y, zoomDir * kZoomStep);
+			}
 			return;
 		}
 
@@ -243,6 +274,8 @@ MouseArea {
 		const dy = (wheel.pixelDelta.y !== 0) ? wheel.pixelDelta.y : wheel.angleDelta.y * 0.1;
 
 		if (wheel.modifiers & Qt.ControlModifier) {
+			if (!shouldZoomToDrone)
+				userMovedMap();
 			if (Math.abs(dy) >= Math.abs(dx)) {
 				if (threeD)
 					targetMap.tilt = clampTilt(targetMap.tilt - dy * kTouchpadTiltSensitivity);
@@ -251,8 +284,15 @@ MouseArea {
 			}
 		} else {
 			if (Math.abs(dy) >= Math.abs(dx)) {
-				zoomTowardPoint(wheel.x, wheel.y, dy * kTouchpadZoomSensitivity);
+				if (shouldZoomToDrone)
+					zoomTowardCoordinate(focusedCoordinate, dy * kTouchpadZoomSensitivity);
+				else {
+					userMovedMap();
+					zoomTowardPoint(wheel.x, wheel.y, dy * kTouchpadZoomSensitivity);
+				}
 			} else {
+				if (!shouldZoomToDrone)
+					userMovedMap();
 				targetMap.bearing += dx * kBearingSensitivity;
 			}
 		}

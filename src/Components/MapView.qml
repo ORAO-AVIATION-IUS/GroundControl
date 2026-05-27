@@ -11,6 +11,7 @@ Item {
 
 	property var drones: []
 	property int selectedDroneUid: -1
+	property int followedDroneUid: -1
 	property int maxPathPoints: 5000
 
 	property bool threeD: true
@@ -123,6 +124,7 @@ Item {
 			id: interactionArea
 			targetMap: map
 			drones: root.drones
+			followedDroneUid: root.followedDroneUid
 			threeD: root.threeD
 			onDroneClicked: function (droneUid) {
 				root.droneClicked(droneUid);

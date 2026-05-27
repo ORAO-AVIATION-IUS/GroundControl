@@ -86,6 +86,7 @@ KDDW.DockWidget {
 			satelliteMode: mapSettings.isSatellite
 			drones: SwarmManager.droneList
 			selectedDroneUid: dockRoot.selectedDrone ? dockRoot.selectedDrone.droneUid : -1
+			followedDroneUid: dockRoot.followSelectedDrone && dockRoot.selectedDrone ? dockRoot.selectedDrone.droneUid : -1
 			onDroneClicked: function (droneUid) {
 				dockRoot.selectDroneByUid(droneUid);
 			}
