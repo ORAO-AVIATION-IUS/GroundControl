@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-	// --- Icon Button ---
+	// Icon button style
 	readonly property int iconBtnSize: 28
 	readonly property int iconBtnLabelSize: 10
 	readonly property color iconBtnLabelColor: "#cdd6e0"
@@ -14,7 +14,7 @@ QtObject {
 	readonly property color iconBtnHoverBg: "#2a2f3a"
 	readonly property color iconBtnPressedBg: "#3a4050"
 
-	// --- Button Group Section ---
+	// Button group style
 	readonly property color sectionBgColor: "#1c1f26"
 	readonly property int sectionRadius: 5
 	readonly property int sectionPadding: 10
@@ -23,10 +23,10 @@ QtObject {
 	readonly property int sectionLabelSize: 7
 	readonly property int sectionRowSpacing: 10
 
-	// --- Map Panel Overlay ---
+	// Map overlay spacing
 	readonly property int overlayMargin: 6
 
-	// --- NormalButton Styles ---
+	// Default button style
 	readonly property int btnWidth: 64
 	readonly property int btnHeight: 24
 	readonly property color btnColor: "#b2d8ff"
@@ -36,7 +36,7 @@ QtObject {
 	readonly property int btnRadius: 4
 	readonly property int btnTextSize: 10
 
-	// --- TelemetryBox Styles ---
+	// Telemetry box style
 	readonly property int boxWidth: 200
 	readonly property int boxHeight: 150
 	readonly property color boxColor: "#002f55"

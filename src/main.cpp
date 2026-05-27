@@ -5,9 +5,9 @@
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QGuiApplication>
+#include <QJSEngine>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QJSEngine>
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 
@@ -24,8 +24,6 @@ Q_IMPORT_QML_PLUGIN(Agc_PanelsPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_NetworkPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_MavlinkPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_CameraPlugin)
-
-
 
 int main(int argc, char* argv[]) {
 #if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
