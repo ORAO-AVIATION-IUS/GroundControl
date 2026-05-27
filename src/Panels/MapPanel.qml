@@ -92,99 +92,26 @@ KDDW.DockWidget {
 			onUserMovedMap: dockRoot.followSelectedDrone = false
 		}
 
-		Column {
+		MapModeToolbar {
 			anchors.left: parent.left
 			anchors.top: parent.top
 			anchors.margins: Style.overlayMargin
-			spacing: Style.sectionSpacing
-			width: childrenRect.width
-
-			ButtonGroup {
-				title: "MODE"
-				IconButton {
-					iconName: "compass"
-					label: "Explore"
-					checked: dockRoot.mapMode === 0
-					onClicked: dockRoot.mapMode = 0
-				}
-				IconButton {
-					iconName: "routeplanning"
-					label: "Plan"
-					checked: dockRoot.mapMode === 1
-					onClicked: dockRoot.mapMode = 1
-				}
-				IconButton {
-					iconName: "flightmode-on"
-					label: "Fly"
-					checked: dockRoot.mapMode === 2
-					onClicked: dockRoot.mapMode = 2
-				}
+			mapMode: dockRoot.mapMode
+			followSelectedDrone: dockRoot.followSelectedDrone
+			canFollowSelectedDrone: dockRoot.selectedDrone ? dockRoot.hasPosition(dockRoot.selectedDrone) : false
+			onMapModeRequested: function (mode) {
+				dockRoot.mapMode = mode;
 			}
-
-			ButtonGroup {
-				title: "TOOLS"
-				visible: dockRoot.mapMode === 1
-				opacity: visible ? 1 : 0
-				Behavior on opacity {
-					NumberAnimation {
-						duration: 150
-					}
-				}
-
-				IconButton {
-					iconName: "flag-black"
-					label: "Waypoint"
-					onClicked: console.log("Waypoint tool")
-				}
-				IconButton {
-					iconName: "draw-polygon"
-					label: "Survey"
-					onClicked: console.log("Survey tool")
-				}
-				IconButton {
-					iconName: "draw-rectangle"
-					label: "Fence"
-					onClicked: console.log("Geofence tool")
-				}
-				IconButton {
-					iconName: "measure"
-					label: "Measure"
-					onClicked: console.log("Measure tool")
-				}
+			onPlanningToolRequested: function (tool) {
+				console.log("Planning tool", tool);
 			}
-
-			ButtonGroup {
-				title: "TRACK"
-				visible: dockRoot.mapMode === 2
-				opacity: visible ? 1 : 0
-				Behavior on opacity {
-					NumberAnimation {
-						duration: 150
-					}
-				}
-
-				IconButton {
-					iconName: "crosshairs"
-					label: "Follow"
-					checkable: true
-					checked: dockRoot.followSelectedDrone
-					enabled: dockRoot.selectedDrone && dockRoot.hasPosition(dockRoot.selectedDrone)
-					onClicked: {
-						dockRoot.followSelectedDrone = checked;
-						if (checked)
-							dockRoot.followSelected();
-					}
-				}
-				IconButton {
-					iconName: "mark-location"
-					label: "Point"
-					onClicked: console.log("Set target point")
-				}
-				IconButton {
-					iconName: "go-home-large"
-					label: "Home"
-					onClicked: console.log("Show RTH point")
-				}
+			onFollowSelectedDroneRequested: function (follow) {
+				dockRoot.followSelectedDrone = follow;
+				if (follow)
+					dockRoot.followSelected();
+			}
+			onTrackingToolRequested: function (tool) {
+				console.log("Tracking tool", tool);
 			}
 		}
 

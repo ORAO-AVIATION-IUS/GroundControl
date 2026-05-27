@@ -1,0 +1,104 @@
+pragma ComponentBehavior: Bound
+
+import Agc.Style
+import QtQuick
+
+Column {
+	id: root
+
+	property int mapMode: 0
+	property bool followSelectedDrone: false
+	property bool canFollowSelectedDrone: false
+
+	signal mapModeRequested(int mode)
+	signal planningToolRequested(string tool)
+	signal followSelectedDroneRequested(bool follow)
+	signal trackingToolRequested(string tool)
+
+	spacing: Style.sectionSpacing
+	width: childrenRect.width
+
+	ButtonGroup {
+		title: "MODE"
+		IconButton {
+			iconName: "compass"
+			label: "Explore"
+			checked: root.mapMode === 0
+			onClicked: root.mapModeRequested(0)
+		}
+		IconButton {
+			iconName: "routeplanning"
+			label: "Plan"
+			checked: root.mapMode === 1
+			onClicked: root.mapModeRequested(1)
+		}
+		IconButton {
+			iconName: "flightmode-on"
+			label: "Fly"
+			checked: root.mapMode === 2
+			onClicked: root.mapModeRequested(2)
+		}
+	}
+
+	ButtonGroup {
+		title: "TOOLS"
+		visible: root.mapMode === 1
+		opacity: visible ? 1 : 0
+		Behavior on opacity {
+			NumberAnimation {
+				duration: 150
+			}
+		}
+
+		IconButton {
+			iconName: "flag-black"
+			label: "Waypoint"
+			onClicked: root.planningToolRequested("waypoint")
+		}
+		IconButton {
+			iconName: "draw-polygon"
+			label: "Survey"
+			onClicked: root.planningToolRequested("survey")
+		}
+		IconButton {
+			iconName: "draw-rectangle"
+			label: "Fence"
+			onClicked: root.planningToolRequested("geofence")
+		}
+		IconButton {
+			iconName: "measure"
+			label: "Measure"
+			onClicked: root.planningToolRequested("measure")
+		}
+	}
+
+	ButtonGroup {
+		title: "TRACK"
+		visible: root.mapMode === 2
+		opacity: visible ? 1 : 0
+		Behavior on opacity {
+			NumberAnimation {
+				duration: 150
+			}
+		}
+
+		IconButton {
+			iconName: "crosshairs"
+			label: "Follow"
+			checkable: true
+			checked: root.followSelectedDrone
+			enabled: root.canFollowSelectedDrone
+			onClicked: root.followSelectedDroneRequested(checked)
+		}
+		IconButton {
+			iconName: "mark-location"
+			label: "Point"
+			onClicked: root.trackingToolRequested("target-point")
+		}
+		IconButton {
+			iconName: "go-home-large"
+			label: "Home"
+			onClicked: root.trackingToolRequested("home")
+		}
+	}
+}
