@@ -172,6 +172,17 @@ ApplicationWindow {
 
 				drone: model.droneRef
 				uniqueName: "dronePanel_" + model.uid
+
+				Connections {
+					target: SwarmManager
+					function onDroneAboutToBeRemoved(uid) {
+						if (uid !== perDroneDock.model.uid)
+							return;
+						perDroneDock.close();
+						perDroneDock.drone = null;
+					}
+				}
+
 				Component.onCompleted: {
 					root.addDockWidget(perDroneDock, KDDW.KDDockWidgets.Location_OnBottom, dronePanel);
 					close();

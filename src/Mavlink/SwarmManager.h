@@ -55,6 +55,7 @@ class SwarmManager : public QObject {
 	Q_INVOKABLE void clearSelection();
 
    signals:
+	void droneAboutToBeRemoved(int uid);
 	void dronesChanged();
 	void selectedDroneIndexChanged();
 	void selectedDroneChanged();

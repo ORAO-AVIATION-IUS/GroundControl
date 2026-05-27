@@ -129,6 +129,8 @@ void SwarmManager::removeDroneByUid(int uid) {
 		return;
 	}
 
+	emit droneAboutToBeRemoved(uid);
+
 	auto* drone = m_drones.takeAt(idx);
 	m_pending.removeOne(drone);
 

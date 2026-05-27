@@ -34,7 +34,7 @@ KDDW.DockWidget {
 			text: qsTr("No drone selected")
 			color: "#999"
 			font.pixelSize: 16
-			visible: !root.drone
+			visible: !droneLoader.d
 		}
 
 		Loader {
@@ -53,7 +53,9 @@ KDDW.DockWidget {
 			id: droneItem
 
 			property DroneManager d: droneLoader.d
-			readonly property bool hasDrone: d !== null
+
+			onDChanged: if (!d)
+				droneLoader.sourceComponent = null
 
 			ListModel {
 				id: logModel
@@ -85,13 +87,13 @@ KDDW.DockWidget {
 
 					SwarmHeader {
 						Layout.fillWidth: true
-						droneId: droneItem.hasDrone ? droneItem.d.droneName : ""
-						flightMode: droneItem.hasDrone ? droneItem.d.flightMode : ""
-						readyToFly: droneItem.hasDrone ? droneItem.d.readyToFly : false
-						armed: droneItem.hasDrone ? droneItem.d.armed : false
-						inFlight: droneItem.hasDrone ? droneItem.d.inFlight : false
-						battery: droneItem.hasDrone ? droneItem.d.battery : 0
-						voltage: droneItem.hasDrone ? droneItem.d.voltage : 0
+						droneId: droneItem.d.droneName
+						flightMode: droneItem.d.flightMode
+						readyToFly: droneItem.d.readyToFly
+						armed: droneItem.d.armed
+						inFlight: droneItem.d.inFlight
+						battery: droneItem.d.battery
+						voltage: droneItem.d.voltage
 					}
 
 					Rectangle {
@@ -107,16 +109,16 @@ KDDW.DockWidget {
 							TelemetrySidebar {
 								Layout.preferredWidth: 150
 								Layout.fillHeight: true
-								roll: droneItem.hasDrone ? droneItem.d.roll : 0
-								pitch: droneItem.hasDrone ? droneItem.d.pitch : 0
-								yaw: droneItem.hasDrone ? droneItem.d.yaw : 0
-								altRel: droneItem.hasDrone ? droneItem.d.altitude : 0
-								climbRate: droneItem.hasDrone ? droneItem.d.climbRate : 0
-								groundspeed: droneItem.hasDrone ? droneItem.d.groundspeed : 0
-								heading: droneItem.hasDrone ? droneItem.d.heading : 0
-								battery: droneItem.hasDrone ? droneItem.d.battery : 0
-								voltage: droneItem.hasDrone ? droneItem.d.voltage : 0
-								ping: droneItem.hasDrone ? droneItem.d.ping : 0
+								roll: droneItem.d.roll
+								pitch: droneItem.d.pitch
+								yaw: droneItem.d.yaw
+								altRel: droneItem.d.altitude
+								climbRate: droneItem.d.climbRate
+								groundspeed: droneItem.d.groundspeed
+								heading: droneItem.d.heading
+								battery: droneItem.d.battery
+								voltage: droneItem.d.voltage
+								ping: droneItem.d.ping
 							}
 
 							Rectangle {
@@ -128,9 +130,9 @@ KDDW.DockWidget {
 							InstrumentGrid {
 								Layout.fillWidth: true
 								Layout.fillHeight: true
-								pitch: droneItem.hasDrone ? droneItem.d.pitch : 0
-								roll: droneItem.hasDrone ? droneItem.d.roll : 0
-								heading: droneItem.hasDrone ? droneItem.d.heading : 0
+								pitch: droneItem.d.pitch
+								roll: droneItem.d.roll
+								heading: droneItem.d.heading
 							}
 
 							Rectangle {
@@ -142,21 +144,16 @@ KDDW.DockWidget {
 							DroneControls {
 								Layout.preferredWidth: 230
 								Layout.fillHeight: true
-								armed: droneItem.hasDrone ? droneItem.d.armed : false
-								inFlight: droneItem.hasDrone ? droneItem.d.inFlight : false
-								connected: droneItem.hasDrone ? droneItem.d.connected : false
-								flightMode: droneItem.hasDrone ? droneItem.d.flightMode : ""
-								droneId: droneItem.hasDrone ? droneItem.d.droneName : ""
-								onArmClicked: if (droneItem.hasDrone)
-									droneItem.d.arm()
-								onDisarmClicked: if (droneItem.hasDrone)
-									droneItem.d.disarm()
-								onTakeoffClicked: if (droneItem.hasDrone)
-									droneItem.d.takeoff()
-								onLandClicked: if (droneItem.hasDrone)
-									droneItem.d.land()
-								onRthClicked: if (droneItem.hasDrone)
-									droneItem.d.rth()
+								armed: droneItem.d.armed
+								inFlight: droneItem.d.inFlight
+								connected: droneItem.d.connected
+								flightMode: droneItem.d.flightMode
+								droneId: droneItem.d.droneName
+								onArmClicked: droneItem.d.arm()
+								onDisarmClicked: droneItem.d.disarm()
+								onTakeoffClicked: droneItem.d.takeoff()
+								onLandClicked: droneItem.d.land()
+								onRthClicked: droneItem.d.rth()
 							}
 
 							Rectangle {
@@ -175,7 +172,7 @@ KDDW.DockWidget {
 							AltitudeTape {
 								Layout.preferredWidth: 110
 								Layout.fillHeight: true
-								altitude: droneItem.hasDrone ? droneItem.d.altitude : 0
+								altitude: droneItem.d.altitude
 							}
 						}
 					}
