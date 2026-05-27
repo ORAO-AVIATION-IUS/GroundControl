@@ -6,16 +6,16 @@ Item {
 	id: root
 
 	property bool armed: false
-	property string activeMode: ""
+	property bool inFlight: false
+	property bool connected: false
+	property string flightMode: ""
 	property string droneId: "--"
 
 	signal armClicked
 	signal disarmClicked
 	signal takeoffClicked
 	signal landClicked
-	signal resetClicked
-	signal configClicked
-	signal modeSelected(string mode)
+	signal rthClicked
 
 	component ActBtn: Rectangle {
 		id: actBtn
@@ -23,14 +23,16 @@ Item {
 		property string label: ""
 		property color bgColor: "#f0f0f4"
 		property color txtColor: "#3a4a5a"
+		property bool highlight: false
 		signal tapped
 
 		Layout.fillWidth: true
 		Layout.preferredHeight: 26
 		radius: 0
-		color: ma.pressed ? Qt.darker(actBtn.bgColor, 1.12) : ma.containsMouse ? Qt.darker(actBtn.bgColor, 1.06) : actBtn.bgColor
-		border.color: Qt.darker(actBtn.bgColor, 1.16)
+		color: !enabled ? Qt.darker(actBtn.bgColor, 0.92) : ma.pressed ? Qt.darker(actBtn.bgColor, 1.12) : ma.containsMouse ? Qt.darker(actBtn.bgColor, 1.06) : actBtn.bgColor
+		border.color: actBtn.highlight ? "#4070b0" : Qt.darker(actBtn.bgColor, 1.16)
 		border.width: 1
+		opacity: enabled ? 1.0 : 0.4
 
 		Text {
 			anchors.centerIn: parent
@@ -45,7 +47,8 @@ Item {
 			id: ma
 			anchors.fill: parent
 			hoverEnabled: true
-			onClicked: parent.tapped()
+			onClicked: if (actBtn.enabled)
+				parent.tapped()
 		}
 	}
 
@@ -75,41 +78,36 @@ Item {
 				label: "ARM"
 				bgColor: "#edf7f1"
 				txtColor: "#1a5830"
-				enabled: !root.armed
-				opacity: root.armed ? 0.38 : 1.0
+				enabled: root.connected && !root.armed
 				onTapped: root.armClicked()
 			}
 			ActBtn {
 				label: "DISARM"
 				bgColor: "#fdf0ee"
 				txtColor: "#6a1e1e"
-				enabled: root.armed
-				opacity: root.armed ? 1.0 : 0.38
+				enabled: root.connected && root.armed && !root.inFlight
 				onTapped: root.disarmClicked()
 			}
 			ActBtn {
 				label: "TAKEOFF"
 				bgColor: "#edf2fa"
 				txtColor: "#1a3060"
+				enabled: root.connected && root.armed && !root.inFlight
 				onTapped: root.takeoffClicked()
 			}
 			ActBtn {
 				label: "LAND"
 				bgColor: "#faf4ec"
 				txtColor: "#4a3010"
+				enabled: root.connected && root.inFlight
 				onTapped: root.landClicked()
 			}
 			ActBtn {
-				label: "RESET"
-				bgColor: "#f0f0f4"
-				txtColor: "#3a4a5a"
-				onTapped: root.resetClicked()
-			}
-			ActBtn {
-				label: "CONFIG"
-				bgColor: "#f0f0f4"
-				txtColor: "#3a4a5a"
-				onTapped: root.configClicked()
+				label: "RTH"
+				bgColor: "#eef2f8"
+				txtColor: "#1a3868"
+				enabled: root.connected && root.inFlight
+				onTapped: root.rthClicked()
 			}
 		}
 
@@ -131,43 +129,21 @@ Item {
 			Layout.bottomMargin: 6
 		}
 
-		GridLayout {
+		Rectangle {
 			Layout.fillWidth: true
-			columns: 2
-			rowSpacing: 3
-			columnSpacing: 3
+			Layout.preferredHeight: 26
+			radius: 0
+			color: "#e8f0fa"
+			border.color: "#4070b0"
+			border.width: 1
 
-			Repeater {
-				model: ["STBY", "GUIDED", "AUTO", "RTL", "LOITER", "LAND"]
-
-				delegate: Rectangle {
-					id: modeDelegate
-
-					required property string modelData
-
-					Layout.fillWidth: true
-					Layout.preferredHeight: 26
-					radius: 0
-					color: root.activeMode === modeDelegate.modelData ? "#e8f0fa" : modeArea.containsMouse ? "#f4f6fa" : "#f8f8fa"
-					border.color: root.activeMode === modeDelegate.modelData ? "#4070b0" : "#dcdce4"
-					border.width: 1
-
-					Text {
-						anchors.centerIn: parent
-						text: modeDelegate.modelData
-						color: root.activeMode === modeDelegate.modelData ? "#1a4890" : "#4a5060"
-						font.pixelSize: 11
-						font.bold: root.activeMode === modeDelegate.modelData
-						font.family: "Segoe UI"
-					}
-
-					MouseArea {
-						id: modeArea
-						anchors.fill: parent
-						hoverEnabled: true
-						onClicked: root.modeSelected(modeDelegate.modelData)
-					}
-				}
+			Text {
+				anchors.centerIn: parent
+				text: root.flightMode || "UNKNOWN"
+				color: "#1a4890"
+				font.pixelSize: 11
+				font.bold: true
+				font.family: "Segoe UI"
 			}
 		}
 

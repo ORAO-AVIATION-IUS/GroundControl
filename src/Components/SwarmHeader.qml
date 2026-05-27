@@ -6,13 +6,12 @@ Item {
 	height: 44
 
 	property string droneId: "--"
-	property string activeMode: ""
+	property string flightMode: ""
 	property bool readyToFly: false
 	property bool armed: false
+	property bool inFlight: false
 	property int battery: 0
 	property real voltage: 0.0
-
-	signal modeClicked
 
 	RowLayout {
 		anchors.fill: parent
@@ -57,19 +56,30 @@ Item {
 		}
 
 		Text {
-			text: root.activeMode
+			text: root.flightMode || "UNKNOWN"
 			font.pixelSize: 15
 			font.bold: true
 			font.family: "Segoe UI"
-			color: modeMa.containsMouse ? "#1a50a0" : "#344878"
+			color: "#344878"
 			Layout.alignment: Qt.AlignVCenter
+		}
 
-			MouseArea {
-				id: modeMa
-				anchors.fill: parent
-				hoverEnabled: true
-				onClicked: root.modeClicked()
-			}
+		Rectangle {
+			Layout.preferredWidth: 1
+			Layout.preferredHeight: 20
+			color: "#e4e4e8"
+			Layout.alignment: Qt.AlignVCenter
+			Layout.leftMargin: 12
+			Layout.rightMargin: 12
+		}
+
+		Text {
+			text: root.inFlight ? "IN AIR" : root.armed ? "ARMED" : "DISARMED"
+			font.pixelSize: 15
+			font.bold: true
+			font.family: "Segoe UI"
+			color: root.inFlight ? "#1a50a0" : root.armed ? "#1e7a40" : "#606878"
+			Layout.alignment: Qt.AlignVCenter
 		}
 
 		Item {
