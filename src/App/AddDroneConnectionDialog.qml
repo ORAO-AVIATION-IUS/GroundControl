@@ -19,7 +19,7 @@ Dialog {
 		if (nameField.text === "")
 			nameField.text = qsTr("PX4 SITL");
 		if (urlField.text === "")
-			urlField.text = "udp://:14540";
+			urlField.text = "udpin://0.0.0.0:14540";
 		nameField.forceActiveFocus();
 	}
 
