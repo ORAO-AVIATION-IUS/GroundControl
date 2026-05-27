@@ -1,16 +1,34 @@
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 qmlformat6 := if os() == "linux" { "/usr/lib/qt6/bin/qmlformat" } else { "qmlformat" }
 
-# Build project
+# Configure cmake (run once after clean or when adding dependencies)
+[unix]
+configure:
+    CC=clang CXX=clang++ cmake -B build -S . -G Ninja
+
+# Configure cmake
+[windows]
+configure:
+    cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+# Build project (incremental — fast for code changes)
 [unix]
 build:
-    cmake -B build -S . -G Ninja
     cmake --build build
 
 # Build project
 [windows]
 build:
-    cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    cmake --build build
+
+# Configure + build from scratch (first time or after adding dependencies)
+[unix]
+prebuild: configure
+    cmake --build build
+
+# Configure + build from scratch
+[windows]
+prebuild: configure
     cmake --build build
 
 # Rebuild the committed QMapLibre prebuilt under third_party/maplibre-prebuilt/macos.
@@ -63,7 +81,7 @@ run:
 # Format code using clang-format and qmlformat
 [unix]
 format:
-	find src/ -name '*.cpp' -o -name '*.h' -exec clang-format -i -style=file {} \;
+	find src/ \( -name '*.cpp' -o -name '*.h' \) -exec clang-format -i -style=file {} \;
 	find src/ -name '*.qml' -exec {{qmlformat6}} -i {} \;
 
 # Format code using clang-format and qmlformat
@@ -75,7 +93,7 @@ format:
 # Lint code using clang-tidy and CMake qmllint targets
 [unix]
 lint:
-	find src/ -name '*.cpp' -o -name '*.h' -exec clang-tidy -p build {} \;
+	find src/ \( -name '*.cpp' -o -name '*.h' \) -exec clang-tidy -p build {} \;
 	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcCamera_qmllint
 
 # Lint code using clang-tidy and qmllint
