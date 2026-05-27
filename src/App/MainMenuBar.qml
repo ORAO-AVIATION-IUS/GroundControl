@@ -99,14 +99,14 @@ MenuBar {
 
 		Action {
 			text: bar.allDronePanelsOpen() ? qsTr("Close All Panels") : qsTr("Show All Panels")
-			enabled: dronePanelDocks && dronePanelDocks.count > 0
+			enabled: bar.dronePanelDocks && bar.dronePanelDocks.count > 0
 			onTriggered: bar.toggleAllDronePanels()
 		}
 
 		MenuSeparator {}
 
 		Instantiator {
-			model: SwarmManager.drones
+			model: SwarmManager.droneList
 			delegate: Menu {
 				id: droneSubmenu
 

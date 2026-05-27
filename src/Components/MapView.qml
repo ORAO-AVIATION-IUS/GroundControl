@@ -8,21 +8,111 @@ import QtQuick
 Item {
 	id: root
 
-	// ───── Public inputs (stateless) ─────
-	// drones: array of { position: QGeoCoordinate, altitude: real (m AGL), heading: real (deg CW from north) }
 	property var drones: []
-	property var flightPaths: []                            // array<array<QGeoCoordinate>>
+	property int selectedDroneUid: -1
+	property int maxPathPoints: 5000
 
-	// ───── View modes ─────
 	property bool threeD: true
 	property bool lightMode: true
 	property bool satelliteMode: false
 
-	// Style index into supportedMapTypes (mirrors maplibre.map.styles order):
-	// 0=bright, 1=liberty, 2=positron, 3=dark, 4=fiord, 5=night-3d (local), 6=satellite (local)
-	readonly property int _styleIndex: satelliteMode ? 6 : (threeD ? (lightMode ? 1 : 5) : (lightMode ? 0 : 4))
-
+	readonly property int _styleIndex: threeD ? (lightMode ? 1 : 5) : (lightMode ? 0 : 4)
+	property int _dataRevision: 0
 	property real _savedTilt: 45
+	property var _pathStore: ({})
+	property var _trackedPaths: []
+
+	property var initialCenter: QtPositioning.coordinate(41.0082, 28.9784)
+	property real initialZoom: 15.5
+	property real initialTilt: 45
+	property real initialBearing: -17.6
+
+	signal droneClicked(int droneUid)
+	signal userMovedMap
+
+	Component.onCompleted: scheduleDataRefresh()
+	onDronesChanged: scheduleDataRefresh()
+	on_StyleIndexChanged: _applyStyle()
+
+	function centerOn(coordinate) {
+		if (coordinate && coordinate.isValid)
+			map.center = coordinate;
+	}
+
+	function coordinateFor(drone) {
+		if (!drone)
+			return QtPositioning.coordinate();
+		return QtPositioning.coordinate(drone.latitude, drone.longitude);
+	}
+
+	function hasPosition(drone) {
+		return drone && (drone.latitude !== 0 || drone.longitude !== 0);
+	}
+
+	function scheduleDataRefresh() {
+		dataRefreshTimer.restart();
+	}
+
+	function refreshTrackingData() {
+		const paths = [];
+		const activeKeys = {};
+
+		for (let i = 0; i < (drones || []).length; ++i) {
+			const drone = drones[i];
+			if (!hasPosition(drone))
+				continue;
+
+			const key = String(drone.droneUid);
+			activeKeys[key] = true;
+			const coord = coordinateFor(drone);
+			const oldPath = _pathStore[key] || [];
+
+			if (oldPath.length === 0 || coord.distanceTo(oldPath[oldPath.length - 1]) >= 1.0) {
+				let newPath = oldPath.concat([coord]);
+				if (newPath.length > maxPathPoints)
+					newPath = newPath.slice(newPath.length - maxPathPoints);
+				_pathStore[key] = newPath;
+			}
+			paths.push(_pathStore[key]);
+		}
+
+		for (const key in _pathStore) {
+			if (!activeKeys[key])
+				delete _pathStore[key];
+		}
+
+		_trackedPaths = paths;
+		_dataRevision += 1;
+	}
+
+	function droneUidAt(point) {
+		const clickCoord = map.toCoordinate(point, false);
+		if (!clickCoord.isValid)
+			return -1;
+
+		const onePixelCoord = map.toCoordinate(Qt.point(point.x + 1, point.y), false);
+		const metersPerPixel = onePixelCoord.isValid ? clickCoord.distanceTo(onePixelCoord) : 1;
+		const thresholdMeters = Math.max(8, metersPerPixel * 24);
+		let bestUid = -1;
+		let bestDistance = thresholdMeters;
+
+		for (let i = 0; i < (drones || []).length; ++i) {
+			const drone = drones[i];
+			if (!hasPosition(drone))
+				continue;
+			const distance = clickCoord.distanceTo(coordinateFor(drone));
+			if (distance <= bestDistance) {
+				bestDistance = distance;
+				bestUid = drone.droneUid;
+			}
+		}
+		return bestUid;
+	}
+
+	function _applyStyle() {
+		if (map.supportedMapTypes.length > _styleIndex)
+			map.activeMapType = map.supportedMapTypes[_styleIndex];
+	}
 
 	onThreeDChanged: {
 		if (threeD) {
@@ -33,32 +123,50 @@ Item {
 		}
 	}
 
-	on_StyleIndexChanged: _applyStyle()
-	function _applyStyle() {
-		if (map.supportedMapTypes.length > _styleIndex)
-			map.activeMapType = map.supportedMapTypes[_styleIndex];
+	Timer {
+		id: dataRefreshTimer
+		interval: 50
+		onTriggered: root.refreshTrackingData()
 	}
 
-	// ───── Camera defaults (overridable) ─────
-	property var initialCenter: QtPositioning.coordinate(41.0082, 28.9784)
-	property real initialZoom: 15.5
-	property real initialTilt: 45
-	property real initialBearing: -17.6
+	Repeater {
+		model: root.drones
+		delegate: Item {
+			id: droneSignalDelegate
 
-	function _isValidDrone(d) {
-		return d && d.position && d.position.isValid;
+			required property var modelData
+
+			Connections {
+				target: droneSignalDelegate.modelData
+
+				function onAltitudeChanged() {
+					root.scheduleDataRefresh();
+				}
+
+				function onHeadingChanged() {
+					root.scheduleDataRefresh();
+				}
+
+				function onLatitudeChanged() {
+					root.scheduleDataRefresh();
+				}
+
+				function onLongitudeChanged() {
+					root.scheduleDataRefresh();
+				}
+			}
+		}
 	}
 
-	// ───── Pure geometry helpers (no state) ─────
 	QtObject {
 		id: geometry
 
-		readonly property var _emptyFC: ({
+		readonly property var emptyFeatureCollection: ({
 				"type": "FeatureCollection",
 				"features": []
 			})
 
-		function _offset(c, alongM, perpM, hdg) {
+		function offset(c, alongM, perpM, hdg) {
 			const d = Math.sqrt(alongM * alongM + perpM * perpM);
 			if (d === 0)
 				return c;
@@ -66,22 +174,24 @@ Item {
 			return c.atDistanceAndAzimuth(d, hdg + a);
 		}
 
-		// Heading-rotated rectangle as a closed [lon,lat] ring.
-		function _polyRect(c, halfA, halfP, hdg) {
-			const p1 = _offset(c, halfA, halfP, hdg);
-			const p2 = _offset(c, halfA, -halfP, hdg);
-			const p3 = _offset(c, -halfA, -halfP, hdg);
-			const p4 = _offset(c, -halfA, halfP, hdg);
+		function polyRect(c, halfA, halfP, hdg) {
+			const p1 = offset(c, halfA, halfP, hdg);
+			const p2 = offset(c, halfA, -halfP, hdg);
+			const p3 = offset(c, -halfA, -halfP, hdg);
+			const p4 = offset(c, -halfA, halfP, hdg);
 			return [[p1.longitude, p1.latitude], [p2.longitude, p2.latitude], [p3.longitude, p3.latitude], [p4.longitude, p4.latitude], [p1.longitude, p1.latitude]];
 		}
 
-		function droneBodyGeoJson(drones) {
+		function droneBodyGeoJson(drones, revision) {
+			void revision;
 			const features = [];
 			for (let i = 0; i < (drones || []).length; ++i) {
-				const d = drones[i];
-				if (!root._isValidDrone(d))
+				const drone = drones[i];
+				if (!root.hasPosition(drone))
 					continue;
-				const c = d.position, hdg = d.heading || 0, alt = d.altitude || 0;
+				const c = root.coordinateFor(drone);
+				const hdg = drone.heading || 0;
+				const alt = drone.altitude || 0;
 				const props = {
 					"base": alt,
 					"height": alt + 1.67
@@ -91,7 +201,7 @@ Item {
 					"properties": props,
 					"geometry": {
 						"type": "Polygon",
-						"coordinates": [_polyRect(c, 6, 0.67, hdg)]
+						"coordinates": [polyRect(c, 6, 0.67, hdg)]
 					}
 				});
 				features.push({
@@ -99,7 +209,7 @@ Item {
 					"properties": props,
 					"geometry": {
 						"type": "Polygon",
-						"coordinates": [_polyRect(c, 0.67, 6, hdg)]
+						"coordinates": [polyRect(c, 0.67, 6, hdg)]
 					}
 				});
 				features.push({
@@ -107,7 +217,7 @@ Item {
 					"properties": props,
 					"geometry": {
 						"type": "Polygon",
-						"coordinates": [_polyRect(c, 2, 2, hdg)]
+						"coordinates": [polyRect(c, 2, 2, hdg)]
 					}
 				});
 			}
@@ -117,19 +227,22 @@ Item {
 			};
 		}
 
-		function rotorGeoJson(drones) {
+		function rotorGeoJson(drones, revision) {
+			void revision;
 			const features = [];
 			for (let i = 0; i < (drones || []).length; ++i) {
-				const d = drones[i];
-				if (!root._isValidDrone(d))
+				const drone = drones[i];
+				if (!root.hasPosition(drone))
 					continue;
-				const c = d.position, hdg = d.heading || 0, alt = d.altitude || 0;
+				const c = root.coordinateFor(drone);
+				const hdg = drone.heading || 0;
+				const alt = drone.altitude || 0;
 				const props = {
 					"base": alt + 1,
 					"height": alt + 2.33
 				};
 				const ring = function (alongM, perpM) {
-					return _polyRect(_offset(c, alongM, perpM, hdg), 1.33, 1.33, hdg);
+					return polyRect(offset(c, alongM, perpM, hdg), 1.33, 1.33, hdg);
 				};
 				features.push({
 					"type": "Feature",
@@ -170,19 +283,19 @@ Item {
 			};
 		}
 
-		// Vertical dashed tethers from ground up to each drone's altitude.
-		// 25 m pitch, 18 m segment. Each feature carries base/height for the layer.
-		function tetherSegmentsGeoJson(drones) {
+		function tetherSegmentsGeoJson(drones, revision) {
+			void revision;
 			const features = [];
-			const pitch = 25, on = 18;
+			const pitch = 25;
+			const onLength = 18;
 			for (let i = 0; i < (drones || []).length; ++i) {
-				const d = drones[i];
-				if (!root._isValidDrone(d) || (d.altitude || 0) <= 0)
+				const drone = drones[i];
+				if (!root.hasPosition(drone) || (drone.altitude || 0) <= 0)
 					continue;
-				const poly = _polyRect(d.position, 0.83, 0.83, 0);
-				const altitude = d.altitude;
+				const poly = polyRect(root.coordinateFor(drone), 0.83, 0.83, 0);
+				const altitude = drone.altitude;
 				for (let base = 0; base < altitude; base += pitch) {
-					const top = Math.min(base + on, altitude);
+					const top = Math.min(base + onLength, altitude);
 					if (top - base < 2)
 						break;
 					features.push({
@@ -204,13 +317,61 @@ Item {
 			};
 		}
 
-		// Ground triangle marker, sized in meters but scaled inversely with
-		// zoom so it stays roughly constant on screen.
-		function gpsTrianglePath(c, hdg, zoomLevel) {
-			if (!c || !c.isValid)
-				return [];
-			const size = 6 * Math.pow(2, 18 - zoomLevel);
-			return [c.atDistanceAndAzimuth(size, hdg), c.atDistanceAndAzimuth(size * 0.8, hdg + 140), c.atDistanceAndAzimuth(size * 0.8, hdg - 140)];
+		function groundMarkerGeoJson(drones, selectedUid, revision) {
+			void revision;
+			const features = [];
+			for (let i = 0; i < (drones || []).length; ++i) {
+				const drone = drones[i];
+				if (!root.hasPosition(drone))
+					continue;
+				const c = root.coordinateFor(drone);
+				const hdg = drone.heading || 0;
+				const selected = drone.droneUid === selectedUid;
+				const z = map.zoomLevel;
+				const scale = z > 15 ? Math.pow(2, (18 - z) * 0.7) : Math.pow(2, 17.1 - z);
+				const tip = c.atDistanceAndAzimuth(6 * scale, hdg);
+				const bl = c.atDistanceAndAzimuth(4.8 * scale, hdg + 140);
+				const br = c.atDistanceAndAzimuth(4.8 * scale, hdg - 140);
+				const ring = [[tip.longitude, tip.latitude], [bl.longitude, bl.latitude], [br.longitude, br.latitude], [tip.longitude, tip.latitude]];
+				features.push({
+					"type": "Feature",
+					"properties": {
+						"fill": selected ? "#ffaa00" : "#ff3030",
+						"outlineWidth": Math.max(1, 3 / Math.sqrt(scale))
+					},
+					"geometry": {
+						"type": "Polygon",
+						"coordinates": [ring]
+					}
+				});
+			}
+			return {
+				"type": "FeatureCollection",
+				"features": features
+			};
+		}
+
+		function flightPathGeoJson(paths) {
+			const features = [];
+			for (let i = 0; i < (paths || []).length; ++i) {
+				const path = paths[i];
+				if (!path || path.length < 2)
+					continue;
+				const coords = [];
+				for (let j = 0; j < path.length; ++j)
+					coords.push([path[j].longitude, path[j].latitude]);
+				features.push({
+					"type": "Feature",
+					"geometry": {
+						"type": "LineString",
+						"coordinates": coords
+					}
+				});
+			}
+			return {
+				"type": "FeatureCollection",
+				"features": features
+			};
 		}
 	}
 
@@ -220,7 +381,7 @@ Item {
 
 		PluginParameter {
 			name: "maplibre.map.styles"
-			value: "https://tiles.openfreemap.org/styles/bright," + "https://tiles.openfreemap.org/styles/liberty," + "https://tiles.openfreemap.org/styles/positron," + "https://tiles.openfreemap.org/styles/dark," + "https://tiles.openfreemap.org/styles/fiord," + "qrc:/resources/assets/night-3d-style.json," + "qrc:/resources/assets/satellite-style.json"
+			value: "https://tiles.openfreemap.org/styles/bright," + "https://tiles.openfreemap.org/styles/liberty," + "https://tiles.openfreemap.org/styles/positron," + "https://tiles.openfreemap.org/styles/dark," + "https://tiles.openfreemap.org/styles/fiord," + "qrc:/resources/assets/night-3d-style.json"
 		}
 	}
 
@@ -243,21 +404,33 @@ Item {
 			root._applyStyle();
 		}
 
-		// 3D drone geometry bound to root inputs via pure helpers.
 		MapLibre.style: Style {
+			SourceParameter {
+				styleId: "satellite-source"
+				type: "raster"
+				property var tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]
+				property int tileSize: 256
+				property int maxzoom: 19
+			}
+			LayerParameter {
+				styleId: "satellite-layer"
+				type: "raster"
+				property string source: "satellite-source"
+				// qmllint disable incompatible-type
+				layout: ({
+						"visibility": root.satelliteMode ? "visible" : "none"
+					})
+			}
+
 			SourceParameter {
 				styleId: "drone-body-source"
 				type: "geojson"
-				property var data: root.threeD ? geometry.droneBodyGeoJson(root.drones) : ({
-						"type": "FeatureCollection",
-						"features": []
-					})
+				property var data: root.threeD ? geometry.droneBodyGeoJson(root.drones, root._dataRevision) : geometry.emptyFeatureCollection
 			}
 			LayerParameter {
 				styleId: "drone-body-layer"
 				type: "fill-extrusion"
 				property string source: "drone-body-source"
-				// MapLibre converts QVariantMap to QJsonObject at runtime; qmllint cannot infer that.
 				// qmllint disable incompatible-type
 				paint: ({
 						"fill-extrusion-color": "#2a2a2a",
@@ -270,16 +443,12 @@ Item {
 			SourceParameter {
 				styleId: "drone-rotor-source"
 				type: "geojson"
-				property var data: root.threeD ? geometry.rotorGeoJson(root.drones) : ({
-						"type": "FeatureCollection",
-						"features": []
-					})
+				property var data: root.threeD ? geometry.rotorGeoJson(root.drones, root._dataRevision) : geometry.emptyFeatureCollection
 			}
 			LayerParameter {
 				styleId: "drone-rotor-layer"
 				type: "fill-extrusion"
 				property string source: "drone-rotor-source"
-				// MapLibre converts QVariantMap to QJsonObject at runtime; qmllint cannot infer that.
 				// qmllint disable incompatible-type
 				paint: ({
 						"fill-extrusion-color": "#ff3030",
@@ -292,16 +461,12 @@ Item {
 			SourceParameter {
 				styleId: "tether-source"
 				type: "geojson"
-				property var data: root.threeD ? geometry.tetherSegmentsGeoJson(root.drones) : ({
-						"type": "FeatureCollection",
-						"features": []
-					})
+				property var data: root.threeD ? geometry.tetherSegmentsGeoJson(root.drones, root._dataRevision) : geometry.emptyFeatureCollection
 			}
 			LayerParameter {
 				styleId: "tether-layer"
 				type: "fill-extrusion"
 				property string source: "tether-source"
-				// MapLibre converts QVariantMap to QJsonObject at runtime; qmllint cannot infer that.
 				// qmllint disable incompatible-type
 				paint: ({
 						"fill-extrusion-color": "#00d0ff",
@@ -310,44 +475,51 @@ Item {
 						"fill-extrusion-opacity": 0.9
 					})
 			}
-		}
 
-		// Flight path trails — one polyline per entry in flightPaths.
-		// Declared before the GPS markers so trails render beneath them.
-		MapItemView {
-			model: root.flightPaths
-			delegate: MapPolyline {
-				required property var modelData
-				visible: modelData && modelData.length > 1
-				line.width: 3
-				line.color: "#ffaa00"
-				path: modelData || []
+			SourceParameter {
+				styleId: "ground-marker-source"
+				type: "geojson"
+				property var data: geometry.groundMarkerGeoJson(root.drones, root.selectedDroneUid, root._dataRevision)
+			}
+			LayerParameter {
+				styleId: "ground-marker-layer"
+				type: "fill"
+				property string source: "ground-marker-source"
+				// qmllint disable incompatible-type
+				paint: ({
+						"fill-color": ["get", "fill"],
+						"fill-opacity": 0.9
+					})
+			}
+			LayerParameter {
+				styleId: "ground-marker-outline"
+				type: "line"
+				property string source: "ground-marker-source"
+				// qmllint disable incompatible-type
+				paint: ({
+						"line-color": "#ffffff",
+						"line-width": ["get", "outlineWidth"]
+					})
+			}
+
+			SourceParameter {
+				styleId: "flight-path-source"
+				type: "geojson"
+				property var data: geometry.flightPathGeoJson(root._trackedPaths)
+			}
+			LayerParameter {
+				styleId: "flight-path-layer"
+				type: "line"
+				property string source: "flight-path-source"
+				// qmllint disable incompatible-type
+				paint: ({
+						"line-color": "#ffaa00",
+						"line-width": 3,
+						"line-opacity": 0.85
+					})
 			}
 		}
 
-		// Ground GPS markers — one per drone.
-		MapItemView {
-			model: root.drones
-			delegate: MapPolygon {
-				required property var modelData
-				visible: root._isValidDrone(modelData)
-				color: "#ff3030"
-				border.color: "white"
-				border.width: 3
-				path: visible ? geometry.gpsTrianglePath(modelData.position, modelData.heading || 0, map.zoomLevel) : []
-			}
-		}
-
-		// Controls:
-		//   Left drag            -> pan (with inertia)
-		//   Ctrl + Left drag     -> rotate / tilt (same as right drag)
-		//   Right drag H         -> rotate bearing
-		//   Right drag V         -> tilt
-		//   Mouse wheel          -> zoom toward cursor
-		//   Touchpad 2-finger V  -> zoom
-		//   Touchpad 2-finger H  -> rotate bearing
-		//   Ctrl + 2-finger V    -> tilt
-		//   Ctrl + 2-finger H    -> rotate bearing
 		MouseArea {
 			id: mouseArea
 			anchors.fill: parent
@@ -356,9 +528,12 @@ Item {
 			cursorShape: Qt.ArrowCursor
 
 			property point lastPoint
+			property point pressPoint
 			property real velocityX: 0
 			property real velocityY: 0
 			property bool inertiaActive: false
+			property bool movedSincePress: false
+			property bool movementNotified: false
 
 			readonly property int modeNone: 0
 			readonly property int modePan: 1
@@ -376,15 +551,29 @@ Item {
 			readonly property real kInertiaCutoff: 0.1
 			readonly property real kFriction: 0.92
 			readonly property int kInertiaInterval: 16
+			readonly property real kClickMoveThreshold: 4
+
+			property var anchorCoord
 
 			function clampTilt(value) {
 				return Math.max(kMinTilt, Math.min(kMaxTilt, value));
 			}
 
+			function noteMapMovement() {
+				if (movementNotified)
+					return;
+				movementNotified = true;
+				root.userMovedMap();
+			}
+
 			onPressed: function (mouse) {
 				lastPoint = Qt.point(mouse.x, mouse.y);
+				pressPoint = lastPoint;
+				anchorCoord = map.toCoordinate(lastPoint, false);
 				velocityX = 0;
 				velocityY = 0;
+				movedSincePress = false;
+				movementNotified = false;
 				inertiaActive = false;
 				inertiaTimer.stop();
 
@@ -401,11 +590,22 @@ Item {
 			}
 
 			onPositionChanged: function (mouse) {
-				const dx = mouse.x - lastPoint.x;
-				const dy = mouse.y - lastPoint.y;
+				const point = Qt.point(mouse.x, mouse.y);
+				const dx = point.x - lastPoint.x;
+				const dy = point.y - lastPoint.y;
+				const pressDx = point.x - pressPoint.x;
+				const pressDy = point.y - pressPoint.y;
+
+				if (Math.sqrt(pressDx * pressDx + pressDy * pressDy) > kClickMoveThreshold) {
+					movedSincePress = true;
+					noteMapMovement();
+				}
 
 				if (dragMode === modePan) {
-					map.pan(-dx, -dy);
+					const cur = map.toCoordinate(point, false);
+					if (cur.isValid && anchorCoord.isValid) {
+						map.center = QtPositioning.coordinate(map.center.latitude + anchorCoord.latitude - cur.latitude, map.center.longitude + anchorCoord.longitude - cur.longitude);
+					}
 					velocityX = velocityX * 0.6 + (-dx) * 0.4;
 					velocityY = velocityY * 0.6 + (-dy) * 0.4;
 				} else if (dragMode === modeRotateTilt) {
@@ -414,11 +614,17 @@ Item {
 						map.tilt = clampTilt(map.tilt - dy * kTiltSensitivity);
 				}
 
-				lastPoint = Qt.point(mouse.x, mouse.y);
+				lastPoint = point;
 			}
 
 			onReleased: function (mouse) {
-				if (mouse.button === Qt.LeftButton && dragMode === modePan) {
+				if (!movedSincePress && mouse.button === Qt.LeftButton) {
+					const uid = root.droneUidAt(Qt.point(mouse.x, mouse.y));
+					if (uid >= 0)
+						root.droneClicked(uid);
+				}
+
+				if (movedSincePress && mouse.button === Qt.LeftButton && dragMode === modePan) {
 					if (Math.abs(velocityX) > kInertiaThreshold || Math.abs(velocityY) > kInertiaThreshold) {
 						inertiaActive = true;
 						inertiaTimer.start();
@@ -460,8 +666,7 @@ Item {
 			}
 
 			onWheel: function (wheel) {
-				// Mouse wheel sends angleDelta in multiples of 120.
-				// Touchpad sends smooth non-120 values or only pixelDelta.
+				root.userMovedMap();
 				const isDiscreteWheel = (wheel.angleDelta.y !== 0) && (wheel.angleDelta.y % 120 === 0) && (Math.abs(wheel.pixelDelta.y) < 1);
 
 				if (isDiscreteWheel) {
@@ -491,8 +696,6 @@ Item {
 		}
 	}
 
-	// Zoom toward a screen point using geographic center adjustment
-	// to avoid integer truncation drift from pan().
 	function zoomTowardPoint(px, py, delta) {
 		const newZoom = Math.max(map.minimumZoomLevel, Math.min(map.maximumZoomLevel, map.zoomLevel + delta));
 		if (newZoom === map.zoomLevel)

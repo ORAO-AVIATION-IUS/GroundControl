@@ -16,6 +16,13 @@ AbstractButton {
 	// checkable and checked are already provided by AbstractButton
 
 	hoverEnabled: true
+	opacity: enabled ? 1.0 : 0.4
+
+	Behavior on opacity {
+		NumberAnimation {
+			duration: 120
+		}
+	}
 
 	implicitWidth: Math.max(iconImage.width, labelText.implicitWidth) + Style.iconBtnPadding * 2
 	implicitHeight: iconImage.height + (labelText.visible ? labelText.implicitHeight + 2 : 0) + Style.iconBtnPadding * 2

@@ -14,8 +14,8 @@ Item {
 	property real batteryPercent: 100.0
 	property bool selected: false
 
-	visible: connected
-	opacity: visible ? 1.0 : 0.0
+	visible: true
+	opacity: 1.0
 	Behavior on opacity {
 		NumberAnimation {
 			duration: 200
@@ -62,7 +62,7 @@ Item {
 			width: 6
 			height: 6
 			radius: 3
-			color: "#2ecc71"
+			color: root.connected ? "#2ecc71" : "#e74c3c"
 			anchors.verticalCenter: parent.verticalCenter
 		}
 

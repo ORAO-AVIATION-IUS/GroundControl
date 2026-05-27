@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import Agc.Components
 import Agc.Mavlink
 import Agc.Style
-import QtPositioning
 import QtQuick
 import com.kdab.dockwidgets as KDDW
 
@@ -14,12 +13,15 @@ KDDW.DockWidget {
 
 	property int mapMode: 0
 
-	// per-drone target state: { droneIndex: { alt, locked } }
 	property var _targetStore: ({})
+	property bool followSelectedDrone: false
 
-	onSelectedDroneIndexChanged: {
-		if (selectedDroneIndex >= 0) {
-			var entry = _targetStore[selectedDroneIndex];
+	readonly property int selectedDroneIndex: SwarmManager.selectedDroneIndex
+	readonly property var selectedDrone: SwarmManager.selectedDrone
+
+	onSelectedDroneChanged: {
+		if (selectedDrone) {
+			var entry = _targetStore[String(selectedDrone.droneUid)];
 			if (entry && entry.locked)
 				altTape.setTarget(entry.alt);
 			else
@@ -29,23 +31,50 @@ KDDW.DockWidget {
 		}
 	}
 
-	readonly property int selectedDroneIndex: SwarmManager.selectedDroneIndex
-	readonly property var selectedDrone: SwarmManager.selectedDrone
-
-	function toMapDrones(list) {
-		return list.map(d => ({
-					"position": QtPositioning.coordinate(d.latitude, d.longitude),
-					"altitude": d.altitude,
-					"heading": d.heading
-				}));
+	function hasPosition(drone) {
+		return drone && (drone.latitude !== 0 || drone.longitude !== 0);
 	}
 
-	function toMapPaths(list) {
-		return list.map(d => [QtPositioning.coordinate(d.latitude - 0.0002, d.longitude - 0.0004), QtPositioning.coordinate(d.latitude, d.longitude), QtPositioning.coordinate(d.latitude + 0.0003, d.longitude + 0.0006), QtPositioning.coordinate(d.latitude + 0.0007, d.longitude + 0.0011), QtPositioning.coordinate(d.latitude + 0.001, d.longitude + 0.0016)]);
+	function followSelected() {
+		if (!selectedDrone || !hasPosition(selectedDrone))
+			return;
+		mapView.centerOn(mapView.coordinateFor(selectedDrone));
+	}
+
+	function selectDroneByUid(uid) {
+		for (let i = 0; i < SwarmManager.droneList.length; ++i) {
+			if (SwarmManager.droneList[i].droneUid === uid) {
+				SwarmManager.selectDrone(i);
+				return;
+			}
+		}
 	}
 
 	Item {
 		anchors.fill: parent
+
+		Repeater {
+			model: SwarmManager.droneList
+			delegate: Item {
+				id: followDelegate
+
+				required property var modelData
+
+				Connections {
+					target: followDelegate.modelData
+
+					function onLatitudeChanged() {
+						if (dockRoot.followSelectedDrone && followDelegate.modelData === dockRoot.selectedDrone)
+							dockRoot.followSelected();
+					}
+
+					function onLongitudeChanged() {
+						if (dockRoot.followSelectedDrone && followDelegate.modelData === dockRoot.selectedDrone)
+							dockRoot.followSelected();
+					}
+				}
+			}
+		}
 
 		MapView {
 			id: mapView
@@ -54,8 +83,12 @@ KDDW.DockWidget {
 			threeD: mapSettings.is3d
 			lightMode: !mapSettings.isDark
 			satelliteMode: mapSettings.isSatellite
-			drones: dockRoot.toMapDrones(SwarmManager.drones)
-			flightPaths: dockRoot.toMapPaths(SwarmManager.drones)
+			drones: SwarmManager.droneList
+			selectedDroneUid: dockRoot.selectedDrone ? dockRoot.selectedDrone.droneUid : -1
+			onDroneClicked: function (droneUid) {
+				dockRoot.selectDroneByUid(droneUid);
+			}
+			onUserMovedMap: dockRoot.followSelectedDrone = false
 		}
 
 		Column {
@@ -132,7 +165,14 @@ KDDW.DockWidget {
 				IconButton {
 					iconName: "crosshairs"
 					label: "Follow"
-					onClicked: console.log("Follow vehicle")
+					checkable: true
+					checked: dockRoot.followSelectedDrone
+					enabled: dockRoot.selectedDrone && dockRoot.hasPosition(dockRoot.selectedDrone)
+					onClicked: {
+						dockRoot.followSelectedDrone = checked;
+						if (checked)
+							dockRoot.followSelected();
+					}
 				}
 				IconButton {
 					iconName: "mark-location"
@@ -160,7 +200,7 @@ KDDW.DockWidget {
 				anchors.top: parent.top
 
 				Repeater {
-					model: SwarmManager.drones
+					model: SwarmManager.droneList
 					delegate: DroneStatusBadge {
 						required property int index
 						required property var modelData
@@ -182,13 +222,13 @@ KDDW.DockWidget {
 				horizontal: true
 
 				IconButton {
-					id: armBtn
-					property bool armed: dockRoot.selectedDrone ? dockRoot.selectedDrone.armed : false
-					iconName: armed ? "security-high" : "security-low"
-					label: armed ? "Disarm" : "Arm"
-					labelColor: armed ? "#ff6b6b" : "#6bffb8"
-					highlighted: armed
-					enabled: dockRoot.selectedDrone !== null
+					property bool _armed: dockRoot.selectedDrone ? dockRoot.selectedDrone.armed : false
+					property bool _connected: dockRoot.selectedDrone ? dockRoot.selectedDrone.connected : false
+					iconName: _armed ? "security-high" : "security-low"
+					label: _armed ? "Disarm" : "Arm"
+					labelColor: _armed ? "#ff6b6b" : "#6bffb8"
+					highlighted: _armed
+					enabled: _connected && (!_armed || !(dockRoot.selectedDrone && dockRoot.selectedDrone.inFlight))
 					onClicked: if (dockRoot.selectedDrone)
 						dockRoot.selectedDrone.armed ? dockRoot.selectedDrone.disarm() : dockRoot.selectedDrone.arm()
 				}
@@ -196,7 +236,7 @@ KDDW.DockWidget {
 					iconName: "arrow-up-double"
 					label: "Takeoff"
 					labelColor: "#6bffb8"
-					enabled: dockRoot.selectedDrone !== null
+					enabled: dockRoot.selectedDrone && dockRoot.selectedDrone.connected && dockRoot.selectedDrone.armed && !dockRoot.selectedDrone.inFlight
 					onClicked: if (dockRoot.selectedDrone)
 						dockRoot.selectedDrone.takeoff()
 				}
@@ -204,7 +244,7 @@ KDDW.DockWidget {
 					iconName: "arrow-down-double"
 					label: "Land"
 					labelColor: "#ffd06b"
-					enabled: dockRoot.selectedDrone !== null
+					enabled: dockRoot.selectedDrone && dockRoot.selectedDrone.connected && dockRoot.selectedDrone.inFlight
 					onClicked: if (dockRoot.selectedDrone)
 						dockRoot.selectedDrone.land()
 				}
@@ -212,7 +252,7 @@ KDDW.DockWidget {
 					iconName: "go-home-large"
 					label: "RTH"
 					labelColor: "#6bb8ff"
-					enabled: dockRoot.selectedDrone !== null
+					enabled: dockRoot.selectedDrone && dockRoot.selectedDrone.connected && dockRoot.selectedDrone.inFlight
 					onClicked: if (dockRoot.selectedDrone)
 						dockRoot.selectedDrone.rth()
 				}
@@ -263,20 +303,20 @@ KDDW.DockWidget {
 			darkMode: mapSettings.isDark
 			z: 1
 			onTargetConfirmed: function (target) {
-				if (dockRoot.selectedDroneIndex >= 0)
-					dockRoot._targetStore[dockRoot.selectedDroneIndex] = {
+				if (dockRoot.selectedDrone) {
+					dockRoot._targetStore[String(dockRoot.selectedDrone.droneUid)] = {
 						"alt": target,
 						"locked": true
 					};
-				console.log("Target altitude confirmed:", target.toFixed(1), "m");
+					dockRoot.selectedDrone.setAltitude(target);
+				}
 			}
 			onTargetReset: {
-				if (dockRoot.selectedDroneIndex >= 0)
-					dockRoot._targetStore[dockRoot.selectedDroneIndex] = {
+				if (dockRoot.selectedDrone)
+					dockRoot._targetStore[String(dockRoot.selectedDrone.droneUid)] = {
 						"alt": 0,
 						"locked": false
 					};
-				console.log("Target altitude reset");
 			}
 		}
 	}
