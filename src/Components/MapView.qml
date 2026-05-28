@@ -129,6 +129,7 @@ Item {
 		MapLibre.style: MapLibreMapStyle {
 			drones: root.drones
 			selectedDroneUid: root.selectedDroneUid
+			mapMode: root.mapMode
 			threeD: root.threeD
 			satelliteMode: root.satelliteMode
 			trackedPaths: droneTracker.trackedPaths

@@ -69,11 +69,6 @@ Column {
 			onClicked: root.planningToolRequested("waypoint")
 		}
 		IconButton {
-			iconName: "edit-delete"
-			label: "Delete"
-			onClicked: root.planningToolRequested("delete")
-		}
-		IconButton {
 			iconName: "edit-clear"
 			label: "Clear"
 			onClicked: root.planningToolRequested("clear")

@@ -12,6 +12,7 @@ Style {
 	property bool satelliteMode: false
 	property var trackedPaths: []
 	property var missionItems: []
+	property int mapMode: 0
 	property int selectedMissionItemIndex: -1
 	property int currentMissionItemIndex: 0
 	property double homeLatitude: 0
@@ -135,7 +136,7 @@ Style {
 		property string source: "flight-path-source"
 		// qmllint disable incompatible-type
 		paint: ({
-				"line-color": "#ffaa00",
+				"line-color": "#ff3030",
 				"line-width": 3,
 				"line-opacity": 0.85
 			})
@@ -253,7 +254,7 @@ Style {
 	SourceParameter {
 		styleId: "mission-waypoint-source"
 		type: "geojson"
-		property var data: geometry.missionWaypointGeoJson(root.missionItems, root.selectedMissionItemIndex, root.currentMissionItemIndex, root.missionRevision)
+		property var data: geometry.missionWaypointGeoJson(root.missionItems, root.selectedMissionItemIndex, root.currentMissionItemIndex, root.mapMode, root.missionRevision)
 	}
 	LayerParameter {
 		styleId: "mission-waypoint-layer"

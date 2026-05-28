@@ -3,8 +3,10 @@ pragma ComponentBehavior: Bound
 import Agc.Components
 import Agc.Mavlink
 import Agc.Style
+import QtCore
 import QtPositioning
 import QtQuick
+import QtQuick.Controls
 import com.kdab.dockwidgets as KDDW
 
 KDDW.DockWidget {
@@ -27,6 +29,9 @@ KDDW.DockWidget {
 	property bool missionRunning: false
 	property bool missionPaused: false
 	property bool waypointConfigOpen: false
+	property bool missionLibraryOpen: false
+	property string missionDraftName: "Mission"
+	property int missionLibraryRevision: 0
 	property string missionBusyText: ""
 	property string missionErrorText: ""
 	property double localHomeLatitude: 0
@@ -34,12 +39,26 @@ KDDW.DockWidget {
 	property double localHomeAltitude: 0
 	property bool localHomeValid: false
 
+	Settings {
+		id: missionSettings
+		category: "MissionPlanning"
+		property string savedMissionPlan: ""
+		property string savedMissionPlans: "{}"
+	}
+
 	property var _targetStore: ({})
 	property bool followSelectedDrone: false
 
 	readonly property int selectedDroneIndex: SwarmManager.selectedDroneIndex
 	readonly property var selectedDrone: SwarmManager.selectedDrone
 	readonly property alias hoveredCoordinate: mapView.hoveredCoordinate
+
+	onMapModeChanged: {
+		if (mapMode !== 1) {
+			selectedMissionItemIndex = -1;
+			waypointConfigOpen = false;
+		}
+	}
 
 	onSelectedDroneChanged: {
 		if (selectedDrone) {
@@ -315,6 +334,86 @@ KDDW.DockWidget {
 		return distance >= 1000 ? qsTr("%1 km").arg((distance / 1000).toFixed(2)) : qsTr("%1 m").arg(Math.round(distance));
 	}
 
+	function savedMissionStore() {
+		try {
+			const store = JSON.parse(missionSettings.savedMissionPlans || "{}");
+			return store && typeof store === "object" ? store : {};
+		} catch (error) {
+			return {};
+		}
+	}
+
+	function savedMissionNames() {
+		void missionLibraryRevision;
+		return Object.keys(savedMissionStore()).sort();
+	}
+
+	function selectedSavedMissionName() {
+		const names = savedMissionNames();
+		return names.length > 0 ? names[missionPlanSelector.currentIndex] : "";
+	}
+
+	function saveMissionDraft(name) {
+		const trimmedName = String(name || "").trim();
+		if (trimmedName === "") {
+			setMissionError(qsTr("Name the mission before saving"));
+			return;
+		}
+		if (missionItems.length === 0) {
+			setMissionError(qsTr("No mission to save"));
+			return;
+		}
+		const store = savedMissionStore();
+		store[trimmedName] = {
+			"version": 1,
+			"name": trimmedName,
+			"returnHomeAfterMission": returnHomeAfterMission,
+			"items": missionItems
+		};
+		missionSettings.savedMissionPlans = JSON.stringify(store);
+		missionSettings.savedMissionPlan = JSON.stringify(store[trimmedName]);
+		missionDraftName = trimmedName;
+		missionLibraryRevision += 1;
+		missionErrorText = "";
+		if (selectedDrone)
+			selectedDrone.log(selectedDrone.droneName, qsTr("Mission draft saved: %1").arg(trimmedName), "info");
+	}
+
+	function loadMissionDraft(name) {
+		const store = savedMissionStore();
+		const trimmedName = String(name || "").trim();
+		const plan = store[trimmedName];
+		if (!plan) {
+			setMissionError(qsTr("Select a saved mission draft"));
+			return;
+		}
+		if (!plan.items || !Array.isArray(plan.items)) {
+			setMissionError(qsTr("Saved mission draft is invalid"));
+			return;
+		}
+		missionItems = plan.items;
+		selectedMissionItemIndex = missionItems.length > 0 && mapMode === 1 ? 0 : -1;
+		returnHomeAfterMission = plan.returnHomeAfterMission === true;
+		missionDraftName = trimmedName;
+		missionUploaded = false;
+		missionDirty = false;
+		missionBusy = false;
+		missionRunning = false;
+		missionPaused = false;
+		missionErrorText = "";
+		missionRevision += 1;
+	}
+
+	function deleteMissionDraft(name) {
+		const trimmedName = String(name || "").trim();
+		const store = savedMissionStore();
+		if (!store[trimmedName])
+			return;
+		delete store[trimmedName];
+		missionSettings.savedMissionPlans = JSON.stringify(store);
+		missionLibraryRevision += 1;
+	}
+
 	function validateMissionDraft() {
 		if (!selectedDrone)
 			return qsTr("Select a drone before uploading");
@@ -351,6 +450,10 @@ KDDW.DockWidget {
 			setMissionError(qsTr("Selected drone is not connected"));
 			return;
 		}
+		if (!selectedDrone.readyToFly) {
+			setMissionError(qsTr("Drone is not ready to fly"));
+			return;
+		}
 		if (!missionUploaded || missionDirty) {
 			setMissionError(qsTr("Upload current mission before starting"));
 			return;
@@ -384,6 +487,17 @@ KDDW.DockWidget {
 			selectedDrone.clearMission();
 		}
 		clearLocalMission();
+	}
+
+	function requestMissionDownload() {
+		if (!selectedDrone || !selectedDrone.connected) {
+			setMissionError(qsTr("Selected drone is not connected"));
+			return;
+		}
+		missionBusy = true;
+		missionBusyText = "DOWNLOADING";
+		missionErrorText = "";
+		selectedDrone.downloadMission();
 	}
 
 	Item {
@@ -440,6 +554,23 @@ KDDW.DockWidget {
 					dockRoot.missionErrorText = message;
 				}
 			}
+
+			function onMissionDownloadFinished(success, message, missionItems, returnToLaunchAfterMission) {
+				dockRoot.missionBusy = false;
+				if (success) {
+					dockRoot.missionItems = missionItems;
+					dockRoot.selectedMissionItemIndex = missionItems.length > 0 ? 0 : -1;
+					dockRoot.returnHomeAfterMission = returnToLaunchAfterMission;
+					dockRoot.missionUploaded = missionItems.length > 0;
+					dockRoot.missionDirty = false;
+					dockRoot.missionRunning = false;
+					dockRoot.missionPaused = false;
+					dockRoot.missionErrorText = "";
+					dockRoot.missionRevision += 1;
+				} else {
+					dockRoot.missionErrorText = message;
+				}
+			}
 		}
 
 		Repeater {
@@ -479,7 +610,7 @@ KDDW.DockWidget {
 			activePlanningTool: dockRoot.activePlanningTool
 			activeTrackingTool: dockRoot.activeTrackingTool
 			missionItems: dockRoot.missionItems
-			selectedMissionItemIndex: dockRoot.selectedMissionItemIndex
+			selectedMissionItemIndex: dockRoot.mapMode === 1 ? dockRoot.selectedMissionItemIndex : -1
 			currentMissionItemIndex: dockRoot.selectedDrone ? dockRoot.selectedDrone.wpCurrent : 0
 			homeLatitude: dockRoot.selectedDrone && dockRoot.selectedDrone.homeValid ? dockRoot.selectedDrone.homeLatitude : dockRoot.localHomeLatitude
 			homeLongitude: dockRoot.selectedDrone && dockRoot.selectedDrone.homeValid ? dockRoot.selectedDrone.homeLongitude : dockRoot.localHomeLongitude
@@ -527,9 +658,7 @@ KDDW.DockWidget {
 					dockRoot.activePlanningTool = "edit";
 			}
 			onPlanningToolRequested: function (tool) {
-				if (tool === "delete") {
-					dockRoot.removeSelectedMissionWaypoint();
-				} else if (tool === "clear") {
+				if (tool === "clear") {
 					dockRoot.clearLocalMission();
 				} else if (tool === "return") {
 					dockRoot.returnHomeAfterMission = !dockRoot.returnHomeAfterMission;
@@ -570,6 +699,20 @@ KDDW.DockWidget {
 				onClicked: dockRoot.requestMissionUpload()
 			}
 			IconButton {
+				iconName: "document-open"
+				label: "Download"
+				enabled: !dockRoot.missionBusy && dockRoot.selectedDrone && dockRoot.selectedDrone.connected
+				onClicked: dockRoot.requestMissionDownload()
+			}
+			IconButton {
+				iconName: "document-save"
+				label: "Plans"
+				enabled: !dockRoot.missionBusy
+				checkable: true
+				checked: dockRoot.missionLibraryOpen
+				onClicked: dockRoot.missionLibraryOpen = checked
+			}
+			IconButton {
 				iconName: "media-playback-start"
 				label: "Start"
 				labelColor: "#6bffb8"
@@ -595,6 +738,78 @@ KDDW.DockWidget {
 				font.pixelSize: 10
 				text: dockRoot.missionErrorText
 				visible: dockRoot.missionErrorText !== ""
+			}
+		}
+
+		ButtonGroup {
+			id: missionLibraryPanel
+			z: 6
+			anchors.left: missionOverlay.left
+			anchors.bottom: missionOverlay.top
+			anchors.bottomMargin: Style.sectionSpacing
+			title: "MISSION PLANS"
+			visible: missionOverlay.visible && dockRoot.missionLibraryOpen
+
+			Column {
+				spacing: 4
+
+				Rectangle {
+					width: 190
+					height: 26
+					color: missionNameInput.activeFocus ? "#253247" : "#182231"
+					border.color: missionNameInput.activeFocus ? Style.iconBtnCheckedBg : "#5b6b82"
+					border.width: missionNameInput.activeFocus ? 2 : 1
+					radius: 4
+
+					TextInput {
+						id: missionNameInput
+						anchors.fill: parent
+						anchors.leftMargin: 7
+						anchors.rightMargin: 7
+						verticalAlignment: TextInput.AlignVCenter
+						text: dockRoot.missionDraftName
+						color: Style.iconBtnLabelColor
+						selectedTextColor: "#ffffff"
+						selectionColor: Style.iconBtnCheckedBg
+						font.pixelSize: 11
+						onEditingFinished: dockRoot.missionDraftName = text
+					}
+				}
+
+				ComboBox {
+					id: missionPlanSelector
+					width: 190
+					height: 26
+					model: dockRoot.savedMissionNames()
+					onActivated: function (index) {
+						if (index >= 0 && index < model.length)
+							dockRoot.missionDraftName = model[index];
+					}
+				}
+
+				Row {
+					spacing: Style.sectionSpacing
+
+					IconButton {
+						iconName: "document-save"
+						label: "Save"
+						enabled: dockRoot.missionItems.length > 0
+						onClicked: dockRoot.saveMissionDraft(missionNameInput.text)
+					}
+					IconButton {
+						iconName: "document-open-recent"
+						label: "Load"
+						enabled: missionPlanSelector.count > 0
+						onClicked: dockRoot.loadMissionDraft(dockRoot.selectedSavedMissionName())
+					}
+					IconButton {
+						iconName: "edit-delete"
+						label: "Delete"
+						labelColor: "#ff6b6b"
+						enabled: missionPlanSelector.count > 0
+						onClicked: dockRoot.deleteMissionDraft(dockRoot.selectedSavedMissionName())
+					}
+				}
 			}
 		}
 

@@ -30,6 +30,33 @@ constexpr float kSetExplicitHome = 0.0F;
 QString missionResultString(mavsdk::Mission::Result result) {
 	return QString::fromStdString(std::string(to_string(result)));
 }
+
+QVariantList missionPlanToVariantList(
+	const mavsdk::Mission::MissionPlan& plan) {
+	QVariantList missionItems;
+	missionItems.reserve(static_cast<qsizetype>(plan.mission_items.size()));
+	for (const mavsdk::Mission::MissionItem& missionItem : plan.mission_items) {
+		QVariantMap item;
+		item.insert("latitude", missionItem.latitude_deg);
+		item.insert("longitude", missionItem.longitude_deg);
+		item.insert("altitude", missionItem.relative_altitude_m);
+		item.insert("speed",
+			missionItem.speed_m_s > 0.0F ? missionItem.speed_m_s
+										 : kDefaultMissionSpeedMS);
+		item.insert("speedEnabled", missionItem.speed_m_s > 0.0F);
+		item.insert("acceptanceRadius",
+			missionItem.acceptance_radius_m > 0.0F
+				? missionItem.acceptance_radius_m
+				: kDefaultAcceptanceRadiusM);
+		item.insert(
+			"acceptanceRadiusEnabled", missionItem.acceptance_radius_m > 0.0F);
+		item.insert("flyThrough", missionItem.is_fly_through);
+		item.insert("loiter", missionItem.loiter_time_s);
+		item.insert("loiterEnabled", missionItem.loiter_time_s > 0.0F);
+		missionItems.push_back(item);
+	}
+	return missionItems;
+}
 }  // namespace
 
 DroneManager::DroneManager(int uid, QString name, QString url, QObject* parent)
@@ -526,6 +553,40 @@ void DroneManager::clearMission() {
 			}
 		});
 	});
+}
+
+void DroneManager::downloadMission() {
+	if (!m_mission) {
+		const QString message = "Cannot download mission: not connected";
+		emit logMessage(m_name, message, "warning");
+		emit missionDownloadFinished(false, message, {}, false);
+		return;
+	}
+	m_mission->download_mission_async(
+		[this](mavsdk::Mission::Result result,
+			const mavsdk::Mission::MissionPlan& plan) {
+			auto returnToLaunch =
+				m_mission->get_return_to_launch_after_mission();
+			onThread([this, result, plan, returnToLaunch]() {
+				if (result == mavsdk::Mission::Result::Success) {
+					const QVariantList missionItems =
+						missionPlanToVariantList(plan);
+					const bool rtl =
+						returnToLaunch.first == mavsdk::Mission::Result::Success
+						? returnToLaunch.second
+						: false;
+					emit logMessage(m_name, "Mission downloaded", "info");
+					emit missionDownloadFinished(
+						true, "Mission downloaded", missionItems, rtl);
+				} else {
+					const QString message =
+						QString("Mission download failed: %1")
+							.arg(missionResultString(result));
+					emit logMessage(m_name, message, "error");
+					emit missionDownloadFinished(false, message, {}, false);
+				}
+			});
+		});
 }
 
 void DroneManager::setHome(double latitude, double longitude, double altitude) {

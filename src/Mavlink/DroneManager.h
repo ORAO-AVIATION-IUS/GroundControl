@@ -139,6 +139,7 @@ class DroneManager : public QObject {
 	Q_INVOKABLE void startMission();
 	Q_INVOKABLE void pauseMission();
 	Q_INVOKABLE void clearMission();
+	Q_INVOKABLE void downloadMission();
 	Q_INVOKABLE void setHome(
 		double latitude, double longitude, double altitude);
 	Q_INVOKABLE void log(
@@ -190,6 +191,8 @@ class DroneManager : public QObject {
 	void missionStartFinished(bool success, const QString& message);
 	void missionPauseFinished(bool success, const QString& message);
 	void missionClearFinished(bool success, const QString& message);
+	void missionDownloadFinished(bool success, const QString& message,
+		const QVariantList& missionItems, bool returnToLaunchAfterMission);
 
    private:
 	void setupTelemetry();

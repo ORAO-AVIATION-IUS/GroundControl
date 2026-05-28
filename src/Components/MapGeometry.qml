@@ -276,23 +276,26 @@ QtObject {
 		return featureCollection(features);
 	}
 
-	function missionWaypointGeoJson(items, selectedIndex, currentIndex, revision) {
+	function missionWaypointGeoJson(items, selectedIndex, currentIndex, mapMode, revision) {
 		void revision;
+		const flyMode = mapMode === 2;
 		const features = [];
 		for (let i = 0; i < (items || []).length; ++i) {
 			const item = items[i];
 			if (!item)
 				continue;
+			const selected = !flyMode && i === selectedIndex;
+			const current = currentIndex > 0 && i === currentIndex - 1;
 			features.push({
 				"type": "Feature",
 				"properties": {
 					"index": i,
 					"label": String(i + 1),
-					"selected": i === selectedIndex,
-					"current": currentIndex > 0 && i === currentIndex - 1,
-					"fill": currentIndex > 0 && i === currentIndex - 1 ? "#ffaa00" : (i === selectedIndex ? "#ffaa00" : "#00d0ff"),
-					"radius": i === selectedIndex ? 8 : 6,
-					"strokeWidth": i === selectedIndex ? 3 : 2
+					"selected": selected,
+					"current": current,
+					"fill": current ? "#ffaa00" : (selected ? "#ffaa00" : "#00d0ff"),
+					"radius": flyMode ? (current ? 5 : 3.5) : (selected ? 8 : 6),
+					"strokeWidth": flyMode ? 1.5 : (selected ? 3 : 2)
 				},
 				"geometry": {
 					"type": "Point",
@@ -403,7 +406,7 @@ QtObject {
 			{
 				"latitude": homeLatitude,
 				"longitude": homeLongitude,
-				"altitude": last.altitude || 0
+				"altitude": 0
 			}
 		], revision);
 	}
