@@ -13,6 +13,7 @@ ApplicationWindow {
 	width: 1200
 	height: 800
 	title: qsTr("Ground Control")
+	color: "#0d1117"
 
 	function rowForId(id) {
 		for (let i = 0; i < cameraModel.count; ++i) {

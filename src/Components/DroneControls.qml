@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import Agc.Style as S
 import QtQuick
 import QtQuick.Layouts
 
@@ -21,16 +22,18 @@ Item {
 		id: actBtn
 
 		property string label: ""
-		property color bgColor: "#f0f0f4"
-		property color txtColor: "#3a4a5a"
+		property color bgColor: S.Style.controlActionBg
+		property color bgColorHover: S.Style.controlActionBgHover
+		property color txtColor: S.Style.textPrimary
+		property color borderColor: S.Style.controlActionBorder
 		property bool highlight: false
 		signal tapped
 
 		Layout.fillWidth: true
 		Layout.preferredHeight: 26
 		radius: 0
-		color: !enabled ? Qt.darker(actBtn.bgColor, 0.92) : ma.pressed ? Qt.darker(actBtn.bgColor, 1.12) : ma.containsMouse ? Qt.darker(actBtn.bgColor, 1.06) : actBtn.bgColor
-		border.color: actBtn.highlight ? "#4070b0" : Qt.darker(actBtn.bgColor, 1.16)
+		color: !enabled ? Qt.darker(actBtn.bgColor, 0.92) : ma.pressed ? Qt.darker(actBtn.bgColor, 1.12) : ma.containsMouse ? actBtn.bgColorHover : actBtn.bgColor
+		border.color: actBtn.highlight ? S.Style.borderFocus : actBtn.borderColor
 		border.width: 1
 		opacity: enabled ? 1.0 : 0.4
 
@@ -40,7 +43,7 @@ Item {
 			color: actBtn.txtColor
 			font.pixelSize: 11
 			font.bold: true
-			font.family: "Segoe UI"
+			font.family: S.Style.fontFamily
 		}
 
 		MouseArea {
@@ -60,11 +63,11 @@ Item {
 
 		Text {
 			text: "CONTROLS"
-			color: "#a0a8b0"
+			color: S.Style.telTitleColor
 			font.pixelSize: 9
 			font.bold: true
 			font.letterSpacing: 1.4
-			font.family: "Segoe UI"
+			font.family: S.Style.fontFamily
 			Layout.bottomMargin: 6
 		}
 
@@ -76,36 +79,46 @@ Item {
 
 			ActBtn {
 				label: "ARM"
-				bgColor: "#edf7f1"
-				txtColor: "#1a5830"
+				bgColor: S.Style.controlArmBg
+				bgColorHover: S.Style.controlArmBgHover
+				txtColor: S.Style.controlArmText
+				borderColor: S.Style.controlArmBorder
 				enabled: root.connected && !root.armed
 				onTapped: root.armClicked()
 			}
 			ActBtn {
 				label: "DISARM"
-				bgColor: "#fdf0ee"
-				txtColor: "#6a1e1e"
+				bgColor: S.Style.controlDisarmBg
+				bgColorHover: S.Style.controlDisarmBgHover
+				txtColor: S.Style.controlDisarmText
+				borderColor: S.Style.controlDisarmBorder
 				enabled: root.connected && root.armed && !root.inFlight
 				onTapped: root.disarmClicked()
 			}
 			ActBtn {
 				label: "TAKEOFF"
-				bgColor: "#edf2fa"
-				txtColor: "#1a3060"
+				bgColor: S.Style.controlActionBg
+				bgColorHover: S.Style.controlActionBgHover
+				txtColor: S.Style.info
+				borderColor: S.Style.borderDefault
 				enabled: root.connected && root.armed && !root.inFlight
 				onTapped: root.takeoffClicked()
 			}
 			ActBtn {
 				label: "LAND"
-				bgColor: "#faf4ec"
-				txtColor: "#4a3010"
+				bgColor: S.Style.controlActionBg
+				bgColorHover: S.Style.controlActionBgHover
+				txtColor: S.Style.warning
+				borderColor: S.Style.borderDefault
 				enabled: root.connected && root.inFlight
 				onTapped: root.landClicked()
 			}
 			ActBtn {
 				label: "RTH"
-				bgColor: "#eef2f8"
-				txtColor: "#1a3868"
+				bgColor: S.Style.controlActionBg
+				bgColorHover: S.Style.controlActionBgHover
+				txtColor: S.Style.info
+				borderColor: S.Style.borderDefault
 				enabled: root.connected && root.inFlight
 				onTapped: root.rthClicked()
 			}
@@ -114,18 +127,18 @@ Item {
 		Rectangle {
 			Layout.fillWidth: true
 			Layout.preferredHeight: 1
-			color: "#e8e8ec"
+			color: S.Style.separator
 			Layout.topMargin: 10
 			Layout.bottomMargin: 10
 		}
 
 		Text {
 			text: "FLIGHT MODE"
-			color: "#a0a8b0"
+			color: S.Style.telTitleColor
 			font.pixelSize: 9
 			font.bold: true
 			font.letterSpacing: 1.4
-			font.family: "Segoe UI"
+			font.family: S.Style.fontFamily
 			Layout.bottomMargin: 6
 		}
 
@@ -133,17 +146,17 @@ Item {
 			Layout.fillWidth: true
 			Layout.preferredHeight: 26
 			radius: 0
-			color: "#e8f0fa"
-			border.color: "#4070b0"
+			color: S.Style.controlFlightModeBg
+			border.color: S.Style.controlFlightModeBorder
 			border.width: 1
 
 			Text {
 				anchors.centerIn: parent
 				text: root.flightMode || "UNKNOWN"
-				color: "#1a4890"
+				color: S.Style.controlFlightModeText
 				font.pixelSize: 11
 				font.bold: true
-				font.family: "Segoe UI"
+				font.family: S.Style.fontFamily
 			}
 		}
 

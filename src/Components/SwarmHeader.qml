@@ -1,3 +1,4 @@
+import Agc.Style as S
 import QtQuick
 import QtQuick.Layouts
 
@@ -23,15 +24,15 @@ Item {
 			text: root.droneId
 			font.pixelSize: 15
 			font.bold: true
-			font.family: "Segoe UI"
-			color: "#1a1a2e"
+			font.family: S.Style.fontFamily
+			color: S.Style.textPrimary
 			Layout.alignment: Qt.AlignVCenter
 		}
 
 		Rectangle {
 			Layout.preferredWidth: 1
 			Layout.preferredHeight: 20
-			color: "#e4e4e8"
+			color: S.Style.headerDivider
 			Layout.alignment: Qt.AlignVCenter
 			Layout.leftMargin: 12
 			Layout.rightMargin: 12
@@ -41,15 +42,15 @@ Item {
 			text: root.readyToFly ? "Ready To Fly" : "Not Ready"
 			font.pixelSize: 15
 			font.bold: true
-			font.family: "Segoe UI"
-			color: root.readyToFly ? "#1e7a40" : "#8a2010"
+			font.family: S.Style.fontFamily
+			color: root.readyToFly ? S.Style.success : S.Style.error
 			Layout.alignment: Qt.AlignVCenter
 		}
 
 		Rectangle {
 			Layout.preferredWidth: 1
 			Layout.preferredHeight: 20
-			color: "#e4e4e8"
+			color: S.Style.headerDivider
 			Layout.alignment: Qt.AlignVCenter
 			Layout.leftMargin: 12
 			Layout.rightMargin: 12
@@ -59,15 +60,15 @@ Item {
 			text: root.flightMode || "UNKNOWN"
 			font.pixelSize: 15
 			font.bold: true
-			font.family: "Segoe UI"
-			color: "#344878"
+			font.family: S.Style.fontFamily
+			color: S.Style.textAccent
 			Layout.alignment: Qt.AlignVCenter
 		}
 
 		Rectangle {
 			Layout.preferredWidth: 1
 			Layout.preferredHeight: 20
-			color: "#e4e4e8"
+			color: S.Style.headerDivider
 			Layout.alignment: Qt.AlignVCenter
 			Layout.leftMargin: 12
 			Layout.rightMargin: 12
@@ -77,8 +78,8 @@ Item {
 			text: root.inFlight ? "IN AIR" : root.armed ? "ARMED" : "DISARMED"
 			font.pixelSize: 15
 			font.bold: true
-			font.family: "Segoe UI"
-			color: root.inFlight ? "#1a50a0" : root.armed ? "#1e7a40" : "#606878"
+			font.family: S.Style.fontFamily
+			color: root.inFlight ? S.Style.info : root.armed ? S.Style.success : S.Style.textSecondary
 			Layout.alignment: Qt.AlignVCenter
 		}
 
@@ -92,15 +93,15 @@ Item {
 			Layout.preferredWidth: 76
 			Layout.preferredHeight: 30
 			radius: 0
-			color: "#f6f8fa"
-			border.color: "#e0e4ea"
+			color: S.Style.bgSection
+			border.color: S.Style.borderDefault
 			border.width: 1
 
 			Rectangle {
 				width: 3
 				height: parent.height
 				radius: 0
-				color: root.battery > 50 ? "#1e7a40" : root.battery > 20 ? "#c08000" : "#c02010"
+				color: root.battery > 50 ? S.Style.success : root.battery > 20 ? S.Style.warning : S.Style.error
 			}
 
 			Column {
@@ -112,15 +113,15 @@ Item {
 				Text {
 					text: "BATTERY"
 					font.pixelSize: 8
-					font.family: "Segoe UI"
-					color: "#9090a0"
+					font.family: S.Style.fontFamily
+					color: S.Style.textMuted
 				}
 				Text {
 					text: root.battery + "%  " + root.voltage.toFixed(1) + " V"
 					font.pixelSize: 9
 					font.bold: true
-					font.family: "Segoe UI"
-					color: "#1a1a2e"
+					font.family: S.Style.fontFamily
+					color: S.Style.textPrimary
 				}
 			}
 		}
@@ -131,15 +132,15 @@ Item {
 			Layout.preferredWidth: 76
 			Layout.preferredHeight: 30
 			radius: 0
-			color: root.armed ? "#edf7f1" : "#f6f6f8"
-			border.color: root.armed ? "#8ecaaa" : "#dcdce4"
+			color: S.Style.bgSection
+			border.color: root.armed ? S.Style.success : S.Style.borderDefault
 			border.width: 1
 
 			Rectangle {
 				width: 3
 				height: parent.height
 				radius: 0
-				color: root.armed ? "#1e7a40" : "#c0c4cc"
+				color: root.armed ? S.Style.success : S.Style.textMuted
 			}
 
 			Column {
@@ -151,15 +152,15 @@ Item {
 				Text {
 					text: "STATUS"
 					font.pixelSize: 8
-					font.family: "Segoe UI"
-					color: "#9090a0"
+					font.family: S.Style.fontFamily
+					color: S.Style.textMuted
 				}
 				Text {
 					text: root.armed ? "ARMED" : "DISARMED"
 					font.pixelSize: 9
 					font.bold: true
-					font.family: "Segoe UI"
-					color: root.armed ? "#1a6030" : "#606878"
+					font.family: S.Style.fontFamily
+					color: root.armed ? S.Style.success : S.Style.textSecondary
 				}
 			}
 		}
@@ -169,6 +170,6 @@ Item {
 		anchors.bottom: parent.bottom
 		width: parent.width
 		height: 1
-		color: "#e4e4e8"
+		color: S.Style.headerDivider
 	}
 }

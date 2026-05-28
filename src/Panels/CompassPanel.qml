@@ -1,4 +1,5 @@
 import Agc.Components
+import Agc.Style as S
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -12,7 +13,7 @@ KDDW.DockWidget {
 	Rectangle {
 		id: panelBackground
 		anchors.fill: parent
-		color: "#ffffff"
+		color: S.Style.bgPanel
 
 		ColumnLayout {
 			anchors.fill: parent
@@ -86,8 +87,8 @@ KDDW.DockWidget {
 			Rectangle {
 				Layout.fillWidth: true
 				Layout.preferredHeight: testGrid.implicitHeight + 24
-				color: "#f8f9fa"
-				border.color: "#dee2e6"
+				color: S.Style.bgSection
+				border.color: S.Style.borderDefault
 				border.width: 1
 				radius: 12
 
@@ -102,7 +103,7 @@ KDDW.DockWidget {
 						text: "Pitch: " + Math.round(pitchSlider.value) + "°"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
+						color: S.Style.textPrimary
 						Layout.preferredWidth: 130
 					}
 					Slider {
@@ -119,7 +120,7 @@ KDDW.DockWidget {
 						text: "Roll: " + Math.round(rollSlider.value) + "°"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
+						color: S.Style.textPrimary
 						Layout.preferredWidth: 130
 					}
 					Slider {
@@ -136,7 +137,7 @@ KDDW.DockWidget {
 						text: "Heading: " + Math.round(headingSlider.value) + "°"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
+						color: S.Style.textPrimary
 						Layout.preferredWidth: 130
 					}
 					Slider {
@@ -153,8 +154,7 @@ KDDW.DockWidget {
 						text: "Airspeed: " + Math.round(airspeedSlider.value) + " kt"
 						font.pixelSize: 15
 						font.bold: true
-						color: "#2c3e50"
-						Layout.preferredWidth: 130
+						color: S.Style.textPrimary
 					}
 					Slider {
 						id: airspeedSlider
@@ -170,6 +170,7 @@ KDDW.DockWidget {
 						text: "Yawspeed: " + yawspeedSlider.value.toFixed(2) + " r/s"
 						font.pixelSize: 15
 						font.bold: true
+						color: S.Style.textPrimary
 					}
 					Slider {
 						id: yawspeedSlider
@@ -185,6 +186,7 @@ KDDW.DockWidget {
 						text: "Yacc: " + yaccSlider.value.toFixed(2) + " mg"
 						font.pixelSize: 15
 						font.bold: true
+						color: S.Style.textPrimary
 					}
 					Slider {
 						id: yaccSlider

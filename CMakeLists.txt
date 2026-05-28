@@ -53,12 +53,15 @@ file(GLOB_RECURSE QML_ASSETS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPE
     resources/*.svg
     resources/*.png
     resources/*.json
+    resources/*.qml
 )
 
 qt_add_executable(GroundControl
     src/main.cpp
     src/MessageHandler.h
     src/MessageHandler.cpp
+    src/DarkViewFactory.h
+    src/DarkViewFactory.cpp
 )
 
 file(GLOB ROOT_QML_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS "src/App/*.qml")

@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import Agc.Style as S
 import QtQuick
 import QtQuick.Layouts
 
@@ -19,11 +20,11 @@ Item {
 
 			Text {
 				text: "STATUS LOG"
-				color: "#a0a8b0"
+				color: S.Style.telTitleColor
 				font.pixelSize: 9
 				font.bold: true
 				font.letterSpacing: 1.4
-				font.family: "Segoe UI"
+				font.family: S.Style.fontFamily
 			}
 
 			Item {
@@ -32,9 +33,9 @@ Item {
 
 			Text {
 				text: "CLR"
-				color: clrArea.containsMouse ? "#3a4a5a" : "#b0b8c0"
+				color: clrArea.containsMouse ? S.Style.textPrimary : S.Style.textMuted
 				font.pixelSize: 9
-				font.family: "Segoe UI"
+				font.family: S.Style.fontFamily
 
 				MouseArea {
 					id: clrArea
@@ -48,7 +49,7 @@ Item {
 		Rectangle {
 			Layout.fillWidth: true
 			Layout.preferredHeight: 1
-			color: "#e8e8ec"
+			color: S.Style.separator
 		}
 
 		ListView {
@@ -72,24 +73,24 @@ Item {
 
 				Text {
 					text: logDelegate.ts
-					color: "#b0b8c4"
+					color: S.Style.logTimestampColor
 					font.pixelSize: 9
-					font.family: "Segoe UI"
+					font.family: S.Style.fontFamily
 				}
 				Text {
 					text: "[" + logDelegate.src + "]"
 					Layout.preferredWidth: 36
-					color: logDelegate.src === "SYS" ? "#2a5080" : "#6a4010"
+					color: logDelegate.src === "SYS" ? S.Style.logSrcSysColor : S.Style.logSrcOtherColor
 					font.pixelSize: 9
 					font.bold: true
-					font.family: "Segoe UI"
+					font.family: S.Style.fontFamily
 				}
 				Text {
 					Layout.fillWidth: true
 					text: logDelegate.msg
-					color: logDelegate.level === "err" ? "#8a2010" : logDelegate.level === "warn" ? "#7a5a00" : "#4a5060"
+					color: logDelegate.level === "err" ? S.Style.logMsgErrorColor : logDelegate.level === "warn" ? S.Style.logMsgWarnColor : S.Style.logMsgColor
 					font.pixelSize: 9
-					font.family: "Segoe UI"
+					font.family: S.Style.fontFamily
 					elide: Text.ElideRight
 				}
 			}

@@ -1,3 +1,4 @@
+import Agc.Style as S
 import QtQuick
 import QtQuick.Layouts
 
@@ -21,8 +22,8 @@ Rectangle {
 	signal disarmRequested
 	signal selectRequested
 
-	color: selected ? "#131e30" : "#0c1522"
-	border.color: selected ? "#2f5fcc" : (armed ? "#1d5535" : "#172333")
+	color: selected ? S.Style.cardBgSelected : S.Style.cardBg
+	border.color: selected ? S.Style.cardBorderSelected : (armed ? S.Style.cardBorderArmed : S.Style.cardBorderDefault)
 	border.width: selected ? 2 : 1
 	radius: 8
 
@@ -44,7 +45,7 @@ Rectangle {
 				Layout.preferredWidth: 8
 				Layout.preferredHeight: 8
 				radius: 4
-				color: root.armed ? "#00dd66" : "#cc3333"
+				color: root.armed ? S.Style.success : S.Style.error
 				Behavior on color {
 					ColorAnimation {
 						duration: 300
@@ -54,10 +55,10 @@ Rectangle {
 
 			Text {
 				text: root.droneId
-				color: "#cce0ff"
+				color: S.Style.cardTextId
 				font.pixelSize: 12
 				font.bold: true
-				font.family: "Courier New"
+				font.family: S.Style.fontFamilyMono
 			}
 
 			Item {
@@ -68,18 +69,18 @@ Rectangle {
 				Layout.preferredHeight: 14
 				Layout.preferredWidth: modeLabel.implicitWidth + 10
 				radius: 3
-				color: "#060e1a"
-				border.color: "#1b2d42"
+				color: S.Style.cardModeBg
+				border.color: S.Style.cardModeBorder
 				border.width: 1
 
 				Text {
 					id: modeLabel
 					anchors.centerIn: parent
 					text: root.flightMode
-					color: "#4d7faa"
+					color: S.Style.cardModeText
 					font.pixelSize: 8
 					font.bold: true
-					font.family: "Courier New"
+					font.family: S.Style.fontFamilyMono
 				}
 			}
 
@@ -88,7 +89,7 @@ Rectangle {
 				Layout.preferredWidth: 6
 				Layout.preferredHeight: 6
 				radius: 3
-				color: root.sysHealth ? "#2266dd" : "#dd3311"
+				color: root.sysHealth ? S.Style.info : S.Style.error
 				opacity: 0.85
 			}
 		}
@@ -108,45 +109,45 @@ Rectangle {
 
 			Text {
 				text: "ALT"
-				color: "#2e4d66"
+				color: S.Style.cardTextLabel
 				font.pixelSize: 8
 			}
 			Text {
 				text: root.altitude.toFixed(0) + "m"
-				color: "#7aaac8"
+				color: S.Style.cardTextValue
 				font.pixelSize: 8
 				width: (root.width - 28) / 2
 				elide: Text.ElideRight
 			}
 			Text {
 				text: "SPD"
-				color: "#2e4d66"
+				color: S.Style.cardTextLabel
 				font.pixelSize: 8
 			}
 			Text {
 				text: root.groundspeed.toFixed(1) + "m/s"
-				color: "#7aaac8"
+				color: S.Style.cardTextValue
 				font.pixelSize: 8
 			}
 
 			Text {
 				text: "BAT"
-				color: "#2e4d66"
+				color: S.Style.cardTextLabel
 				font.pixelSize: 8
 			}
 			Text {
 				text: root.battery + "%"
-				color: root.battery > 50 ? "#2db36a" : root.battery > 20 ? "#e0960a" : "#dd3322"
+				color: root.battery > 50 ? S.Style.success : root.battery > 20 ? S.Style.warning : S.Style.error
 				font.pixelSize: 8
 			}
 			Text {
 				text: "GPS"
-				color: "#2e4d66"
+				color: S.Style.cardTextLabel
 				font.pixelSize: 8
 			}
 			Text {
 				text: root.gpsCount + (root.gpsFix === 2 ? "/3D" : root.gpsFix === 1 ? "/2D" : "/--")
-				color: root.gpsFix === 2 ? "#2db36a" : root.gpsFix === 1 ? "#e0960a" : "#dd3322"
+				color: root.gpsFix === 2 ? S.Style.success : root.gpsFix === 1 ? S.Style.warning : S.Style.error
 				font.pixelSize: 8
 			}
 		}
@@ -159,18 +160,18 @@ Rectangle {
 				Layout.fillWidth: true
 				Layout.preferredHeight: 20
 				radius: 3
-				color: armArea.pressed ? "#004d1e" : armArea.containsMouse ? "#003815" : "#00210d"
-				border.color: root.armed ? "#111" : "#007a3d"
+				color: armArea.pressed ? S.Style.cardArmBgPressed : armArea.containsMouse ? S.Style.cardArmBgHover : S.Style.cardArmBg
+				border.color: root.armed ? S.Style.borderDefault : S.Style.controlArmBorder
 				border.width: 1
 				opacity: root.armed ? 0.3 : 1.0
 
 				Text {
 					anchors.centerIn: parent
 					text: "ARM"
-					color: "#00e86e"
+					color: S.Style.cardArmText
 					font.pixelSize: 9
 					font.bold: true
-					font.family: "Courier New"
+					font.family: S.Style.fontFamilyMono
 				}
 
 				MouseArea {
@@ -189,18 +190,18 @@ Rectangle {
 				Layout.fillWidth: true
 				Layout.preferredHeight: 20
 				radius: 3
-				color: disarmArea.pressed ? "#4d1400" : disarmArea.containsMouse ? "#380e00" : "#220800"
-				border.color: root.armed ? "#aa2d00" : "#111"
+				color: disarmArea.pressed ? S.Style.cardDisarmBgPressed : disarmArea.containsMouse ? S.Style.cardDisarmBgHover : S.Style.cardDisarmBg
+				border.color: root.armed ? S.Style.controlDisarmBorder : S.Style.borderDefault
 				border.width: 1
 				opacity: root.armed ? 1.0 : 0.3
 
 				Text {
 					anchors.centerIn: parent
 					text: "DISARM"
-					color: "#ff6022"
+					color: S.Style.cardDisarmText
 					font.pixelSize: 9
 					font.bold: true
-					font.family: "Courier New"
+					font.family: S.Style.fontFamilyMono
 				}
 
 				MouseArea {
