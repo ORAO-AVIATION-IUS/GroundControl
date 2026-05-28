@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import Agc.Components
 import Agc.Mavlink
 import Agc.Style
+import QtPositioning
 import QtQuick
 import com.kdab.dockwidgets as KDDW
 
@@ -12,6 +13,26 @@ KDDW.DockWidget {
 	title: qsTr("Map")
 
 	property int mapMode: 0
+	property string activePlanningTool: "edit"
+	property string activeTrackingTool: ""
+	property var missionItems: []
+	property int selectedMissionItemIndex: -1
+	property int missionRevision: 0
+	property real defaultMissionAltitude: 50
+	property real defaultMissionSpeed: 8
+	property bool returnHomeAfterMission: false
+	property bool missionUploaded: false
+	property bool missionDirty: false
+	property bool missionBusy: false
+	property bool missionRunning: false
+	property bool missionPaused: false
+	property bool waypointConfigOpen: false
+	property string missionBusyText: ""
+	property string missionErrorText: ""
+	property double localHomeLatitude: 0
+	property double localHomeLongitude: 0
+	property double localHomeAltitude: 0
+	property bool localHomeValid: false
 
 	property var _targetStore: ({})
 	property bool followSelectedDrone: false
@@ -51,8 +72,375 @@ KDDW.DockWidget {
 		}
 	}
 
+	function selectedMissionItem() {
+		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
+			return null;
+		return missionItems[selectedMissionItemIndex];
+	}
+
+	function markMissionChanged() {
+		missionRevision += 1;
+		missionErrorText = "";
+		missionRunning = false;
+		missionPaused = false;
+		if (missionUploaded)
+			missionDirty = true;
+	}
+
+	function missionStatusText() {
+		if (missionBusy)
+			return missionBusyText;
+		if (missionErrorText !== "")
+			return "ERROR";
+		if (missionItems.length === 0)
+			return "EMPTY";
+		if (missionRunning)
+			return "RUNNING";
+		if (missionPaused)
+			return "PAUSED";
+		if (missionUploaded && missionDirty)
+			return "DIRTY";
+		if (missionUploaded)
+			return "UPLOADED";
+		return "DRAFT";
+	}
+
+	function setMissionError(message) {
+		missionErrorText = message;
+		missionBusy = false;
+	}
+
+	function handlePlanMapClick(coordinate) {
+		if (activePlanningTool === "waypoint")
+			addMissionWaypoint(coordinate);
+	}
+
+	function setHomePoint(coordinate, sendToDrone) {
+		if (!coordinate || !coordinate.isValid)
+			return;
+		localHomeLatitude = coordinate.latitude;
+		localHomeLongitude = coordinate.longitude;
+		localHomeAltitude = selectedDrone && selectedDrone.altitudeMsl ? selectedDrone.altitudeMsl : 0;
+		localHomeValid = true;
+		if (sendToDrone && selectedDrone && selectedDrone.connected)
+			selectedDrone.setHome(localHomeLatitude, localHomeLongitude, localHomeAltitude);
+	}
+
+	function ensureVisibleHomePoint() {
+		if ((selectedDrone && selectedDrone.homeValid) || localHomeValid)
+			return;
+		if (selectedDrone && hasPosition(selectedDrone))
+			setHomePoint(QtPositioning.coordinate(selectedDrone.latitude, selectedDrone.longitude), false);
+	}
+
+	function addMissionWaypoint(coordinate) {
+		if (!coordinate || !coordinate.isValid || activePlanningTool !== "waypoint")
+			return;
+		const items = missionItems.slice();
+		items.push(waypointFromCoordinate(coordinate, appendAltitude(), appendSpeed()));
+		missionItems = items;
+		selectedMissionItemIndex = items.length - 1;
+		markMissionChanged();
+	}
+
+	function waypointFromCoordinate(coordinate, altitude, speed) {
+		return {
+			"latitude": coordinate.latitude,
+			"longitude": coordinate.longitude,
+			"altitude": altitude,
+			"speed": speed,
+			"speedEnabled": false,
+			"acceptanceRadius": 3,
+			"acceptanceRadiusEnabled": false,
+			"flyThrough": true,
+			"loiter": 0,
+			"loiterEnabled": false
+		};
+	}
+
+	function appendAltitude() {
+		return missionItems.length > 0 ? missionItems[missionItems.length - 1].altitude : defaultMissionAltitude;
+	}
+
+	function appendSpeed() {
+		return missionItems.length > 0 ? missionItems[missionItems.length - 1].speed : defaultMissionSpeed;
+	}
+
+	function segmentAltitude(segmentIndex) {
+		if (segmentIndex < 0 || segmentIndex >= missionItems.length - 1)
+			return appendAltitude();
+		return (missionItems[segmentIndex].altitude + missionItems[segmentIndex + 1].altitude) * 0.5;
+	}
+
+	function segmentSpeed(segmentIndex) {
+		if (segmentIndex < 0 || segmentIndex >= missionItems.length - 1)
+			return appendSpeed();
+		return (missionItems[segmentIndex].speed + missionItems[segmentIndex + 1].speed) * 0.5;
+	}
+
+	function nearestMissionSegmentIndex(coordinate) {
+		if (!coordinate || !coordinate.isValid || missionItems.length < 2)
+			return missionItems.length - 1;
+		let bestIndex = 0;
+		let bestScore = Number.MAX_VALUE;
+		for (let i = 0; i < missionItems.length - 1; ++i) {
+			const a = QtPositioning.coordinate(missionItems[i].latitude, missionItems[i].longitude);
+			const b = QtPositioning.coordinate(missionItems[i + 1].latitude, missionItems[i + 1].longitude);
+			const segmentLength = Math.max(1, a.distanceTo(b));
+			const score = a.distanceTo(coordinate) + coordinate.distanceTo(b) - segmentLength;
+			if (score < bestScore) {
+				bestScore = score;
+				bestIndex = i;
+			}
+		}
+		return bestIndex;
+	}
+
+	function insertMissionWaypoint(coordinate) {
+		if (!coordinate || !coordinate.isValid)
+			return;
+		const segmentIndex = missionItems.length < 2 ? missionItems.length - 1 : nearestMissionSegmentIndex(coordinate);
+		insertMissionWaypointAtSegment(segmentIndex, coordinate);
+	}
+
+	function insertMissionWaypointAtSegment(segmentIndex, coordinate) {
+		if (!coordinate || !coordinate.isValid)
+			return;
+		const items = missionItems.slice();
+		const insertIndex = missionItems.length < 2 ? missionItems.length : Math.max(0, Math.min(segmentIndex + 1, missionItems.length));
+		items.splice(insertIndex, 0, waypointFromCoordinate(coordinate, segmentAltitude(segmentIndex), segmentSpeed(segmentIndex)));
+		missionItems = items;
+		selectedMissionItemIndex = insertIndex;
+		markMissionChanged();
+	}
+
+	function moveMissionWaypoint(index, coordinate) {
+		if (index < 0 || index >= missionItems.length || !coordinate || !coordinate.isValid)
+			return;
+		const items = missionItems.slice();
+		items[index] = Object.assign({}, items[index], {
+			"latitude": coordinate.latitude,
+			"longitude": coordinate.longitude
+		});
+		missionItems = items;
+		selectedMissionItemIndex = index;
+		markMissionChanged();
+	}
+
+	function setSelectedMissionField(fieldName, value, minimumValue) {
+		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
+			return;
+		const items = missionItems.slice();
+		const update = {};
+		update[fieldName] = Math.max(minimumValue, value);
+		items[selectedMissionItemIndex] = Object.assign({}, items[selectedMissionItemIndex], update);
+		missionItems = items;
+		markMissionChanged();
+	}
+
+	function setSelectedMissionAltitude(altitude) {
+		setSelectedMissionField("altitude", altitude, 5);
+	}
+
+	function setSelectedMissionSpeed(speed) {
+		setSelectedMissionField("speed", speed, 0.5);
+	}
+
+	function setSelectedMissionAcceptanceRadius(radius) {
+		setSelectedMissionField("acceptanceRadius", radius, 0.5);
+	}
+
+	function setSelectedMissionLoiter(loiter) {
+		setSelectedMissionField("loiter", loiter, 0);
+	}
+
+	function setSelectedMissionOptionEnabled(fieldName, enabled) {
+		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
+			return;
+		const items = missionItems.slice();
+		const update = {};
+		update[fieldName] = enabled;
+		items[selectedMissionItemIndex] = Object.assign({}, items[selectedMissionItemIndex], update);
+		missionItems = items;
+		markMissionChanged();
+	}
+
+	function setSelectedMissionFlyThrough(flyThrough) {
+		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
+			return;
+		const items = missionItems.slice();
+		items[selectedMissionItemIndex] = Object.assign({}, items[selectedMissionItemIndex], {
+			"flyThrough": flyThrough
+		});
+		missionItems = items;
+		markMissionChanged();
+	}
+
+	function removeSelectedMissionWaypoint() {
+		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
+			return;
+		const items = missionItems.slice();
+		items.splice(selectedMissionItemIndex, 1);
+		missionItems = items;
+		selectedMissionItemIndex = Math.min(selectedMissionItemIndex, items.length - 1);
+		markMissionChanged();
+	}
+
+	function clearLocalMission() {
+		missionItems = [];
+		selectedMissionItemIndex = -1;
+		waypointConfigOpen = false;
+		returnHomeAfterMission = false;
+		missionUploaded = false;
+		missionDirty = false;
+		missionBusy = false;
+		missionRunning = false;
+		missionPaused = false;
+		missionErrorText = "";
+		missionRevision += 1;
+	}
+
+	function missionDistanceMeters() {
+		let distance = 0;
+		for (let i = 1; i < missionItems.length; ++i) {
+			const a = QtPositioning.coordinate(missionItems[i - 1].latitude, missionItems[i - 1].longitude);
+			const b = QtPositioning.coordinate(missionItems[i].latitude, missionItems[i].longitude);
+			distance += a.distanceTo(b);
+		}
+		return distance;
+	}
+
+	function missionDistanceText() {
+		const distance = missionDistanceMeters();
+		return distance >= 1000 ? qsTr("%1 km").arg((distance / 1000).toFixed(2)) : qsTr("%1 m").arg(Math.round(distance));
+	}
+
+	function validateMissionDraft() {
+		if (!selectedDrone)
+			return qsTr("Select a drone before uploading");
+		if (!selectedDrone.connected)
+			return qsTr("Selected drone is not connected");
+		if (missionItems.length < 2)
+			return qsTr("Add at least 2 waypoints");
+		for (let i = 0; i < missionItems.length; ++i) {
+			const item = missionItems[i];
+			if (item.altitude < 5)
+				return qsTr("Waypoint %1 altitude is too low").arg(i + 1);
+			if (item.speedEnabled && item.speed <= 0)
+				return qsTr("Waypoint %1 speed is invalid").arg(i + 1);
+		}
+		return "";
+	}
+
+	function requestMissionUpload() {
+		const error = validateMissionDraft();
+		if (error !== "") {
+			setMissionError(error);
+			if (selectedDrone)
+				selectedDrone.log(selectedDrone.droneName, error, "warning");
+			return;
+		}
+		missionBusy = true;
+		missionBusyText = "UPLOADING";
+		missionErrorText = "";
+		selectedDrone.uploadMission(missionItems, returnHomeAfterMission);
+	}
+
+	function requestMissionStart() {
+		if (!selectedDrone || !selectedDrone.connected) {
+			setMissionError(qsTr("Selected drone is not connected"));
+			return;
+		}
+		if (!missionUploaded || missionDirty) {
+			setMissionError(qsTr("Upload current mission before starting"));
+			return;
+		}
+		if (!selectedDrone.sensorGps) {
+			setMissionError(qsTr("GPS is not ready"));
+			return;
+		}
+		if (selectedDrone.battery <= 20) {
+			setMissionError(qsTr("Battery is too low for mission start"));
+			return;
+		}
+		missionBusy = true;
+		missionBusyText = "STARTING";
+		missionErrorText = "";
+		selectedDrone.startMission();
+	}
+
+	function requestMissionPause() {
+		if (!selectedDrone || !selectedDrone.connected)
+			return;
+		missionBusy = true;
+		missionBusyText = "PAUSING";
+		selectedDrone.pauseMission();
+	}
+
+	function requestMissionClear() {
+		if (selectedDrone && selectedDrone.connected) {
+			missionBusy = true;
+			missionBusyText = "CLEARING";
+			selectedDrone.clearMission();
+		}
+		clearLocalMission();
+	}
+
 	Item {
 		anchors.fill: parent
+
+		Connections {
+			target: dockRoot.selectedDrone
+			ignoreUnknownSignals: true
+
+			function onMissionUploadFinished(success, message) {
+				dockRoot.missionBusy = false;
+				if (success) {
+					dockRoot.missionUploaded = true;
+					dockRoot.missionDirty = false;
+					dockRoot.missionRunning = false;
+					dockRoot.missionPaused = false;
+					dockRoot.missionErrorText = "";
+				} else {
+					dockRoot.missionErrorText = message;
+				}
+			}
+
+			function onMissionStartFinished(success, message) {
+				dockRoot.missionBusy = false;
+				if (success) {
+					dockRoot.missionRunning = true;
+					dockRoot.missionPaused = false;
+					dockRoot.missionErrorText = "";
+				} else {
+					dockRoot.missionErrorText = message;
+				}
+			}
+
+			function onMissionPauseFinished(success, message) {
+				dockRoot.missionBusy = false;
+				if (success) {
+					dockRoot.missionRunning = false;
+					dockRoot.missionPaused = true;
+					dockRoot.missionErrorText = "";
+				} else {
+					dockRoot.missionErrorText = message;
+				}
+			}
+
+			function onMissionClearFinished(success, message) {
+				dockRoot.missionBusy = false;
+				if (success) {
+					dockRoot.missionUploaded = false;
+					dockRoot.missionDirty = false;
+					dockRoot.missionRunning = false;
+					dockRoot.missionPaused = false;
+					dockRoot.missionErrorText = "";
+				} else {
+					dockRoot.missionErrorText = message;
+				}
+			}
+		}
 
 		Repeater {
 			model: SwarmManager.droneList
@@ -87,8 +475,35 @@ KDDW.DockWidget {
 			drones: SwarmManager.droneList
 			selectedDroneUid: dockRoot.selectedDrone ? dockRoot.selectedDrone.droneUid : -1
 			followedDroneUid: dockRoot.followSelectedDrone && dockRoot.selectedDrone ? dockRoot.selectedDrone.droneUid : -1
+			mapMode: dockRoot.mapMode
+			activePlanningTool: dockRoot.activePlanningTool
+			activeTrackingTool: dockRoot.activeTrackingTool
+			missionItems: dockRoot.missionItems
+			selectedMissionItemIndex: dockRoot.selectedMissionItemIndex
+			currentMissionItemIndex: dockRoot.selectedDrone ? dockRoot.selectedDrone.wpCurrent : 0
+			homeLatitude: dockRoot.selectedDrone && dockRoot.selectedDrone.homeValid ? dockRoot.selectedDrone.homeLatitude : dockRoot.localHomeLatitude
+			homeLongitude: dockRoot.selectedDrone && dockRoot.selectedDrone.homeValid ? dockRoot.selectedDrone.homeLongitude : dockRoot.localHomeLongitude
+			homeValid: dockRoot.selectedDrone && dockRoot.selectedDrone.homeValid ? true : dockRoot.localHomeValid
+			returnHomeAfterMission: dockRoot.returnHomeAfterMission
+			missionRevision: dockRoot.missionRevision
 			onDroneClicked: function (droneUid) {
 				dockRoot.selectDroneByUid(droneUid);
+			}
+			onMissionMapClicked: function (coordinate) {
+				dockRoot.handlePlanMapClick(coordinate);
+			}
+			onMissionItemClicked: function (index) {
+				dockRoot.selectedMissionItemIndex = index;
+			}
+			onMissionItemMoved: function (index, coordinate) {
+				dockRoot.moveMissionWaypoint(index, coordinate);
+			}
+			onMissionSegmentInsertRequested: function (segmentIndex, coordinate) {
+				dockRoot.insertMissionWaypointAtSegment(segmentIndex, coordinate);
+			}
+			onHomeMapClicked: function (coordinate) {
+				dockRoot.setHomePoint(coordinate, true);
+				dockRoot.activeTrackingTool = "";
 			}
 			onUserMovedMap: dockRoot.followSelectedDrone = false
 		}
@@ -98,13 +513,32 @@ KDDW.DockWidget {
 			anchors.top: parent.top
 			anchors.margins: Style.overlayMargin
 			mapMode: dockRoot.mapMode
+			activePlanningTool: dockRoot.activePlanningTool
+			activeTrackingTool: dockRoot.activeTrackingTool
+			returnHomeAfterMission: dockRoot.returnHomeAfterMission
+			canReturnFromSelectedWaypoint: dockRoot.selectedMissionItemIndex === dockRoot.missionItems.length - 1 && dockRoot.missionItems.length > 0
 			followSelectedDrone: dockRoot.followSelectedDrone
 			canFollowSelectedDrone: dockRoot.selectedDrone ? dockRoot.hasPosition(dockRoot.selectedDrone) : false
 			onMapModeRequested: function (mode) {
 				dockRoot.mapMode = mode;
+				if (mode !== 2)
+					dockRoot.activeTrackingTool = "";
+				if (mode === 1 && (dockRoot.activePlanningTool === "" || dockRoot.activePlanningTool === "home"))
+					dockRoot.activePlanningTool = "edit";
 			}
 			onPlanningToolRequested: function (tool) {
-				console.log("Planning tool", tool);
+				if (tool === "delete") {
+					dockRoot.removeSelectedMissionWaypoint();
+				} else if (tool === "clear") {
+					dockRoot.clearLocalMission();
+				} else if (tool === "return") {
+					dockRoot.returnHomeAfterMission = !dockRoot.returnHomeAfterMission;
+					if (dockRoot.returnHomeAfterMission)
+						dockRoot.ensureVisibleHomePoint();
+					dockRoot.markMissionChanged();
+				} else {
+					dockRoot.activePlanningTool = tool;
+				}
 			}
 			onFollowSelectedDroneRequested: function (follow) {
 				dockRoot.followSelectedDrone = follow;
@@ -112,7 +546,147 @@ KDDW.DockWidget {
 					dockRoot.followSelected();
 			}
 			onTrackingToolRequested: function (tool) {
-				console.log("Tracking tool", tool);
+				if (tool === "home")
+					dockRoot.activeTrackingTool = dockRoot.activeTrackingTool === "home" ? "" : "home";
+				else
+					console.log("Tracking tool", tool);
+			}
+		}
+
+		ButtonGroup {
+			id: missionOverlay
+			z: 5
+			anchors.left: parent.left
+			anchors.bottom: parent.bottom
+			anchors.margins: Style.overlayMargin
+			title: "MISSION  " + dockRoot.missionStatusText() + "  " + dockRoot.missionItems.length + " WP  " + dockRoot.missionDistanceText() + (dockRoot.returnHomeAfterMission ? "  RTH" : "")
+			horizontal: true
+			visible: dockRoot.mapMode === 1 || dockRoot.missionItems.length > 0
+
+			IconButton {
+				iconName: "document-send"
+				label: "Upload"
+				enabled: !dockRoot.missionBusy && dockRoot.selectedDrone && dockRoot.selectedDrone.connected && dockRoot.missionItems.length >= 2
+				onClicked: dockRoot.requestMissionUpload()
+			}
+			IconButton {
+				iconName: "media-playback-start"
+				label: "Start"
+				labelColor: "#6bffb8"
+				enabled: !dockRoot.missionBusy && dockRoot.selectedDrone && dockRoot.selectedDrone.connected && dockRoot.missionUploaded && !dockRoot.missionDirty
+				onClicked: dockRoot.requestMissionStart()
+			}
+			IconButton {
+				iconName: "media-playback-pause"
+				label: "Pause"
+				labelColor: "#ffd06b"
+				enabled: !dockRoot.missionBusy && dockRoot.selectedDrone && dockRoot.selectedDrone.connected && dockRoot.missionRunning
+				onClicked: dockRoot.requestMissionPause()
+			}
+			IconButton {
+				iconName: "edit-clear"
+				label: "Clear"
+				labelColor: "#ff6b6b"
+				enabled: !dockRoot.missionBusy && (dockRoot.missionItems.length > 0 || dockRoot.missionUploaded)
+				onClicked: dockRoot.requestMissionClear()
+			}
+			Text {
+				color: "#ff6b6b"
+				font.pixelSize: 10
+				text: dockRoot.missionErrorText
+				visible: dockRoot.missionErrorText !== ""
+			}
+		}
+
+		ButtonGroup {
+			id: waypointInspector
+			z: 5
+			anchors.left: missionOverlay.right
+			anchors.bottom: parent.bottom
+			anchors.margins: Style.overlayMargin
+			title: dockRoot.selectedMissionItem() ? "WAYPOINT " + (dockRoot.selectedMissionItemIndex + 1) : "WAYPOINT"
+			horizontal: true
+			visible: dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() !== null
+
+			IconButton {
+				iconName: "configure"
+				label: "Config"
+				checkable: true
+				checked: dockRoot.waypointConfigOpen
+				onClicked: dockRoot.waypointConfigOpen = checked
+			}
+			IconButton {
+				iconName: dockRoot.selectedMissionItem() && dockRoot.selectedMissionItem().flyThrough ? "media-seek-forward" : "media-playback-pause"
+				label: dockRoot.selectedMissionItem() && dockRoot.selectedMissionItem().flyThrough ? "Fly through" : "Stop at WP"
+				checkable: true
+				checked: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().flyThrough : false
+				onClicked: dockRoot.setSelectedMissionFlyThrough(checked)
+			}
+			IconButton {
+				iconName: "edit-delete"
+				label: "Delete WP"
+				labelColor: "#ff6b6b"
+				onClicked: dockRoot.removeSelectedMissionWaypoint()
+			}
+		}
+
+		ButtonGroup {
+			id: waypointConfigPanel
+			z: 6
+			anchors.left: waypointInspector.left
+			anchors.bottom: waypointInspector.top
+			anchors.bottomMargin: Style.sectionSpacing
+			title: "WP OPTIONS"
+			visible: waypointInspector.visible && dockRoot.waypointConfigOpen
+
+			Column {
+				spacing: 2
+
+				MissionOptionEditor {
+					title: "Speed"
+					suffix: "m/s"
+					value: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().speed : 0
+					optionEnabled: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().speedEnabled : false
+					minimumValue: 0.5
+					maximumValue: 100
+					decimals: 1
+					onOptionEnabledEdited: function (enabled) {
+						dockRoot.setSelectedMissionOptionEnabled("speedEnabled", enabled);
+					}
+					onValueEdited: function (value) {
+						dockRoot.setSelectedMissionSpeed(value);
+					}
+				}
+				MissionOptionEditor {
+					title: "Radius"
+					suffix: "m"
+					value: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().acceptanceRadius : 0
+					optionEnabled: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().acceptanceRadiusEnabled : false
+					minimumValue: 0.5
+					maximumValue: 200
+					decimals: 1
+					onOptionEnabledEdited: function (enabled) {
+						dockRoot.setSelectedMissionOptionEnabled("acceptanceRadiusEnabled", enabled);
+					}
+					onValueEdited: function (value) {
+						dockRoot.setSelectedMissionAcceptanceRadius(value);
+					}
+				}
+				MissionOptionEditor {
+					title: "Loiter"
+					suffix: "s"
+					value: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().loiter : 0
+					optionEnabled: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().loiterEnabled : false
+					minimumValue: 0
+					maximumValue: 3600
+					decimals: 0
+					onOptionEnabledEdited: function (enabled) {
+						dockRoot.setSelectedMissionOptionEnabled("loiterEnabled", enabled);
+					}
+					onValueEdited: function (value) {
+						dockRoot.setSelectedMissionLoiter(value);
+					}
+				}
 			}
 		}
 
@@ -224,15 +798,20 @@ KDDW.DockWidget {
 
 		AltitudeTape {
 			id: altTape
-			enabled: dockRoot.selectedDroneIndex >= 0
+			enabled: dockRoot.selectedDroneIndex >= 0 || (dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() !== null)
 			anchors.right: parent.right
 			anchors.top: parent.top
 			anchors.bottom: parent.bottom
-			altitude: dockRoot.selectedDrone ? dockRoot.selectedDrone.altitude : 0
+			altitude: dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().altitude : (dockRoot.selectedDrone ? dockRoot.selectedDrone.altitude : 0)
 			darkMode: mapSettings.isDark
+			liveEdit: dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() !== null
+			minimumAltitude: liveEdit ? 5 : 0
 			z: 1
+			onTargetEdited: function (target) {
+				dockRoot.setSelectedMissionAltitude(target);
+			}
 			onTargetConfirmed: function (target) {
-				if (dockRoot.selectedDrone) {
+				if (!altTape.liveEdit && dockRoot.selectedDrone) {
 					dockRoot._targetStore[String(dockRoot.selectedDrone.droneUid)] = {
 						"alt": target,
 						"locked": true
@@ -241,7 +820,7 @@ KDDW.DockWidget {
 				}
 			}
 			onTargetReset: {
-				if (dockRoot.selectedDrone)
+				if (!altTape.liveEdit && dockRoot.selectedDrone)
 					dockRoot._targetStore[String(dockRoot.selectedDrone.droneUid)] = {
 						"alt": 0,
 						"locked": false

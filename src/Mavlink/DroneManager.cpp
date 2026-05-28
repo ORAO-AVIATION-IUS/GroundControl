@@ -1,7 +1,10 @@
 #include "DroneManager.h"
 
 #include <cmath>
+#include <string>
 #include <utility>
+
+#include <QVariantMap>
 
 namespace {
 constexpr double kRatePosition = 10.0;
@@ -14,6 +17,19 @@ constexpr double kRateVelocity = 10.0;
 constexpr double kRateFixedwingMetrics = 10.0;
 constexpr double kRateInFlight = 10.0;
 constexpr int kReadyBatteryPercent = 20;
+constexpr float kDefaultMissionAltitudeM = 50.0F;
+constexpr float kDefaultMissionSpeedMS = 8.0F;
+constexpr float kDefaultAcceptanceRadiusM = 3.0F;
+constexpr double kMinLatitudeDeg = -90.0;
+constexpr double kMaxLatitudeDeg = 90.0;
+constexpr double kMinLongitudeDeg = -180.0;
+constexpr double kMaxLongitudeDeg = 180.0;
+constexpr uint16_t kMavCmdDoSetHome = 179;
+constexpr float kSetExplicitHome = 0.0F;
+
+QString missionResultString(mavsdk::Mission::Result result) {
+	return QString::fromStdString(std::string(to_string(result)));
+}
 }  // namespace
 
 DroneManager::DroneManager(int uid, QString name, QString url, QObject* parent)
@@ -77,6 +93,18 @@ void DroneManager::attachSystem(const std::shared_ptr<mavsdk::System>& system) {
 	m_system = system;
 	m_telemetry = std::make_unique<mavsdk::Telemetry>(system);
 	m_action = std::make_unique<mavsdk::Action>(system);
+	m_mission = std::make_unique<mavsdk::Mission>(system);
+	m_mavlinkPassthrough = std::make_unique<mavsdk::MavlinkPassthrough>(system);
+
+	m_missionProgressHandle = m_mission->subscribe_mission_progress(
+		[this](mavsdk::Mission::MissionProgress progress) {
+			onThread([this, progress]() {
+				updateAndEmit(m_wpCurrent, static_cast<int>(progress.current),
+					&DroneManager::wpCurrentChanged);
+				updateAndEmit(m_wpTotal, static_cast<int>(progress.total),
+					&DroneManager::wpTotalChanged);
+			});
+		});
 
 	setConnecting(false);
 
@@ -89,6 +117,12 @@ void DroneManager::attachSystem(const std::shared_ptr<mavsdk::System>& system) {
 void DroneManager::detachSystem() {
 	teardownTelemetry();
 
+	if (m_mission && m_missionProgressHandle.valid()) {
+		m_mission->unsubscribe_mission_progress(m_missionProgressHandle);
+		m_missionProgressHandle = {};
+	}
+	m_mavlinkPassthrough.reset();
+	m_mission.reset();
 	m_action.reset();
 	m_telemetry.reset();
 	m_system.reset();
@@ -177,6 +211,22 @@ double DroneManager::latitude() const {
 }
 double DroneManager::longitude() const {
 	return m_longitude;
+}
+
+double DroneManager::homeLatitude() const {
+	return m_homeLatitude;
+}
+
+double DroneManager::homeLongitude() const {
+	return m_homeLongitude;
+}
+
+double DroneManager::homeAltitude() const {
+	return m_homeAltitude;
+}
+
+bool DroneManager::homeValid() const {
+	return m_homeValid;
 }
 
 double DroneManager::voltage() const {
@@ -336,6 +386,181 @@ void DroneManager::setAltitude(double altitudeMeters) {
 		});
 }
 
+void DroneManager::uploadMission(
+	const QVariantList& missionItems, bool returnToLaunchAfterMission) {
+	if (!m_mission) {
+		const QString message = "Cannot upload mission: not connected";
+		emit logMessage(m_name, message, "warning");
+		emit missionUploadFinished(false, message);
+		return;
+	}
+	if (missionItems.size() < 2) {
+		const QString message =
+			"Cannot upload mission: add at least 2 waypoints";
+		emit logMessage(m_name, message, "warning");
+		emit missionUploadFinished(false, message);
+		return;
+	}
+
+	mavsdk::Mission::MissionPlan plan;
+	plan.mission_items.reserve(static_cast<size_t>(missionItems.size()));
+	for (const QVariant& value : missionItems) {
+		const QVariantMap item = value.toMap();
+		const double latitude = item.value("latitude").toDouble();
+		const double longitude = item.value("longitude").toDouble();
+		if (latitude < kMinLatitudeDeg || latitude > kMaxLatitudeDeg ||
+			longitude < kMinLongitudeDeg || longitude > kMaxLongitudeDeg) {
+			const QString message = "Cannot upload mission: invalid waypoint";
+			emit logMessage(m_name, message, "warning");
+			emit missionUploadFinished(false, message);
+			return;
+		}
+
+		mavsdk::Mission::MissionItem missionItem{};
+		missionItem.latitude_deg = latitude;
+		missionItem.longitude_deg = longitude;
+		missionItem.relative_altitude_m = static_cast<float>(
+			item.value("altitude", kDefaultMissionAltitudeM).toDouble());
+		if (item.value("speedEnabled", false).toBool()) {
+			missionItem.speed_m_s = static_cast<float>(
+				item.value("speed", kDefaultMissionSpeedMS).toDouble());
+		}
+		if (item.value("acceptanceRadiusEnabled", false).toBool()) {
+			missionItem.acceptance_radius_m = static_cast<float>(
+				item.value("acceptanceRadius", kDefaultAcceptanceRadiusM)
+					.toDouble());
+		}
+		missionItem.is_fly_through = item.value("flyThrough", true).toBool();
+		if (item.value("loiterEnabled", false).toBool()) {
+			missionItem.loiter_time_s =
+				static_cast<float>(item.value("loiter", 0.0).toDouble());
+		}
+		missionItem.camera_action =
+			mavsdk::Mission::MissionItem::CameraAction::None;
+		missionItem.vehicle_action =
+			mavsdk::Mission::MissionItem::VehicleAction::None;
+		plan.mission_items.push_back(missionItem);
+	}
+
+	m_mission->set_return_to_launch_after_mission(returnToLaunchAfterMission);
+	m_mission->upload_mission_async(
+		plan, [this](mavsdk::Mission::Result result) {
+			onThread([this, result]() {
+				if (result == mavsdk::Mission::Result::Success) {
+					emit logMessage(m_name, "Mission uploaded", "info");
+					emit missionUploadFinished(true, "Mission uploaded");
+				} else {
+					const QString message =
+						QString("Mission upload failed: %1")
+							.arg(missionResultString(result));
+					emit logMessage(m_name, message, "error");
+					emit missionUploadFinished(false, message);
+				}
+			});
+		});
+}
+
+void DroneManager::startMission() {
+	if (!m_mission) {
+		const QString message = "Cannot start mission: not connected";
+		emit logMessage(m_name, message, "warning");
+		emit missionStartFinished(false, message);
+		return;
+	}
+	m_mission->start_mission_async([this](mavsdk::Mission::Result result) {
+		onThread([this, result]() {
+			if (result == mavsdk::Mission::Result::Success) {
+				emit logMessage(m_name, "Mission started", "info");
+				emit missionStartFinished(true, "Mission started");
+			} else {
+				const QString message = QString("Mission start failed: %1")
+											.arg(missionResultString(result));
+				emit logMessage(m_name, message, "error");
+				emit missionStartFinished(false, message);
+			}
+		});
+	});
+}
+
+void DroneManager::pauseMission() {
+	if (!m_mission) {
+		const QString message = "Cannot pause mission: not connected";
+		emit logMessage(m_name, message, "warning");
+		emit missionPauseFinished(false, message);
+		return;
+	}
+	m_mission->pause_mission_async([this](mavsdk::Mission::Result result) {
+		onThread([this, result]() {
+			if (result == mavsdk::Mission::Result::Success) {
+				emit logMessage(m_name, "Mission paused", "info");
+				emit missionPauseFinished(true, "Mission paused");
+			} else {
+				const QString message = QString("Mission pause failed: %1")
+											.arg(missionResultString(result));
+				emit logMessage(m_name, message, "error");
+				emit missionPauseFinished(false, message);
+			}
+		});
+	});
+}
+
+void DroneManager::clearMission() {
+	if (!m_mission) {
+		const QString message = "Cannot clear mission: not connected";
+		emit logMessage(m_name, message, "warning");
+		emit missionClearFinished(false, message);
+		return;
+	}
+	m_mission->clear_mission_async([this](mavsdk::Mission::Result result) {
+		onThread([this, result]() {
+			if (result == mavsdk::Mission::Result::Success) {
+				updateAndEmit(m_wpCurrent, 0, &DroneManager::wpCurrentChanged);
+				updateAndEmit(m_wpTotal, 0, &DroneManager::wpTotalChanged);
+				emit logMessage(m_name, "Mission cleared", "info");
+				emit missionClearFinished(true, "Mission cleared");
+			} else {
+				const QString message = QString("Mission clear failed: %1")
+											.arg(missionResultString(result));
+				emit logMessage(m_name, message, "error");
+				emit missionClearFinished(false, message);
+			}
+		});
+	});
+}
+
+void DroneManager::setHome(double latitude, double longitude, double altitude) {
+	if (!m_mavlinkPassthrough) {
+		emit logMessage(m_name, "Cannot set home: not connected", "warning");
+		return;
+	}
+	if (latitude < kMinLatitudeDeg || latitude > kMaxLatitudeDeg ||
+		longitude < kMinLongitudeDeg || longitude > kMaxLongitudeDeg) {
+		emit logMessage(
+			m_name, "Cannot set home: invalid coordinate", "warning");
+		return;
+	}
+
+	mavsdk::MavlinkPassthrough::CommandLong command{};
+	command.target_sysid = m_mavlinkPassthrough->get_target_sysid();
+	command.target_compid = m_mavlinkPassthrough->get_target_compid();
+	command.command = kMavCmdDoSetHome;
+	command.param1 = kSetExplicitHome;
+	command.param5 = static_cast<float>(latitude);
+	command.param6 = static_cast<float>(longitude);
+	command.param7 = static_cast<float>(altitude);
+
+	const auto result = m_mavlinkPassthrough->send_command_long(command);
+	if (result == mavsdk::MavlinkPassthrough::Result::Success) {
+		updateAndEmit(m_homeLatitude, latitude, &DroneManager::homeChanged);
+		updateAndEmit(m_homeLongitude, longitude, &DroneManager::homeChanged);
+		updateAndEmit(m_homeAltitude, altitude, &DroneManager::homeChanged);
+		updateAndEmit(m_homeValid, true, &DroneManager::homeChanged);
+		emit logMessage(m_name, "Home point set", "info");
+	} else {
+		emit logMessage(m_name, "Set home failed", "error");
+	}
+}
+
 void DroneManager::log(
 	const QString& source, const QString& message, const QString& level) {
 	emit logMessage(source, message, level);
@@ -355,6 +580,7 @@ void DroneManager::setupTelemetry() {
 	m_telemetry->set_rate_velocity_ned(kRateVelocity);
 	m_telemetry->set_rate_fixedwing_metrics(kRateFixedwingMetrics);
 	m_telemetry->set_rate_in_air(kRateInFlight);
+	m_telemetry->set_rate_home(1.0);
 
 	m_positionHandle = m_telemetry->subscribe_position(
 		[this](mavsdk::Telemetry::Position pos) {
@@ -490,6 +716,23 @@ void DroneManager::setupTelemetry() {
 			});
 		});
 
+	m_homeHandle = m_telemetry->subscribe_home(
+		[this](mavsdk::Telemetry::HomePosition home) {
+			onThread([this, home]() {
+				if (std::isnan(home.latitude_deg) ||
+					std::isnan(home.longitude_deg)) {
+					return;
+				}
+				updateAndEmit(m_homeLatitude, home.latitude_deg,
+					&DroneManager::homeChanged);
+				updateAndEmit(m_homeLongitude, home.longitude_deg,
+					&DroneManager::homeChanged);
+				updateAndEmit(m_homeAltitude, home.absolute_altitude_m,
+					&DroneManager::homeChanged);
+				updateAndEmit(m_homeValid, true, &DroneManager::homeChanged);
+			});
+		});
+
 	{
 		bool armed = m_telemetry->armed();
 		bool inAir = m_telemetry->in_air();
@@ -524,6 +767,10 @@ void DroneManager::setupTelemetry() {
 }
 
 void DroneManager::teardownTelemetry() {
+	if (m_mission && m_missionProgressHandle.valid()) {
+		m_mission->unsubscribe_mission_progress(m_missionProgressHandle);
+		m_missionProgressHandle = {};
+	}
 	if (m_telemetry) {
 		if (m_positionHandle.valid()) {
 			m_telemetry->unsubscribe_position(m_positionHandle);
@@ -569,6 +816,10 @@ void DroneManager::teardownTelemetry() {
 			m_telemetry->unsubscribe_fixedwing_metrics(
 				m_fixedwingMetricsHandle);
 			m_fixedwingMetricsHandle = {};
+		}
+		if (m_homeHandle.valid()) {
+			m_telemetry->unsubscribe_home(m_homeHandle);
+			m_homeHandle = {};
 		}
 	}
 	if (m_system && m_isConnectedHandle.valid()) {

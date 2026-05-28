@@ -9,6 +9,10 @@ Column {
 	property int mapMode: 0
 	property bool followSelectedDrone: false
 	property bool canFollowSelectedDrone: false
+	property string activePlanningTool: "edit"
+	property string activeTrackingTool: ""
+	property bool returnHomeAfterMission: false
+	property bool canReturnFromSelectedWaypoint: false
 
 	signal mapModeRequested(int mode)
 	signal planningToolRequested(string tool)
@@ -51,24 +55,36 @@ Column {
 		}
 
 		IconButton {
+			iconName: "edit-select"
+			label: "Edit"
+			checkable: true
+			checked: root.activePlanningTool === "edit"
+			onClicked: root.planningToolRequested("edit")
+		}
+		IconButton {
 			iconName: "flag-black"
-			label: "Waypoint"
+			label: "WP"
+			checkable: true
+			checked: root.activePlanningTool === "waypoint"
 			onClicked: root.planningToolRequested("waypoint")
 		}
 		IconButton {
-			iconName: "draw-polygon"
-			label: "Survey"
-			onClicked: root.planningToolRequested("survey")
+			iconName: "edit-delete"
+			label: "Delete"
+			onClicked: root.planningToolRequested("delete")
 		}
 		IconButton {
-			iconName: "draw-rectangle"
-			label: "Fence"
-			onClicked: root.planningToolRequested("geofence")
+			iconName: "edit-clear"
+			label: "Clear"
+			onClicked: root.planningToolRequested("clear")
 		}
 		IconButton {
-			iconName: "measure"
-			label: "Measure"
-			onClicked: root.planningToolRequested("measure")
+			iconName: "go-home-large"
+			label: "Return"
+			checkable: true
+			checked: root.returnHomeAfterMission
+			enabled: root.canReturnFromSelectedWaypoint
+			onClicked: root.planningToolRequested("return")
 		}
 	}
 
@@ -98,6 +114,8 @@ Column {
 		IconButton {
 			iconName: "go-home-large"
 			label: "Home"
+			checkable: true
+			checked: root.activeTrackingTool === "home"
 			onClicked: root.trackingToolRequested("home")
 		}
 	}

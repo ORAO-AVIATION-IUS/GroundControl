@@ -18,6 +18,17 @@ Item {
 	property bool lightMode: true
 	property bool satelliteMode: false
 	property var hoveredCoordinate: QtPositioning.coordinate()
+	property int mapMode: 0
+	property string activePlanningTool: "edit"
+	property string activeTrackingTool: ""
+	property var missionItems: []
+	property int selectedMissionItemIndex: -1
+	property int currentMissionItemIndex: 0
+	property double homeLatitude: 0
+	property double homeLongitude: 0
+	property bool homeValid: false
+	property bool returnHomeAfterMission: false
+	property int missionRevision: 0
 
 	readonly property int _styleIndex: threeD ? (lightMode ? 1 : 5) : (lightMode ? 0 : 4)
 	property real _savedTilt: 45
@@ -28,6 +39,11 @@ Item {
 	property real initialBearing: -17.6
 
 	signal droneClicked(int droneUid)
+	signal missionMapClicked(var coordinate)
+	signal homeMapClicked(var coordinate)
+	signal missionItemClicked(int index)
+	signal missionItemMoved(int index, var coordinate)
+	signal missionSegmentInsertRequested(int segmentIndex, var coordinate)
 	signal userMovedMap
 
 	on_StyleIndexChanged: _applyStyle()
@@ -116,7 +132,16 @@ Item {
 			threeD: root.threeD
 			satelliteMode: root.satelliteMode
 			trackedPaths: droneTracker.trackedPaths
+			missionItems: root.missionItems
+			selectedMissionItemIndex: root.selectedMissionItemIndex
+			currentMissionItemIndex: root.currentMissionItemIndex
+			homeLatitude: root.homeLatitude
+			homeLongitude: root.homeLongitude
+			homeValid: root.homeValid
+			returnHomeAfterMission: root.returnHomeAfterMission
+			showMissionInsertHandles: root.mapMode === 1
 			revision: droneTracker.revision
+			missionRevision: root.missionRevision
 			zoomLevel: map.zoomLevel
 		}
 
@@ -126,8 +151,27 @@ Item {
 			drones: root.drones
 			followedDroneUid: root.followedDroneUid
 			threeD: root.threeD
+			mapMode: root.mapMode
+			activePlanningTool: root.activePlanningTool
+			activeTrackingTool: root.activeTrackingTool
+			missionItems: root.missionItems
 			onDroneClicked: function (droneUid) {
 				root.droneClicked(droneUid);
+			}
+			onMissionMapClicked: function (coordinate) {
+				root.missionMapClicked(coordinate);
+			}
+			onHomeMapClicked: function (coordinate) {
+				root.homeMapClicked(coordinate);
+			}
+			onMissionItemClicked: function (index) {
+				root.missionItemClicked(index);
+			}
+			onMissionItemMoved: function (index, coordinate) {
+				root.missionItemMoved(index, coordinate);
+			}
+			onMissionSegmentInsertRequested: function (segmentIndex, coordinate) {
+				root.missionSegmentInsertRequested(segmentIndex, coordinate);
 			}
 			onHoveredCoordinateChanged: root.hoveredCoordinate = interactionArea.hoveredCoordinate
 			onUserMovedMap: root.userMovedMap()

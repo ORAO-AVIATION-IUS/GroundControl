@@ -21,15 +21,18 @@ Item {
 
 	property real altitude: 0
 	property bool darkMode: false
+	property bool liveEdit: false
+	property real minimumAltitude: 0
 
 	readonly property real targetAltitude: _targetAlt
 	readonly property bool targetLocked: _targetLocked
 
 	signal targetConfirmed(real target)
+	signal targetEdited(real target)
 	signal targetReset
 
 	function setTarget(alt) {
-		_targetAlt = Math.max(0, alt);
+		_targetAlt = Math.max(root.minimumAltitude, alt);
 		_targetLocked = true;
 		_tapeOffsetPx = 0;
 		root.targetConfirmed(_targetAlt);
@@ -38,16 +41,20 @@ Item {
 	function clearTarget() {
 		_tapeOffsetPx = 0;
 		_targetLocked = false;
-		_targetAlt = 0;
+		_targetAlt = root.minimumAltitude;
 		root.targetReset();
 	}
 
 	// private
 	readonly property real _ppm: 6.0
 	property real _tapeOffsetPx: 0
+	property real _liveStartAltitude: 0
+	property real _liveEditAltitude: altitude
+	property bool _liveDragActive: false
 	property bool _targetLocked: false
 	property real _targetAlt: 0
-	readonly property real _tapeCenterAlt: altitude + _tapeOffsetPx / _ppm
+	readonly property real _displayAltitude: liveEdit && _liveDragActive ? _liveEditAltitude : altitude
+	readonly property real _tapeCenterAlt: liveEdit ? _displayAltitude : altitude + _tapeOffsetPx / _ppm
 
 	// layout constants
 	readonly property real _rulerWidth: 14
@@ -154,15 +161,15 @@ Item {
 		anchors.fill: parent
 		z: 5
 
-		// current altitude indicator
+		// current altitude / live-edit waypoint indicator
 		Row {
 			id: currentLabel
-			y: root.height / 2 - height / 2 + root._tapeOffsetPx
+			y: root.height / 2 - height / 2 + (root.liveEdit ? 0 : root._tapeOffsetPx)
 			x: 2
 			spacing: 2
 
 			Text {
-				text: root._fmtAlt(root.altitude)
+				text: root._fmtAlt(root._displayAltitude)
 				color: root.darkMode ? "#cccccc" : "#333333"
 				font {
 					pixelSize: 10
@@ -197,7 +204,7 @@ Item {
 			x: 2
 			spacing: 2
 
-			visible: root._tapeOffsetPx !== 0 || root._targetLocked
+			visible: !root.liveEdit && (root._tapeOffsetPx !== 0 || root._targetLocked)
 
 			y: {
 				if (root._targetLocked)
@@ -247,7 +254,12 @@ Item {
 		property real _startOffset: 0
 
 		onPressed: function (mouse) {
-			if (root._targetLocked) {
+			root._liveStartAltitude = root.altitude;
+			root._liveEditAltitude = root.altitude;
+			root._liveDragActive = root.liveEdit;
+			if (root.liveEdit) {
+				root._tapeOffsetPx = 0;
+			} else if (root._targetLocked) {
 				root._tapeOffsetPx = (root._targetAlt - root.altitude) * root._ppm;
 				root._targetLocked = false;
 			}
@@ -259,9 +271,28 @@ Item {
 			if (!pressed)
 				return;
 			var next = _startOffset + (mouse.y - _startY);
-			if (root.altitude + next / root._ppm < 0)
-				next = -root.altitude * root._ppm;
+			if (root.liveEdit) {
+				root._liveEditAltitude = Math.max(root.minimumAltitude, root._liveStartAltitude + next / root._ppm);
+				root._targetAlt = root._liveEditAltitude;
+				root._targetLocked = true;
+				root.targetEdited(root._targetAlt);
+				root._tapeOffsetPx = 0;
+				return;
+			}
+			if (root.altitude + next / root._ppm < root.minimumAltitude)
+				next = (root.minimumAltitude - root.altitude) * root._ppm;
 			root._tapeOffsetPx = next;
+		}
+
+		onReleased: {
+			root._liveDragActive = false;
+			if (root.liveEdit)
+				root._targetLocked = false;
+		}
+		onCanceled: {
+			root._liveDragActive = false;
+			if (root.liveEdit)
+				root._targetLocked = false;
 		}
 	}
 
@@ -275,7 +306,7 @@ Item {
 		z: 30
 
 		text: "SET"
-		visible: root._tapeOffsetPx !== 0
+		visible: !root.liveEdit && root._tapeOffsetPx !== 0
 		onClicked: root.setTarget(root._tapeCenterAlt)
 
 		background: Rectangle {
@@ -305,7 +336,7 @@ Item {
 		z: 30
 
 		text: "RESET"
-		visible: root._tapeOffsetPx !== 0 || root._targetLocked
+		visible: !root.liveEdit && (root._tapeOffsetPx !== 0 || root._targetLocked)
 		onClicked: root.clearTarget()
 
 		background: Rectangle {
@@ -326,7 +357,12 @@ Item {
 		}
 	}
 
-	onAltitudeChanged: tapeCanvas.requestPaint()
+	onAltitudeChanged: {
+		if (!liveEdit || !root._liveDragActive)
+			root._liveEditAltitude = altitude;
+		tapeCanvas.requestPaint();
+	}
+	on_LiveEditAltitudeChanged: tapeCanvas.requestPaint()
 	onHeightChanged: tapeCanvas.requestPaint()
 	on_TapeOffsetPxChanged: tapeCanvas.requestPaint()
 	onDarkModeChanged: tapeCanvas.requestPaint()

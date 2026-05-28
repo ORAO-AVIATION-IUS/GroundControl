@@ -4,8 +4,11 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QString>
+#include <QVariantList>
 
 #include <plugins/action/action.hpp>
+#include <plugins/mavlink_passthrough/mavlink_passthrough.hpp>
+#include <plugins/mission/mission.hpp>
 #include <plugins/telemetry/telemetry.hpp>
 #include <system.hpp>
 
@@ -49,6 +52,10 @@ class DroneManager : public QObject {
 	Q_PROPERTY(double heading READ heading NOTIFY headingChanged)
 	Q_PROPERTY(double latitude READ latitude NOTIFY latitudeChanged)
 	Q_PROPERTY(double longitude READ longitude NOTIFY longitudeChanged)
+	Q_PROPERTY(double homeLatitude READ homeLatitude NOTIFY homeChanged)
+	Q_PROPERTY(double homeLongitude READ homeLongitude NOTIFY homeChanged)
+	Q_PROPERTY(double homeAltitude READ homeAltitude NOTIFY homeChanged)
+	Q_PROPERTY(bool homeValid READ homeValid NOTIFY homeChanged)
 
 	Q_PROPERTY(double voltage READ voltage NOTIFY voltageChanged)
 	Q_PROPERTY(double current READ current NOTIFY currentChanged)
@@ -105,6 +112,10 @@ class DroneManager : public QObject {
 	[[nodiscard]] double heading() const;
 	[[nodiscard]] double latitude() const;
 	[[nodiscard]] double longitude() const;
+	[[nodiscard]] double homeLatitude() const;
+	[[nodiscard]] double homeLongitude() const;
+	[[nodiscard]] double homeAltitude() const;
+	[[nodiscard]] bool homeValid() const;
 
 	[[nodiscard]] double voltage() const;
 	[[nodiscard]] double current() const;
@@ -123,6 +134,13 @@ class DroneManager : public QObject {
 	Q_INVOKABLE void land();
 	Q_INVOKABLE void rth();
 	Q_INVOKABLE void setAltitude(double altitudeMeters);
+	Q_INVOKABLE void uploadMission(
+		const QVariantList& missionItems, bool returnToLaunchAfterMission);
+	Q_INVOKABLE void startMission();
+	Q_INVOKABLE void pauseMission();
+	Q_INVOKABLE void clearMission();
+	Q_INVOKABLE void setHome(
+		double latitude, double longitude, double altitude);
 	Q_INVOKABLE void log(
 		const QString& source, const QString& message, const QString& level);
 
@@ -153,6 +171,7 @@ class DroneManager : public QObject {
 	void headingChanged();
 	void latitudeChanged();
 	void longitudeChanged();
+	void homeChanged();
 
 	void voltageChanged();
 	void currentChanged();
@@ -167,6 +186,10 @@ class DroneManager : public QObject {
 
 	void logMessage(
 		const QString& source, const QString& message, const QString& level);
+	void missionUploadFinished(bool success, const QString& message);
+	void missionStartFinished(bool success, const QString& message);
+	void missionPauseFinished(bool success, const QString& message);
+	void missionClearFinished(bool success, const QString& message);
 
    private:
 	void setupTelemetry();
@@ -190,6 +213,8 @@ class DroneManager : public QObject {
 	std::shared_ptr<mavsdk::System> m_system;
 	std::unique_ptr<mavsdk::Telemetry> m_telemetry;
 	std::unique_ptr<mavsdk::Action> m_action;
+	std::unique_ptr<mavsdk::Mission> m_mission;
+	std::unique_ptr<mavsdk::MavlinkPassthrough> m_mavlinkPassthrough;
 
 	bool m_armed{false};
 	bool m_inFlight{false};
@@ -212,6 +237,10 @@ class DroneManager : public QObject {
 	double m_heading{0.0};
 	double m_latitude{0.0};
 	double m_longitude{0.0};
+	double m_homeLatitude{0.0};
+	double m_homeLongitude{0.0};
+	double m_homeAltitude{0.0};
+	bool m_homeValid{false};
 
 	double m_voltage{0.0};
 	double m_current{0.0};
@@ -235,5 +264,7 @@ class DroneManager : public QObject {
 	mavsdk::Telemetry::GpsInfoHandle m_gpsInfoHandle;
 	mavsdk::Telemetry::VelocityNedHandle m_velocityNedHandle;
 	mavsdk::Telemetry::FixedwingMetricsHandle m_fixedwingMetricsHandle;
+	mavsdk::Telemetry::HomeHandle m_homeHandle;
+	mavsdk::Mission::MissionProgressHandle m_missionProgressHandle;
 	mavsdk::System::IsConnectedHandle m_isConnectedHandle;
 };

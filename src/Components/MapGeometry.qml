@@ -55,6 +55,27 @@ QtObject {
 		return [[p1.longitude, p1.latitude], [p2.longitude, p2.latitude], [p3.longitude, p3.latitude], [p4.longitude, p4.latitude], [p1.longitude, p1.latitude]];
 	}
 
+	function circleRing(c, radiusM, steps) {
+		const ring = [];
+		for (let i = 0; i <= steps; ++i) {
+			const p = c.atDistanceAndAzimuth(radiusM, i * 360 / steps);
+			ring.push([p.longitude, p.latitude]);
+		}
+		return ring;
+	}
+
+	function segmentRect(a, b, halfWidthM) {
+		const distance = a.distanceTo(b);
+		if (distance <= 0.1)
+			return [];
+		const bearing = a.azimuthTo(b);
+		const p1 = a.atDistanceAndAzimuth(halfWidthM, bearing + 90);
+		const p2 = b.atDistanceAndAzimuth(halfWidthM, bearing + 90);
+		const p3 = b.atDistanceAndAzimuth(halfWidthM, bearing - 90);
+		const p4 = a.atDistanceAndAzimuth(halfWidthM, bearing - 90);
+		return [[p1.longitude, p1.latitude], [p2.longitude, p2.latitude], [p3.longitude, p3.latitude], [p4.longitude, p4.latitude], [p1.longitude, p1.latitude]];
+	}
+
 	function droneBodyGeoJson(drones, revision) {
 		void revision;
 		const features = [];
@@ -167,5 +188,237 @@ QtObject {
 			});
 		}
 		return featureCollection(features);
+	}
+
+	function missionPathGeoJson(items, revision) {
+		void revision;
+		if (!items || items.length < 2)
+			return emptyFeatureCollection;
+		const coords = [];
+		for (let i = 0; i < items.length; ++i) {
+			if (!items[i])
+				continue;
+			coords.push([items[i].longitude, items[i].latitude]);
+		}
+		if (coords.length < 2)
+			return emptyFeatureCollection;
+		return featureCollection([
+			{
+				"type": "Feature",
+				"geometry": {
+					"type": "LineString",
+					"coordinates": coords
+				}
+			}
+		]);
+	}
+
+	function missionInsertHandleGeoJson(items, visible, revision) {
+		void revision;
+		if (!visible || !items || items.length < 2)
+			return emptyFeatureCollection;
+		const features = [];
+		for (let i = 0; i < items.length - 1; ++i) {
+			const aItem = items[i];
+			const bItem = items[i + 1];
+			if (!aItem || !bItem)
+				continue;
+			const a = QtPositioning.coordinate(aItem.latitude, aItem.longitude);
+			const b = QtPositioning.coordinate(bItem.latitude, bItem.longitude);
+			const mid = a.atDistanceAndAzimuth(a.distanceTo(b) * 0.5, a.azimuthTo(b));
+			features.push({
+				"type": "Feature",
+				"properties": {
+					"segmentIndex": i,
+					"label": "+"
+				},
+				"geometry": {
+					"type": "Point",
+					"coordinates": [mid.longitude, mid.latitude]
+				}
+			});
+		}
+		return featureCollection(features);
+	}
+
+	function missionInsertCrossGeoJson(items, visible, revision) {
+		void revision;
+		if (!visible || !items || items.length < 2)
+			return emptyFeatureCollection;
+		const features = [];
+		for (let i = 0; i < items.length - 1; ++i) {
+			const aItem = items[i];
+			const bItem = items[i + 1];
+			if (!aItem || !bItem)
+				continue;
+			const a = QtPositioning.coordinate(aItem.latitude, aItem.longitude);
+			const b = QtPositioning.coordinate(bItem.latitude, bItem.longitude);
+			const mid = a.atDistanceAndAzimuth(a.distanceTo(b) * 0.5, a.azimuthTo(b));
+			const north = mid.atDistanceAndAzimuth(5, 0);
+			const south = mid.atDistanceAndAzimuth(5, 180);
+			const east = mid.atDistanceAndAzimuth(5, 90);
+			const west = mid.atDistanceAndAzimuth(5, 270);
+			features.push({
+				"type": "Feature",
+				"geometry": {
+					"type": "LineString",
+					"coordinates": [[south.longitude, south.latitude], [north.longitude, north.latitude]]
+				}
+			});
+			features.push({
+				"type": "Feature",
+				"geometry": {
+					"type": "LineString",
+					"coordinates": [[west.longitude, west.latitude], [east.longitude, east.latitude]]
+				}
+			});
+		}
+		return featureCollection(features);
+	}
+
+	function missionWaypointGeoJson(items, selectedIndex, currentIndex, revision) {
+		void revision;
+		const features = [];
+		for (let i = 0; i < (items || []).length; ++i) {
+			const item = items[i];
+			if (!item)
+				continue;
+			features.push({
+				"type": "Feature",
+				"properties": {
+					"index": i,
+					"label": String(i + 1),
+					"selected": i === selectedIndex,
+					"current": currentIndex > 0 && i === currentIndex - 1,
+					"fill": currentIndex > 0 && i === currentIndex - 1 ? "#ffaa00" : (i === selectedIndex ? "#ffaa00" : "#00d0ff"),
+					"radius": i === selectedIndex ? 8 : 6,
+					"strokeWidth": i === selectedIndex ? 3 : 2
+				},
+				"geometry": {
+					"type": "Point",
+					"coordinates": [item.longitude, item.latitude]
+				}
+			});
+		}
+		return featureCollection(features);
+	}
+
+	function missionWaypointExtrusionGeoJson(items, revision) {
+		void revision;
+		const features = [];
+		for (let i = 0; i < (items || []).length; ++i) {
+			const item = items[i];
+			if (!item)
+				continue;
+			const c = QtPositioning.coordinate(item.latitude, item.longitude);
+			const alt = Math.max(0, item.altitude || 0);
+			features.push(polygonFeature(circleRing(c, 3.5, 18), {
+				"base": Math.max(0, alt - 1.5),
+				"height": alt + 1.5
+			}));
+		}
+		return featureCollection(features);
+	}
+
+	function missionTetherGeoJson(items, revision) {
+		void revision;
+		const features = [];
+		for (let i = 0; i < (items || []).length; ++i) {
+			const item = items[i];
+			if (!item || (item.altitude || 0) <= 0)
+				continue;
+			const c = QtPositioning.coordinate(item.latitude, item.longitude);
+			features.push(polygonFeature(circleRing(c, 1.1, 10), {
+				"base": 0,
+				"height": item.altitude
+			}));
+		}
+		return featureCollection(features);
+	}
+
+	function missionSegmentExtrusionGeoJson(items, revision) {
+		void revision;
+		const features = [];
+		const dashLengthM = 4;
+		const gapLengthM = 9;
+		for (let i = 1; i < (items || []).length; ++i) {
+			const aItem = items[i - 1];
+			const bItem = items[i];
+			if (!aItem || !bItem)
+				continue;
+			const a = QtPositioning.coordinate(aItem.latitude, aItem.longitude);
+			const b = QtPositioning.coordinate(bItem.latitude, bItem.longitude);
+			const distance = a.distanceTo(b);
+			if (distance <= 0.1)
+				continue;
+			const bearing = a.azimuthTo(b);
+			const aAlt = Math.max(0, aItem.altitude || 0);
+			const bAlt = Math.max(0, bItem.altitude || 0);
+			for (let startM = 0; startM < distance; startM += dashLengthM + gapLengthM) {
+				const endM = Math.min(startM + dashLengthM, distance);
+				if (endM - startM < 1)
+					continue;
+				const start = a.atDistanceAndAzimuth(startM, bearing);
+				const end = a.atDistanceAndAzimuth(endM, bearing);
+				const ring = segmentRect(start, end, 0.9);
+				if (ring.length === 0)
+					continue;
+				const midT = ((startM + endM) * 0.5) / distance;
+				const alt = aAlt + (bAlt - aAlt) * midT;
+				features.push(polygonFeature(ring, {
+					"base": Math.max(0, alt - 0.35),
+					"height": alt + 0.35
+				}));
+			}
+		}
+		return featureCollection(features);
+	}
+
+	function returnHomePathGeoJson(items, homeLatitude, homeLongitude, homeValid, enabled, revision) {
+		void revision;
+		if (!enabled || !homeValid || !items || items.length < 1)
+			return emptyFeatureCollection;
+		const last = items[items.length - 1];
+		if (!last)
+			return emptyFeatureCollection;
+		return featureCollection([
+			{
+				"type": "Feature",
+				"geometry": {
+					"type": "LineString",
+					"coordinates": [[last.longitude, last.latitude], [homeLongitude, homeLatitude]]
+				}
+			}
+		]);
+	}
+
+	function returnHomeSegmentExtrusionGeoJson(items, homeLatitude, homeLongitude, homeValid, enabled, revision) {
+		void revision;
+		if (!enabled || !homeValid || !items || items.length < 1)
+			return emptyFeatureCollection;
+		const last = items[items.length - 1];
+		if (!last)
+			return emptyFeatureCollection;
+		return missionSegmentExtrusionGeoJson([last,
+			{
+				"latitude": homeLatitude,
+				"longitude": homeLongitude,
+				"altitude": last.altitude || 0
+			}
+		], revision);
+	}
+
+	function homeGeoJson(latitude, longitude, valid) {
+		if (!valid)
+			return emptyFeatureCollection;
+		return featureCollection([
+			{
+				"type": "Feature",
+				"geometry": {
+					"type": "Point",
+					"coordinates": [longitude, latitude]
+				}
+			}
+		]);
 	}
 }

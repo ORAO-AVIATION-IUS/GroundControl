@@ -10,11 +10,20 @@ MouseArea {
 	property var drones: []
 	property int followedDroneUid: -1
 	property bool threeD: true
+	property int mapMode: 0
+	property string activePlanningTool: "edit"
+	property string activeTrackingTool: ""
+	property var missionItems: []
 	property var hoveredCoordinate: QtPositioning.coordinate()
 	property point _lastPointerPoint: Qt.point(0, 0)
 	property bool _hasPointerOnMap: false
 
 	signal droneClicked(int droneUid)
+	signal missionMapClicked(var coordinate)
+	signal homeMapClicked(var coordinate)
+	signal missionItemClicked(int index)
+	signal missionItemMoved(int index, var coordinate)
+	signal missionSegmentInsertRequested(int segmentIndex, var coordinate)
 	signal userMovedMap
 
 	anchors.fill: parent
@@ -30,6 +39,7 @@ MouseArea {
 	property bool inertiaActive: false
 	property bool movedSincePress: false
 	property bool movementNotified: false
+	property int draggedMissionIndex: -1
 
 	readonly property int modeNone: 0
 	readonly property int modePan: 1
@@ -92,6 +102,61 @@ MouseArea {
 			}
 		}
 		return bestUid;
+	}
+
+	function missionItemAt(point) {
+		const clickCoord = targetMap.toCoordinate(point, false);
+		if (!clickCoord || !clickCoord.isValid)
+			return -1;
+
+		const onePixelCoord = targetMap.toCoordinate(Qt.point(point.x + 1, point.y), false);
+		const metersPerPixel = onePixelCoord && onePixelCoord.isValid ? clickCoord.distanceTo(onePixelCoord) : 1;
+		const thresholdMeters = Math.max(6, metersPerPixel * 18);
+		let bestIndex = -1;
+		let bestDistance = thresholdMeters;
+
+		for (let i = 0; i < (missionItems || []).length; ++i) {
+			const item = missionItems[i];
+			const coord = QtPositioning.coordinate(item.latitude, item.longitude);
+			const distance = clickCoord.distanceTo(coord);
+			if (distance <= bestDistance) {
+				bestDistance = distance;
+				bestIndex = i;
+			}
+		}
+		return bestIndex;
+	}
+
+	function missionInsertHandleAt(point) {
+		const clickCoord = targetMap.toCoordinate(point, false);
+		if (mapMode !== 1 || !clickCoord || !clickCoord.isValid || !missionItems || missionItems.length < 2)
+			return -1;
+
+		const onePixelCoord = targetMap.toCoordinate(Qt.point(point.x + 1, point.y), false);
+		const metersPerPixel = onePixelCoord && onePixelCoord.isValid ? clickCoord.distanceTo(onePixelCoord) : 1;
+		const thresholdMeters = Math.max(6, metersPerPixel * 18);
+		let bestIndex = -1;
+		let bestDistance = thresholdMeters;
+
+		for (let i = 0; i < missionItems.length - 1; ++i) {
+			const a = QtPositioning.coordinate(missionItems[i].latitude, missionItems[i].longitude);
+			const b = QtPositioning.coordinate(missionItems[i + 1].latitude, missionItems[i + 1].longitude);
+			const mid = a.atDistanceAndAzimuth(a.distanceTo(b) * 0.5, a.azimuthTo(b));
+			const distance = clickCoord.distanceTo(mid);
+			if (distance <= bestDistance) {
+				bestDistance = distance;
+				bestIndex = i;
+			}
+		}
+		return bestIndex;
+	}
+
+	function missionSegmentMidpoint(segmentIndex) {
+		if (segmentIndex < 0 || segmentIndex >= (missionItems || []).length - 1)
+			return QtPositioning.coordinate();
+		const a = QtPositioning.coordinate(missionItems[segmentIndex].latitude, missionItems[segmentIndex].longitude);
+		const b = QtPositioning.coordinate(missionItems[segmentIndex + 1].latitude, missionItems[segmentIndex + 1].longitude);
+		return a.atDistanceAndAzimuth(a.distanceTo(b) * 0.5, a.azimuthTo(b));
 	}
 
 	function noteMapMovement() {
@@ -164,6 +229,22 @@ MouseArea {
 		if (dragMode !== modeNone)
 			return;
 
+		if (mapMode === 1 && mouse.button === Qt.LeftButton) {
+			const missionIndex = missionItemAt(lastPoint);
+			if (missionIndex >= 0) {
+				draggedMissionIndex = missionIndex;
+				cursorShape = Qt.ClosedHandCursor;
+				return;
+			}
+			const segmentIndex = missionInsertHandleAt(lastPoint);
+			if (segmentIndex >= 0) {
+				missionSegmentInsertRequested(segmentIndex, missionSegmentMidpoint(segmentIndex));
+				draggedMissionIndex = segmentIndex + 1;
+				cursorShape = Qt.ClosedHandCursor;
+				return;
+			}
+		}
+
 		if (mouse.button === Qt.LeftButton && !(mouse.modifiers & Qt.ControlModifier)) {
 			dragMode = modePan;
 			cursorShape = Qt.OpenHandCursor;
@@ -187,7 +268,11 @@ MouseArea {
 				noteMapMovement();
 		}
 
-		if (dragMode === modePan) {
+		if (draggedMissionIndex >= 0) {
+			const coordinate = targetMap.toCoordinate(point, false);
+			if (coordinate && coordinate.isValid)
+				missionItemMoved(draggedMissionIndex, coordinate);
+		} else if (dragMode === modePan) {
 			const cur = targetMap.toCoordinate(point, false);
 			if (cur.isValid && anchorCoord.isValid) {
 				targetMap.center = QtPositioning.coordinate(targetMap.center.latitude + anchorCoord.latitude - cur.latitude, targetMap.center.longitude + anchorCoord.longitude - cur.longitude);
@@ -204,10 +289,34 @@ MouseArea {
 	}
 
 	onReleased: function (mouse) {
+		if (draggedMissionIndex >= 0) {
+			missionItemClicked(draggedMissionIndex);
+			draggedMissionIndex = -1;
+			dragMode = modeNone;
+			cursorShape = Qt.ArrowCursor;
+			return;
+		}
+
 		if (!movedSincePress && mouse.button === Qt.LeftButton) {
-			const uid = droneUidAt(Qt.point(mouse.x, mouse.y));
-			if (uid >= 0)
-				droneClicked(uid);
+			const point = Qt.point(mouse.x, mouse.y);
+			if (mapMode === 1) {
+				const missionIndex = missionItemAt(point);
+				if (missionIndex >= 0) {
+					missionItemClicked(missionIndex);
+				} else {
+					const coordinate = targetMap.toCoordinate(point, false);
+					if (coordinate && coordinate.isValid)
+						missionMapClicked(coordinate);
+				}
+			} else if (mapMode === 2 && activeTrackingTool === "home") {
+				const coordinate = targetMap.toCoordinate(point, false);
+				if (coordinate && coordinate.isValid)
+					homeMapClicked(coordinate);
+			} else {
+				const uid = droneUidAt(point);
+				if (uid >= 0)
+					droneClicked(uid);
+			}
 		}
 
 		if (movedSincePress && mouse.button === Qt.LeftButton && dragMode === modePan) {
@@ -223,6 +332,7 @@ MouseArea {
 	onCanceled: function () {
 		inertiaTimer.stop();
 		inertiaActive = false;
+		draggedMissionIndex = -1;
 		dragMode = modeNone;
 		cursorShape = Qt.ArrowCursor;
 	}
