@@ -6,6 +6,9 @@
 #include <QMutexLocker>
 #include <QDataStream>
 
+#include <QCoreApplication>
+#include <QFileInfo>
+
 DetectionWorker::DetectionWorker(int streamId, QObject* parent)
     : QObject(parent), m_streamId(streamId) {}
 
@@ -24,6 +27,15 @@ void DetectionWorker::start() {
 
     m_process->setProgram(python);
     m_process->setArguments({script});
+
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    m_process->setProcessEnvironment(env);
+
+    m_process->setProcessChannelMode(QProcess::SeparateChannels);
+    connect(m_process, &QProcess::readyReadStandardError, this, [this]() {
+        qWarning() << "Detector stderr [stream" << m_streamId << "]:"
+                   << m_process->readAllStandardError();
+    });
 
     connect(m_process, &QProcess::readyReadStandardOutput,
             this, &DetectionWorker::onReadyRead);
@@ -91,17 +103,19 @@ void DetectionWorker::onReadyRead() {
         QByteArray line = m_process->readLine().trimmed();
         if (line.isEmpty()) continue;
 
-        // should probably delete this its pretty useless rn
         QJsonParseError err;
         QJsonDocument doc = QJsonDocument::fromJson(line, &err);
-        if (err.error != QJsonParseError::NoError || !doc.isArray()) {
+        if (err.error != QJsonParseError::NoError || !doc.isObject()) {
             qWarning() << "Bad detection JSON:" << err.errorString();
             m_busy = false;
             continue;
         }
 
+        QJsonObject root = doc.object();
+
+        // object detections
         QList<Detection> detections;
-        for (const QJsonValue& v : doc.array()) {
+        for (const QJsonValue& v : root["boxes"].toArray()) {
             QJsonObject o = v.toObject();
             detections.append({
                 .x = (float)o["x"].toDouble(),
@@ -109,14 +123,20 @@ void DetectionWorker::onReadyRead() {
                 .w = (float)o["w"].toDouble(),
                 .h = (float)o["h"].toDouble(),
                 .label = o["label"].toString(),
-                .score = (float)o["score"].toDouble()
+                .score = (float)o["score"].toDouble(),
             });
         }
-
         emit detectionsReady(m_streamId, detections);
+
+        // qwen alert
+        QString alert = root["alert"].toString().trimmed();
+        if (!alert.isEmpty()) {
+            emit alertReady(m_streamId, alert);
+        }
+
         m_busy = false;
 
-        // send next pending frame asap
+        // Send next pending frame
         QMutexLocker l(&m_frameMutex);
         if (m_hasPending) {
             QByteArray data = std::move(m_pendingFrame);

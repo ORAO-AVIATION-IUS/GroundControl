@@ -539,6 +539,10 @@ void CameraManager::setDetectionEnabled(int id, bool enabled) {
 
         connect(cam->detectionThread.get(), &QThread::started,
                 cam->detectionWorker.get(), &DetectionWorker::start);
+		connect(cam->detectionWorker.get(), &DetectionWorker::alertReady,
+        this, [this](int streamId, QString alert) {
+            emit alertChanged(streamId, alert);
+        }, Qt::QueuedConnection); // the uhhhh qwen detection alert thing
 
         cam->detectionThread->start();
     } else {

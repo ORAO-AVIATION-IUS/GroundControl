@@ -56,3 +56,5 @@ third_party/maplibre-native-qt/
 src/Camera/.venv/
 src/Camera/yolov8n.pt
 .venv/
+.env
+src/Camera/.env

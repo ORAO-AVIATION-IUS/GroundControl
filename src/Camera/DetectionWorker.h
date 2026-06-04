@@ -1,14 +1,11 @@
 #pragma once
+
+#include <QByteArray>
+#include <QList>
+#include <QMutex>
 #include <QObject>
 #include <QProcess>
-#include <QByteArray>
-#include <QJsonArray>
-#include <QThread>
-#include <QMutex>
-#include <QList>
-#include <QCoreApplication>
-#include <QDir>
-#include <QFile>
+#include <QString>
 
 struct Detection {
     float x, y, w, h;
@@ -21,16 +18,16 @@ Q_DECLARE_METATYPE(QList<Detection>)
 
 class DetectionWorker : public QObject {
     Q_OBJECT
+
 public:
     explicit DetectionWorker(int streamId, QObject* parent = nullptr);
     ~DetectionWorker() override;
 
-    DetectionWorker(const DetectionWorker&) = delete;
+    DetectionWorker(const DetectionWorker&)            = delete;
     DetectionWorker& operator=(const DetectionWorker&) = delete;
-    DetectionWorker(DetectionWorker&&) = delete;
-    DetectionWorker& operator=(DetectionWorker&&) = delete;
+    DetectionWorker(DetectionWorker&&)                 = delete;
+    DetectionWorker& operator=(DetectionWorker&&)      = delete;
 
-    // called from gstreamer thread
     void submitFrame(const QByteArray& bgrData, int width, int height);
 
 public slots:
@@ -39,6 +36,7 @@ public slots:
 
 signals:
     void detectionsReady(int streamId, QList<Detection> detections);
+    void alertReady(int streamId, QString alert);  
 
 private slots:
     void onReadyRead();
@@ -46,13 +44,13 @@ private slots:
 
 private:
     void writeFrame(const QByteArray& data, int w, int h);
-    void sendNextPending();
 
     int m_streamId;
     QProcess* m_process = nullptr;
     QMutex m_frameMutex;
     QByteArray m_pendingFrame;
-    int m_pendingW = 0, m_pendingH = 0;
+    int m_pendingW = 0;
+    int m_pendingH = 0;
     bool m_hasPending = false;
     bool m_busy = false;
 };
