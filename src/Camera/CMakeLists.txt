@@ -33,3 +33,11 @@ qt_add_qml_module(AgcCamera
     QML_FILES ${QML_FILES}
     IMPORT_PATH "${CMAKE_BINARY_DIR}"
 )
+
+# should maybe consider obfuscating the python side somehow
+add_custom_command(TARGET AgcCamera POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/detector.py"
+        "$<TARGET_FILE_DIR:GroundControl>/detector.py"
+    COMMENT "Copying detector.py to build output"
+)

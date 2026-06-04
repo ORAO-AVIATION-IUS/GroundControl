@@ -17,7 +17,7 @@ class CameraManager : public QObject {
 	QML_ELEMENT
 	QML_SINGLETON
 
-   public:
+	public:
 	explicit CameraManager(QQmlEngine* engine, QObject* parent = nullptr);
 
 	static CameraManager* create(QQmlEngine* qmlEngine, QJSEngine* jsEngine);
@@ -35,18 +35,21 @@ class CameraManager : public QObject {
 		const QString& customPipeline, bool useCustomPipeline);
 	Q_INVOKABLE void attachSink(int id, QVideoSink* sink);
 	Q_INVOKABLE void reconnectStream(int id);
+	Q_INVOKABLE void setDetectionEnabled(int id, bool enabled);
 
 	[[nodiscard]] Q_INVOKABLE QString streamStatus(int id) const;
 	[[nodiscard]] Q_INVOKABLE bool streamConnected(int id) const;
+	[[nodiscard]] Q_INVOKABLE QVariantList detections(int id) const;
 
 	void setStreamState(int id, const QString& status, bool connected);
 
-   signals:
+	signals:
 	void streamStatusChanged(int id, const QString& status);
 	void streamConnectedChanged(int id, bool connected);
 	void streamError(int id, const QString& message);
+	void detectionsChanged(int id, QVariantList detections);
 
-   private:
+	private:
 	void startPipeline(int id);
 	void stopPipeline(int id);
 
