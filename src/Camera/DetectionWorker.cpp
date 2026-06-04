@@ -1,10 +1,14 @@
 #include "DetectionWorker.h"
-#include <QDataStream>
+
+#include <QCoreApplication>
 #include <QDebug>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMutexLocker>
+
+#include <cstring>
 
 DetectionWorker::DetectionWorker(int streamId, QObject* parent)
 	: QObject(parent), m_streamId(streamId) {}
@@ -26,13 +30,21 @@ void DetectionWorker::start() {
 	m_process->setProgram(python);
 	m_process->setArguments({script});
 
+	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+	m_process->setProcessEnvironment(env);
+
+	m_process->setProcessChannelMode(QProcess::SeparateChannels);
+	connect(m_process, &QProcess::readyReadStandardError, this, [this]() {
+		qWarning() << "Detector stderr [stream" << m_streamId
+				   << "]:" << m_process->readAllStandardError();
+	});
 	connect(m_process, &QProcess::readyReadStandardOutput, this,
 		&DetectionWorker::onReadyRead);
 	connect(m_process, &QProcess::errorOccurred, this,
 		&DetectionWorker::onProcessError);
 
 	m_process->start();
-	//qwarning doesnt seem to write to stdout gotta investigate
+	// qWarning does not seem to write to stdout; investigate if needed.
 	if (!m_process->waitForStarted(3000)) {
 		qWarning() << "Detector failed to start for stream" << m_streamId;
 		qWarning() << "  python :" << python;
@@ -51,7 +63,6 @@ void DetectionWorker::stop() {
 	}
 }
 
-// Called from GStreamer thread — only stores the latest frame
 void DetectionWorker::submitFrame(
 	const QByteArray& bgrData, int width, int height) {
 	QMutexLocker lock(&m_frameMutex);
@@ -60,16 +71,17 @@ void DetectionWorker::submitFrame(
 	m_pendingH = height;
 	m_hasPending = true;
 
-	// start send on worker's thread
 	if (!m_busy) {
 		QMetaObject::invokeMethod(
 			this,
 			[this]() {
 				QMutexLocker l(&m_frameMutex);
-				if (!m_hasPending)
+				if (!m_hasPending) {
 					return;
+				}
 				QByteArray data = std::move(m_pendingFrame);
-				int w = m_pendingW, h = m_pendingH;
+				int w = m_pendingW;
+				int h = m_pendingH;
 				m_hasPending = false;
 				m_busy = true;
 				l.unlock();
@@ -84,10 +96,10 @@ void DetectionWorker::writeFrame(const QByteArray& data, int w, int h) {
 		m_busy = false;
 		return;
 	}
-	// raw rgb bytes
+
 	char header[8];
-	memcpy(header, &w, 4);
-	memcpy(header + 4, &h, 4);
+	std::memcpy(header, &w, 4);
+	std::memcpy(header + 4, &h, 4);
 	m_process->write(header, 8);
 	m_process->write(data);
 }
@@ -95,37 +107,44 @@ void DetectionWorker::writeFrame(const QByteArray& data, int w, int h) {
 void DetectionWorker::onReadyRead() {
 	while (m_process->canReadLine()) {
 		QByteArray line = m_process->readLine().trimmed();
-		if (line.isEmpty())
+		if (line.isEmpty()) {
 			continue;
+		}
 
-		// should probably delete this its pretty useless rn
 		QJsonParseError err;
 		QJsonDocument doc = QJsonDocument::fromJson(line, &err);
-		if (err.error != QJsonParseError::NoError || !doc.isArray()) {
+		if (err.error != QJsonParseError::NoError || !doc.isObject()) {
 			qWarning() << "Bad detection JSON:" << err.errorString();
 			m_busy = false;
 			continue;
 		}
 
+		QJsonObject root = doc.object();
+
 		QList<Detection> detections;
-		for (const QJsonValue& v : doc.array()) {
+		for (const QJsonValue& v : root["boxes"].toArray()) {
 			QJsonObject o = v.toObject();
-			detections.append({.x = (float)o["x"].toDouble(),
-				.y = (float)o["y"].toDouble(),
-				.w = (float)o["w"].toDouble(),
-				.h = (float)o["h"].toDouble(),
+			detections.append({.x = static_cast<float>(o["x"].toDouble()),
+				.y = static_cast<float>(o["y"].toDouble()),
+				.w = static_cast<float>(o["w"].toDouble()),
+				.h = static_cast<float>(o["h"].toDouble()),
 				.label = o["label"].toString(),
-				.score = (float)o["score"].toDouble()});
+				.score = static_cast<float>(o["score"].toDouble())});
+		}
+		emit detectionsReady(m_streamId, detections);
+
+		QString alert = root["alert"].toString().trimmed();
+		if (!alert.isEmpty()) {
+			emit alertReady(m_streamId, alert);
 		}
 
-		emit detectionsReady(m_streamId, detections);
 		m_busy = false;
 
-		// send next pending frame asap
 		QMutexLocker l(&m_frameMutex);
 		if (m_hasPending) {
 			QByteArray data = std::move(m_pendingFrame);
-			int w = m_pendingW, h = m_pendingH;
+			int w = m_pendingW;
+			int h = m_pendingH;
 			m_hasPending = false;
 			m_busy = true;
 			l.unlock();

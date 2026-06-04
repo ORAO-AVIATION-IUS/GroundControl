@@ -11,11 +11,6 @@
 #include <QThread>
 #include "DetectionWorker.h"
 
-// At the top of CameraManager.cpp, after all #includes
-static const int _detectionMetaType = qRegisterMetaType<Detection>("Detection");
-static const int _detectionListMetaType =
-	qRegisterMetaType<QList<Detection>>("QList<Detection>");
-
 // Per-stream state, internal to this translation unit.
 struct CameraInfo {
 	QString name;
@@ -320,6 +315,8 @@ PipelineSetup createUriPipeline(
 
 CameraManager::CameraManager(QQmlEngine* engine, QObject* parent)
 	: QObject(parent), m_engine(engine) {
+	qRegisterMetaType<Detection>("Detection");
+	qRegisterMetaType<QList<Detection>>("QList<Detection>");
 	gst_init(nullptr, nullptr);
 }
 
@@ -557,6 +554,12 @@ void CameraManager::setDetectionEnabled(int id, bool enabled) {
 
 		connect(cam->detectionThread.get(), &QThread::started,
 			cam->detectionWorker.get(), &DetectionWorker::start);
+		connect(
+			cam->detectionWorker.get(), &DetectionWorker::alertReady, this,
+			[this](int streamId, const QString& alert) {
+				emit alertChanged(streamId, alert);
+			},
+			Qt::QueuedConnection);
 
 		cam->detectionThread->start();
 	} else {

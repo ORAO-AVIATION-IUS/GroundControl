@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QString>
+#include <QVariant>
 #include <QVideoSink>
 
 #include <map>
@@ -48,6 +49,7 @@ class CameraManager : public QObject {
 	void streamConnectedChanged(int id, bool connected);
 	void streamError(int id, const QString& message);
 	void detectionsChanged(int id, QVariantList detections);
+	void alertChanged(int id, const QString& alert);
 
    private:
 	void startPipeline(int id);

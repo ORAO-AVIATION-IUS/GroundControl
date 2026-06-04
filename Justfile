@@ -59,6 +59,7 @@ bootstrap-maplibre:
 [linux]
 run BACKEND="xcb":
     cd build && \
+    set -a && source {{justfile_directory()}}/.env && set +a && \
     QT_QPA_PLATFORM={{BACKEND}} \
     LD_LIBRARY_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/lib" \
     QT_PLUGIN_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/plugins" \
@@ -124,13 +125,18 @@ detector_python := if os() == "windows" { detector_venv + "/Scripts/python.exe" 
 detector-setup:
     python3 -m venv {{detector_venv}}
     {{detector_python}} -m pip install --upgrade pip
-    {{detector_python}} -m pip install sahi ultralytics opencv-python-headless numpy
+    {{detector_python}} -m pip install \
+        sahi ultralytics opencv-python-headless numpy \
+        google-genai
+    {{detector_python}} -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
 
 [windows]
 detector-setup:
-    python -m venv {{detector_venv}}
+    python3 -m venv {{detector_venv}}
     {{detector_python}} -m pip install --upgrade pip
-    {{detector_python}} -m pip install sahi ultralytics opencv-python-headless numpy
+    {{detector_python}} -m pip install \
+        sahi ultralytics opencv-python-headless numpy \
+    {{detector_python}} -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
 
 # Download YOLOv8n weights into src/Camera/
 [unix]
