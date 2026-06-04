@@ -8,6 +8,14 @@
 #include <gst/app/gstappsink.h>
 #include <gst/gst.h>
 
+#include <QThread>
+#include "DetectionWorker.h"
+
+// At the top of CameraManager.cpp, after all #includes
+static const int _detectionMetaType = qRegisterMetaType<Detection>("Detection");
+static const int _detectionListMetaType =
+	qRegisterMetaType<QList<Detection>>("QList<Detection>");
+
 // Per-stream state, internal to this translation unit.
 struct CameraInfo {
 	QString name;
@@ -18,6 +26,12 @@ struct CameraInfo {
 	QString status;
 	QPointer<QVideoSink> sink;
 	GstElement* pipeline = nullptr;
+
+	// Detection
+	std::unique_ptr<QThread> detectionThread;
+	std::unique_ptr<DetectionWorker> detectionWorker;
+	QList<Detection> lastDetections;
+	bool detectionEnabled = false;
 };
 
 namespace {
@@ -53,7 +67,6 @@ GstFlowReturn onNewSample(GstAppSink* appsink, gpointer userData) {
 	int height = 0;
 	gst_structure_get_int(s, "width", &width);
 	gst_structure_get_int(s, "height", &height);
-
 	if (width <= 0 || height <= 0) {
 		gst_sample_unref(sample);
 		return GST_FLOW_OK;
@@ -75,6 +88,19 @@ GstFlowReturn onNewSample(GstAppSink* appsink, gpointer userData) {
 			QMetaObject::invokeMethod(sink, [sink, f = std::move(frame)]() {
 				sink->setVideoFrame(QVideoFrame(f));
 			});
+		}
+
+		if (cam->detectionEnabled && cam->detectionWorker) {
+			const int pixels = width * height;
+			QByteArray bgr(pixels * 3, Qt::Uninitialized);
+			const uchar* src = map.data;
+			auto* dst = reinterpret_cast<uchar*>(bgr.data());
+			for (int i = 0; i < pixels; ++i) {
+				dst[(i * 3) + 0] = src[(i * 4) + 2];
+				dst[(i * 3) + 1] = src[(i * 4) + 1];
+				dst[(i * 3) + 2] = src[(i * 4) + 0];
+			}
+			cam->detectionWorker->submitFrame(bgr, width, height);
 		}
 
 		gst_buffer_unmap(buffer, &map);
@@ -487,4 +513,80 @@ void CameraManager::stopPipeline(int id) {
 	gst_element_set_state(cam->pipeline, GST_STATE_NULL);
 	gst_object_unref(cam->pipeline);
 	cam->pipeline = nullptr;
+}
+
+// ai sahi detection stuff
+void CameraManager::setDetectionEnabled(int id, bool enabled) {
+	auto it = m_cameras.find(id);
+	if (it == m_cameras.end())
+		return;
+	auto* cam = it->second.get();
+
+	if (enabled == cam->detectionEnabled)
+		return;
+	cam->detectionEnabled = enabled;
+
+	if (enabled) {
+		cam->detectionThread = std::make_unique<QThread>();
+		cam->detectionWorker = std::make_unique<DetectionWorker>(id);
+		cam->detectionWorker->moveToThread(cam->detectionThread.get());
+
+		// Wire results back to CameraManager on the GUI thread
+		connect(
+			cam->detectionWorker.get(), &DetectionWorker::detectionsReady, this,
+			[this](int streamId, QList<Detection> dets) {
+				auto it2 = m_cameras.find(streamId);
+				if (it2 == m_cameras.end())
+					return;
+				it2->second->lastDetections = dets;
+
+				QVariantList out;
+				for (const auto& d : dets) {
+					QVariantMap m;
+					m["x"] = d.x;
+					m["y"] = d.y;
+					m["w"] = d.w;
+					m["h"] = d.h;
+					m["label"] = d.label;
+					m["score"] = d.score;
+					out.append(m);
+				}
+				emit detectionsChanged(streamId, out);
+			},
+			Qt::QueuedConnection);
+
+		connect(cam->detectionThread.get(), &QThread::started,
+			cam->detectionWorker.get(), &DetectionWorker::start);
+
+		cam->detectionThread->start();
+	} else {
+		if (cam->detectionWorker)
+			cam->detectionWorker->stop();
+		if (cam->detectionThread) {
+			cam->detectionThread->quit();
+			cam->detectionThread->wait();
+		}
+		cam->detectionWorker.reset();
+		cam->detectionThread.reset();
+		cam->lastDetections.clear();
+		emit detectionsChanged(id, {});
+	}
+}
+
+QVariantList CameraManager::detections(int id) const {
+	auto it = m_cameras.find(id);
+	if (it == m_cameras.end())
+		return {};
+	QVariantList out;
+	for (const auto& d : it->second->lastDetections) {
+		QVariantMap m;
+		m["x"] = d.x;
+		m["y"] = d.y;
+		m["w"] = d.w;
+		m["h"] = d.h;
+		m["label"] = d.label;
+		m["score"] = d.score;
+		out.append(m);
+	}
+	return out;
 }

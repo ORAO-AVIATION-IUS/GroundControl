@@ -110,3 +110,40 @@ clean:
 clean:
 	Remove-Item -Path build -Verbose -Recurse -ErrorAction SilentlyContinue -Force
 	Remove-Item -Path compile_commands.json -Verbose -ErrorAction SilentlyContinue -Force
+
+# stuff necessary for the object detection should be set up in a way that it will just install
+# the dependencies and everything
+# putting this here cuz i dont want to clog up the preexisting justfile above
+
+# Path to the venv used by the Python detector
+detector_venv := ".venv"
+detector_python := if os() == "windows" { detector_venv + "/Scripts/python.exe" } else { detector_venv + "/bin/python3" }
+
+# Create venv and install detector dependencies
+[unix]
+detector-setup:
+    python3 -m venv {{detector_venv}}
+    {{detector_python}} -m pip install --upgrade pip
+    {{detector_python}} -m pip install sahi ultralytics opencv-python-headless numpy
+
+[windows]
+detector-setup:
+    python -m venv {{detector_venv}}
+    {{detector_python}} -m pip install --upgrade pip
+    {{detector_python}} -m pip install sahi ultralytics opencv-python-headless numpy
+
+# Download YOLOv8n weights into src/Camera/
+[unix]
+detector-download-model:
+    {{detector_python}} -c "from ultralytics import YOLO; m=YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', 'src/Camera/yolov8n.pt')" 2>/dev/null || true
+
+[windows]
+detector-download-model:
+    {{detector_python}} -c "from ultralytics import YOLO; m=YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', 'src/Camera/yolov8n.pt')"
+
+# First-time setup: venv + model + build
+[unix]
+setup: detector-setup detector-download-model prebuild
+
+[windows]
+setup: detector-setup detector-download-model prebuild

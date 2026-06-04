@@ -13,6 +13,8 @@ Item {
 
 	property bool connected: false
 	property string statusText: ""
+	property var detections: []
+	property bool detectionEnabled: true
 
 	anchors.fill: parent
 
@@ -25,6 +27,8 @@ Item {
 			CameraManager.attachSink(root.streamId, video.videoSink);
 			root.connected = CameraManager.streamConnected(root.streamId);
 			root.statusText = CameraManager.streamStatus(root.streamId);
+			if (root.detectionEnabled)
+				CameraManager.setDetectionEnabled(root.streamId, true);
 		}
 	}
 
@@ -34,6 +38,46 @@ Item {
 	VideoOutput {
 		id: video
 		anchors.fill: parent
+	}
+
+	Repeater {
+		model: root.detections
+
+		delegate: Item {
+			required property var modelData
+
+			x: video.contentRect.x + modelData.x * video.contentRect.width
+			y: video.contentRect.y + modelData.y * video.contentRect.height
+			width: modelData.w * video.contentRect.width
+			height: modelData.h * video.contentRect.height
+
+			Rectangle {
+				anchors.fill: parent
+				color: "transparent"
+				border.color: "#00FF41"
+				border.width: 2
+				radius: 1
+			}
+
+			Rectangle {
+				anchors.bottom: parent.top
+				anchors.left: parent.left
+				anchors.bottomMargin: 2
+				color: "#CC000000"
+				width: lbl.implicitWidth + 8
+				height: lbl.implicitHeight + 4
+				radius: 2
+
+				Text {
+					id: lbl
+					anchors.centerIn: parent
+					text: "%1 %2%".arg(modelData.label).arg(Math.round(modelData.score * 100))
+					color: "#00FF41"
+					font.pixelSize: 11
+					font.family: S.Style.fontFamily
+				}
+			}
+		}
 	}
 
 	Rectangle {
@@ -74,7 +118,15 @@ Item {
 			if (id === root.streamId)
 				root.statusText = status;
 		}
+
+		function onDetectionsChanged(id, dets) {
+			if (id === root.streamId)
+				root.detections = dets;
+		}
 	}
 
 	Component.onCompleted: root.claimSink()
+
+	Component.onDestruction: if (root.streamId >= 0)
+		CameraManager.setDetectionEnabled(root.streamId, false)
 }
