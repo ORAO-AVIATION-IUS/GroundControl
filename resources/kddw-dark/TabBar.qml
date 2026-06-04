@@ -77,7 +77,16 @@ TabBarBase {
         position: (root.groupCpp && root.groupCpp.tabsAtBottom) ? Controls.TabBar.Footer : Controls.TabBar.Header
 
         background: Rectangle {
-            color: "#161b22"
+            color: "#0d1117"
+
+            // Top separator line
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#30363d"
+            }
         }
 
         onCurrentIndexChanged: {
@@ -93,7 +102,7 @@ TabBarBase {
                 text: title
 
                 background: Rectangle {
-                    color: index === tabBar.currentIndex ? "#21262d" : "#161b22"
+                    color: index === tabBar.currentIndex ? "#1c2128" : "#0d1117"
 
                     Rectangle {
                         visible: index === tabBar.currentIndex

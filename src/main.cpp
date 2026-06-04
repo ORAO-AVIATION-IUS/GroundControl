@@ -7,6 +7,7 @@
 #include <QGuiApplication>
 #include <QJSEngine>
 #include <QPalette>
+#include <QQuickStyle>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickWindow>
@@ -36,7 +37,10 @@ int main(int argc, char* argv[]) {
 
 	QGuiApplication app(argc, argv);
 
-	// Dark palette – propagates to KDDW tabs/separators/titlebars and all dialogs.
+	// Use Fusion style – fully respects QPalette for MenuBar, menus, dialogs.
+	QQuickStyle::setStyle("Fusion");
+
+	// Dark palette – propagates to KDDW tabs/separators/titlebars, MenuBar, and all dialogs.
 	QPalette darkPalette;
 	darkPalette.setColor(QPalette::Window, QColor("#0d1117"));
 	darkPalette.setColor(QPalette::WindowText, QColor("#e6edf3"));
@@ -54,6 +58,8 @@ int main(int argc, char* argv[]) {
 	darkPalette.setColor(QPalette::Midlight, QColor("#30363d"));
 	darkPalette.setColor(QPalette::Link, QColor("#58a6ff"));
 	darkPalette.setColor(QPalette::PlaceholderText, QColor("#6e7681"));
+	darkPalette.setColor(QPalette::ToolTipBase, QColor("#1c2128"));
+	darkPalette.setColor(QPalette::ToolTipText, QColor("#e6edf3"));
 	app.setPalette(darkPalette);
 
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);

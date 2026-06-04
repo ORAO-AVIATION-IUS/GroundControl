@@ -15,6 +15,25 @@ ApplicationWindow {
 	title: qsTr("Ground Control")
 	color: "#0d1117"
 
+	palette.window: "#0d1117"
+	palette.windowText: "#e6edf3"
+	palette.base: "#161b22"
+	palette.alternateBase: "#1c2128"
+	palette.text: "#e6edf3"
+	palette.button: "#21262d"
+	palette.buttonText: "#e6edf3"
+	palette.brightText: "#f85149"
+	palette.highlight: "#1f6feb"
+	palette.highlightedText: "#ffffff"
+	palette.dark: "#30363d"
+	palette.mid: "#21262d"
+	palette.light: "#484f58"
+	palette.midlight: "#30363d"
+	palette.link: "#58a6ff"
+	palette.placeholderText: "#6e7681"
+	palette.toolTipBase: "#1c2128"
+	palette.toolTipText: "#e6edf3"
+
 	function rowForId(id) {
 		for (let i = 0; i < cameraModel.count; ++i) {
 			if (cameraModel.get(i).cameraId === id)
