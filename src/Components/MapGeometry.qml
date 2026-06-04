@@ -411,6 +411,61 @@ QtObject {
 		], revision);
 	}
 
+	function flyTargetGeoJson(valid, latitude, longitude) {
+		if (!valid)
+			return emptyFeatureCollection;
+		return featureCollection([
+			{
+				"type": "Feature",
+				"geometry": {
+					"type": "Point",
+					"coordinates": [longitude, latitude]
+				}
+			}
+		]);
+	}
+
+	function flyTargetLineGeoJson(valid, droneLatitude, droneLongitude, latitude, longitude) {
+		if (!valid || (droneLatitude === 0 && droneLongitude === 0))
+			return emptyFeatureCollection;
+		return featureCollection([
+			{
+				"type": "Feature",
+				"geometry": {
+					"type": "LineString",
+					"coordinates": [[droneLongitude, droneLatitude], [longitude, latitude]]
+				}
+			}
+		]);
+	}
+
+	function flyTargetTetherGeoJson(valid, latitude, longitude, altitude) {
+		if (!valid || altitude <= 0)
+			return emptyFeatureCollection;
+		const c = QtPositioning.coordinate(latitude, longitude);
+		return featureCollection([polygonFeature(circleRing(c, 1.1, 10), {
+				"base": 0,
+				"height": altitude
+			})]);
+	}
+
+	function flyTargetExtrusionGeoJson(valid, latitude, longitude, altitude, heading) {
+		if (!valid)
+			return emptyFeatureCollection;
+		const c = QtPositioning.coordinate(latitude, longitude);
+		const alt = Math.max(0, altitude || 0);
+		const features = [];
+		features.push(polygonFeature(circleRing(c, 3.5, 18), {
+			"base": Math.max(0, alt - 1.2),
+			"height": alt + 1.2
+		}));
+		features.push(polygonFeature(polyRect(c, 7, 0.8, heading || 0), {
+			"base": Math.max(0, alt - 0.5),
+			"height": alt + 0.5
+		}));
+		return featureCollection(features);
+	}
+
 	function homeGeoJson(latitude, longitude, valid) {
 		if (!valid)
 			return emptyFeatureCollection;

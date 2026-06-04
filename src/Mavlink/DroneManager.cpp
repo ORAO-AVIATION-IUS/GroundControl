@@ -53,6 +53,9 @@ QVariantList missionPlanToVariantList(
 		item.insert("flyThrough", missionItem.is_fly_through);
 		item.insert("loiter", missionItem.loiter_time_s);
 		item.insert("loiterEnabled", missionItem.loiter_time_s > 0.0F);
+		item.insert("heading",
+			std::isnan(missionItem.yaw_deg) ? 0.0F : missionItem.yaw_deg);
+		item.insert("headingEnabled", !std::isnan(missionItem.yaw_deg));
 		missionItems.push_back(item);
 	}
 	return missionItems;
@@ -413,6 +416,46 @@ void DroneManager::setAltitude(double altitudeMeters) {
 		});
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void DroneManager::goToLocation(double latitude, double longitude,
+	double altitudeMeters, double headingDegrees) {
+	if (!m_action) {
+		emit logMessage(
+			m_name, "Cannot go to location: not connected", "warning");
+		return;
+	}
+	if (!isConnected()) {
+		emit logMessage(
+			m_name, "Cannot go to location: no system connection", "warning");
+		return;
+	}
+	if (latitude < kMinLatitudeDeg || latitude > kMaxLatitudeDeg ||
+		longitude < kMinLongitudeDeg || longitude > kMaxLongitudeDeg) {
+		emit logMessage(
+			m_name, "Cannot go to location: invalid coordinate", "warning");
+		return;
+	}
+
+	const double heading =
+		std::fmod(std::fmod(headingDegrees, 360.0) + 360.0, 360.0);
+	const double absoluteAlt = m_altitudeMsl + (altitudeMeters - m_altitude);
+	m_action->goto_location_async(latitude, longitude,
+		static_cast<float>(absoluteAlt), static_cast<float>(heading),
+		[this](mavsdk::Action::Result result) {
+			onThread([this, result]() {
+				if (result == mavsdk::Action::Result::Success) {
+					emit logMessage(m_name, "Go Here command sent", "info");
+				} else {
+					emit logMessage(m_name,
+						QString("Go Here failed: %1")
+							.arg(QString::fromStdString(
+								std::string(to_string(result)))),
+						"error");
+				}
+			});
+		});
+}
+
 void DroneManager::uploadMission(
 	const QVariantList& missionItems, bool returnToLaunchAfterMission) {
 	if (!m_mission) {
@@ -461,6 +504,10 @@ void DroneManager::uploadMission(
 		if (item.value("loiterEnabled", false).toBool()) {
 			missionItem.loiter_time_s =
 				static_cast<float>(item.value("loiter", 0.0).toDouble());
+		}
+		if (item.value("headingEnabled", false).toBool()) {
+			missionItem.yaw_deg =
+				static_cast<float>(item.value("heading", 0.0).toDouble());
 		}
 		missionItem.camera_action =
 			mavsdk::Mission::MissionItem::CameraAction::None;

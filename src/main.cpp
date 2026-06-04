@@ -33,6 +33,9 @@ int main(int argc, char* argv[]) {
 	installMessageHandler();
 
 	QGuiApplication app(argc, argv);
+	QCoreApplication::setOrganizationName("ORAO");
+	QCoreApplication::setOrganizationDomain("orao.local");
+	QCoreApplication::setApplicationName("GroundControl");
 
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
 

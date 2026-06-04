@@ -14,6 +14,15 @@ MouseArea {
 	property string activePlanningTool: "edit"
 	property string activeTrackingTool: ""
 	property var missionItems: []
+	property double homeLatitude: 0
+	property double homeLongitude: 0
+	property bool homeValid: false
+	property bool goTargetValid: false
+	property double goTargetLatitude: 0
+	property double goTargetLongitude: 0
+	property bool lookTargetValid: false
+	property double lookTargetLatitude: 0
+	property double lookTargetLongitude: 0
 	property var hoveredCoordinate: QtPositioning.coordinate()
 	property point _lastPointerPoint: Qt.point(0, 0)
 	property bool _hasPointerOnMap: false
@@ -21,6 +30,11 @@ MouseArea {
 	signal droneClicked(int droneUid)
 	signal missionMapClicked(var coordinate)
 	signal homeMapClicked(var coordinate)
+	signal mapContextRequested(var coordinate, point screenPoint)
+	signal mapInteractionStarted
+	signal flyTargetClicked(string targetKind)
+	signal flyTargetEditStarted(string targetKind)
+	signal flyTargetMoved(string targetKind, var coordinate)
 	signal missionItemClicked(int index)
 	signal missionItemMoved(int index, var coordinate)
 	signal missionSegmentInsertRequested(int segmentIndex, var coordinate)
@@ -40,6 +54,7 @@ MouseArea {
 	property bool movedSincePress: false
 	property bool movementNotified: false
 	property int draggedMissionIndex: -1
+	property string draggedFlyTargetKind: ""
 
 	readonly property int modeNone: 0
 	readonly property int modePan: 1
@@ -102,6 +117,39 @@ MouseArea {
 			}
 		}
 		return bestUid;
+	}
+
+	function flyTargetAt(point) {
+		const clickCoord = targetMap.toCoordinate(point, false);
+		if (!clickCoord || !clickCoord.isValid)
+			return "";
+
+		const onePixelCoord = targetMap.toCoordinate(Qt.point(point.x + 1, point.y), false);
+		const metersPerPixel = onePixelCoord && onePixelCoord.isValid ? clickCoord.distanceTo(onePixelCoord) : 1;
+		const thresholdMeters = Math.max(7, metersPerPixel * 20);
+		let bestKind = "";
+		let bestDistance = thresholdMeters;
+
+		if (goTargetValid) {
+			const goDistance = clickCoord.distanceTo(QtPositioning.coordinate(goTargetLatitude, goTargetLongitude));
+			if (goDistance <= bestDistance) {
+				bestDistance = goDistance;
+				bestKind = "go";
+			}
+		}
+		if (lookTargetValid) {
+			const lookDistance = clickCoord.distanceTo(QtPositioning.coordinate(lookTargetLatitude, lookTargetLongitude));
+			if (lookDistance <= bestDistance) {
+				bestDistance = lookDistance;
+				bestKind = "look";
+			}
+		}
+		if (mapMode === 2 && homeValid) {
+			const homeDistance = clickCoord.distanceTo(QtPositioning.coordinate(homeLatitude, homeLongitude));
+			if (homeDistance <= bestDistance)
+				bestKind = "home";
+		}
+		return bestKind;
 	}
 
 	function missionItemAt(point) {
@@ -217,6 +265,7 @@ MouseArea {
 	onPressed: function (mouse) {
 		lastPoint = Qt.point(mouse.x, mouse.y);
 		updateHoveredCoordinate(lastPoint);
+		mapInteractionStarted();
 		pressPoint = lastPoint;
 		anchorCoord = targetMap.toCoordinate(lastPoint, false);
 		velocityX = 0;
@@ -228,6 +277,16 @@ MouseArea {
 
 		if (dragMode !== modeNone)
 			return;
+
+		if (mapMode === 2 && mouse.button === Qt.LeftButton) {
+			const targetKind = flyTargetAt(lastPoint);
+			if (targetKind !== "") {
+				draggedFlyTargetKind = targetKind;
+				flyTargetEditStarted(targetKind);
+				cursorShape = Qt.ClosedHandCursor;
+				return;
+			}
+		}
 
 		if (mapMode === 1 && mouse.button === Qt.LeftButton) {
 			const missionIndex = missionItemAt(lastPoint);
@@ -245,7 +304,9 @@ MouseArea {
 			}
 		}
 
-		if (mouse.button === Qt.LeftButton && !(mouse.modifiers & Qt.ControlModifier)) {
+		if (mouse.button === Qt.RightButton) {
+			cursorShape = Qt.ArrowCursor;
+		} else if (mouse.button === Qt.LeftButton && !(mouse.modifiers & Qt.ControlModifier)) {
 			dragMode = modePan;
 			cursorShape = Qt.OpenHandCursor;
 		} else {
@@ -264,11 +325,19 @@ MouseArea {
 
 		if (Math.sqrt(pressDx * pressDx + pressDy * pressDy) > kClickMoveThreshold) {
 			movedSincePress = true;
+			if (dragMode === modeNone && (mouse.buttons & Qt.RightButton)) {
+				dragMode = modeRotateTilt;
+				cursorShape = Qt.ClosedHandCursor;
+			}
 			if (dragMode === modePan)
 				noteMapMovement();
 		}
 
-		if (draggedMissionIndex >= 0) {
+		if (draggedFlyTargetKind !== "") {
+			const coordinate = targetMap.toCoordinate(point, false);
+			if (coordinate && coordinate.isValid)
+				flyTargetMoved(draggedFlyTargetKind, coordinate);
+		} else if (draggedMissionIndex >= 0) {
 			const coordinate = targetMap.toCoordinate(point, false);
 			if (coordinate && coordinate.isValid)
 				missionItemMoved(draggedMissionIndex, coordinate);
@@ -289,6 +358,27 @@ MouseArea {
 	}
 
 	onReleased: function (mouse) {
+		const releasePoint = Qt.point(mouse.x, mouse.y);
+
+		if (mouse.button === Qt.RightButton) {
+			if (!movedSincePress) {
+				const coordinate = targetMap.toCoordinate(releasePoint, false);
+				if (coordinate && coordinate.isValid)
+					mapContextRequested(coordinate, releasePoint);
+			}
+			dragMode = modeNone;
+			cursorShape = Qt.ArrowCursor;
+			return;
+		}
+
+		if (draggedFlyTargetKind !== "") {
+			flyTargetClicked(draggedFlyTargetKind);
+			draggedFlyTargetKind = "";
+			dragMode = modeNone;
+			cursorShape = Qt.ArrowCursor;
+			return;
+		}
+
 		if (draggedMissionIndex >= 0) {
 			missionItemClicked(draggedMissionIndex);
 			draggedMissionIndex = -1;
@@ -308,10 +398,8 @@ MouseArea {
 					if (coordinate && coordinate.isValid)
 						missionMapClicked(coordinate);
 				}
-			} else if (mapMode === 2 && activeTrackingTool === "home") {
-				const coordinate = targetMap.toCoordinate(point, false);
-				if (coordinate && coordinate.isValid)
-					homeMapClicked(coordinate);
+			} else if (mapMode === 2 && flyTargetAt(point) !== "") {
+				flyTargetClicked(flyTargetAt(point));
 			} else {
 				const uid = droneUidAt(point);
 				if (uid >= 0)
@@ -333,6 +421,7 @@ MouseArea {
 		inertiaTimer.stop();
 		inertiaActive = false;
 		draggedMissionIndex = -1;
+		draggedFlyTargetKind = "";
 		dragMode = modeNone;
 		cursorShape = Qt.ArrowCursor;
 	}
@@ -364,6 +453,7 @@ MouseArea {
 	}
 
 	onWheel: function (wheel) {
+		mapInteractionStarted();
 		updateHoveredCoordinate(Qt.point(wheel.x, wheel.y));
 		const focusedCoordinate = followedDroneCoordinate();
 		const shouldZoomToDrone = focusedCoordinate && focusedCoordinate.isValid;

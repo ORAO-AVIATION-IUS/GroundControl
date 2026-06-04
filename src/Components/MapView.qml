@@ -28,6 +28,17 @@ Item {
 	property double homeLongitude: 0
 	property bool homeValid: false
 	property bool returnHomeAfterMission: false
+	property bool goTargetValid: false
+	property double goTargetLatitude: 0
+	property double goTargetLongitude: 0
+	property double goTargetAltitude: 0
+	property double goTargetHeading: 0
+	property bool lookTargetValid: false
+	property double lookTargetLatitude: 0
+	property double lookTargetLongitude: 0
+	property double lookTargetHeading: 0
+	property double flyTargetDroneLatitude: 0
+	property double flyTargetDroneLongitude: 0
 	property int missionRevision: 0
 
 	readonly property int _styleIndex: threeD ? (lightMode ? 1 : 5) : (lightMode ? 0 : 4)
@@ -41,6 +52,11 @@ Item {
 	signal droneClicked(int droneUid)
 	signal missionMapClicked(var coordinate)
 	signal homeMapClicked(var coordinate)
+	signal mapContextRequested(var coordinate, point screenPoint)
+	signal mapInteractionStarted
+	signal flyTargetClicked(string targetKind)
+	signal flyTargetEditStarted(string targetKind)
+	signal flyTargetMoved(string targetKind, var coordinate)
 	signal missionItemClicked(int index)
 	signal missionItemMoved(int index, var coordinate)
 	signal missionSegmentInsertRequested(int segmentIndex, var coordinate)
@@ -140,6 +156,17 @@ Item {
 			homeLongitude: root.homeLongitude
 			homeValid: root.homeValid
 			returnHomeAfterMission: root.returnHomeAfterMission
+			goTargetValid: root.goTargetValid
+			goTargetLatitude: root.goTargetLatitude
+			goTargetLongitude: root.goTargetLongitude
+			goTargetAltitude: root.goTargetAltitude
+			goTargetHeading: root.goTargetHeading
+			lookTargetValid: root.lookTargetValid
+			lookTargetLatitude: root.lookTargetLatitude
+			lookTargetLongitude: root.lookTargetLongitude
+			lookTargetHeading: root.lookTargetHeading
+			flyTargetDroneLatitude: root.flyTargetDroneLatitude
+			flyTargetDroneLongitude: root.flyTargetDroneLongitude
 			showMissionInsertHandles: root.mapMode === 1
 			revision: droneTracker.revision
 			missionRevision: root.missionRevision
@@ -156,6 +183,15 @@ Item {
 			activePlanningTool: root.activePlanningTool
 			activeTrackingTool: root.activeTrackingTool
 			missionItems: root.missionItems
+			homeLatitude: root.homeLatitude
+			homeLongitude: root.homeLongitude
+			homeValid: root.homeValid
+			goTargetValid: root.goTargetValid
+			goTargetLatitude: root.goTargetLatitude
+			goTargetLongitude: root.goTargetLongitude
+			lookTargetValid: root.lookTargetValid
+			lookTargetLatitude: root.lookTargetLatitude
+			lookTargetLongitude: root.lookTargetLongitude
 			onDroneClicked: function (droneUid) {
 				root.droneClicked(droneUid);
 			}
@@ -164,6 +200,19 @@ Item {
 			}
 			onHomeMapClicked: function (coordinate) {
 				root.homeMapClicked(coordinate);
+			}
+			onMapContextRequested: function (coordinate, screenPoint) {
+				root.mapContextRequested(coordinate, screenPoint);
+			}
+			onMapInteractionStarted: root.mapInteractionStarted()
+			onFlyTargetClicked: function (targetKind) {
+				root.flyTargetClicked(targetKind);
+			}
+			onFlyTargetEditStarted: function (targetKind) {
+				root.flyTargetEditStarted(targetKind);
+			}
+			onFlyTargetMoved: function (targetKind, coordinate) {
+				root.flyTargetMoved(targetKind, coordinate);
 			}
 			onMissionItemClicked: function (index) {
 				root.missionItemClicked(index);

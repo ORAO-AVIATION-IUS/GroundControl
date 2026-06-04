@@ -31,16 +31,16 @@ Column {
 			onClicked: root.mapModeRequested(0)
 		}
 		IconButton {
-			iconName: "routeplanning"
-			label: "Plan"
-			checked: root.mapMode === 1
-			onClicked: root.mapModeRequested(1)
-		}
-		IconButton {
 			iconName: "flightmode-on"
 			label: "Fly"
 			checked: root.mapMode === 2
 			onClicked: root.mapModeRequested(2)
+		}
+		IconButton {
+			iconName: "routeplanning"
+			label: "Plan"
+			checked: root.mapMode === 1
+			onClicked: root.mapModeRequested(1)
 		}
 	}
 
@@ -103,15 +103,18 @@ Column {
 		}
 		IconButton {
 			iconName: "mark-location"
-			label: "Point"
-			onClicked: root.trackingToolRequested("target-point")
+			label: "Go\nTarget"
+			onClicked: root.trackingToolRequested("focus-go")
+		}
+		IconButton {
+			iconName: "transform-rotate"
+			label: "Look\nTarget"
+			onClicked: root.trackingToolRequested("focus-look")
 		}
 		IconButton {
 			iconName: "go-home-large"
 			label: "Home"
-			checkable: true
-			checked: root.activeTrackingTool === "home"
-			onClicked: root.trackingToolRequested("home")
+			onClicked: root.trackingToolRequested("focus-home")
 		}
 	}
 }

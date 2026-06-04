@@ -75,6 +75,8 @@ AbstractButton {
 			text: root.label
 			color: root.checked ? Style.iconBtnCheckedLabelColor : root.labelColor
 			font.pixelSize: root.labelSize
+			horizontalAlignment: Text.AlignHCenter
+			lineHeight: 0.86
 			visible: root.label !== ""
 		}
 	}

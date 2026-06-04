@@ -134,6 +134,8 @@ class DroneManager : public QObject {
 	Q_INVOKABLE void land();
 	Q_INVOKABLE void rth();
 	Q_INVOKABLE void setAltitude(double altitudeMeters);
+	Q_INVOKABLE void goToLocation(double latitude, double longitude,
+		double altitudeMeters, double headingDegrees);
 	Q_INVOKABLE void uploadMission(
 		const QVariantList& missionItems, bool returnToLaunchAfterMission);
 	Q_INVOKABLE void startMission();

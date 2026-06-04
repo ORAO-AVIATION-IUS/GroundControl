@@ -19,6 +19,17 @@ Style {
 	property double homeLongitude: 0
 	property bool homeValid: false
 	property bool returnHomeAfterMission: false
+	property bool goTargetValid: false
+	property double goTargetLatitude: 0
+	property double goTargetLongitude: 0
+	property double goTargetAltitude: 0
+	property double goTargetHeading: 0
+	property bool lookTargetValid: false
+	property double lookTargetLatitude: 0
+	property double lookTargetLongitude: 0
+	property double lookTargetHeading: 0
+	property double flyTargetDroneLatitude: 0
+	property double flyTargetDroneLongitude: 0
 	property bool showMissionInsertHandles: false
 	property int revision: 0
 	property int missionRevision: 0
@@ -139,6 +150,77 @@ Style {
 				"line-color": "#ff3030",
 				"line-width": 3,
 				"line-opacity": 0.85
+			})
+	}
+
+	SourceParameter {
+		styleId: "fly-target-line-source"
+		type: "geojson"
+		property var data: geometry.flyTargetLineGeoJson(root.goTargetValid, root.flyTargetDroneLatitude, root.flyTargetDroneLongitude, root.goTargetLatitude, root.goTargetLongitude)
+	}
+	LayerParameter {
+		styleId: "fly-target-line-layer"
+		type: "line"
+		property string source: "fly-target-line-source"
+		// qmllint disable incompatible-type
+		paint: ({
+				"line-color": "#5a9aef",
+				"line-width": 3,
+				"line-dasharray": [1, 1.2],
+				"line-opacity": 0.9
+			})
+	}
+
+	SourceParameter {
+		styleId: "look-target-line-source"
+		type: "geojson"
+		property var data: geometry.flyTargetLineGeoJson(root.lookTargetValid, root.flyTargetDroneLatitude, root.flyTargetDroneLongitude, root.lookTargetLatitude, root.lookTargetLongitude)
+	}
+	LayerParameter {
+		styleId: "look-target-line-layer"
+		type: "line"
+		property string source: "look-target-line-source"
+		// qmllint disable incompatible-type
+		paint: ({
+				"line-color": "#ffb347",
+				"line-width": 3,
+				"line-dasharray": [0.5, 1.1],
+				"line-opacity": 0.9
+			})
+	}
+
+	SourceParameter {
+		styleId: "fly-target-tether-source"
+		type: "geojson"
+		property var data: root.threeD ? geometry.flyTargetTetherGeoJson(root.goTargetValid, root.goTargetLatitude, root.goTargetLongitude, root.goTargetAltitude) : geometry.emptyFeatureCollection
+	}
+	LayerParameter {
+		styleId: "fly-target-tether-layer"
+		type: "fill-extrusion"
+		property string source: "fly-target-tether-source"
+		// qmllint disable incompatible-type
+		paint: ({
+				"fill-extrusion-color": "#5a9aef",
+				"fill-extrusion-base": ["get", "base"],
+				"fill-extrusion-height": ["get", "height"],
+				"fill-extrusion-opacity": 0.65
+			})
+	}
+	SourceParameter {
+		styleId: "fly-target-3d-source"
+		type: "geojson"
+		property var data: root.threeD ? geometry.flyTargetExtrusionGeoJson(root.goTargetValid, root.goTargetLatitude, root.goTargetLongitude, root.goTargetAltitude, root.goTargetHeading) : geometry.emptyFeatureCollection
+	}
+	LayerParameter {
+		styleId: "fly-target-3d-layer"
+		type: "fill-extrusion"
+		property string source: "fly-target-3d-source"
+		// qmllint disable incompatible-type
+		paint: ({
+				"fill-extrusion-color": "#5a9aef",
+				"fill-extrusion-base": ["get", "base"],
+				"fill-extrusion-height": ["get", "height"],
+				"fill-extrusion-opacity": 0.95
 			})
 	}
 
@@ -267,6 +349,44 @@ Style {
 				"circle-stroke-color": "#ffffff",
 				"circle-stroke-width": ["get", "strokeWidth"],
 				"circle-opacity": root.threeD ? 0.55 : 0.95
+			})
+	}
+
+	SourceParameter {
+		styleId: "fly-target-source"
+		type: "geojson"
+		property var data: geometry.flyTargetGeoJson(root.goTargetValid, root.goTargetLatitude, root.goTargetLongitude)
+	}
+	LayerParameter {
+		styleId: "fly-target-layer"
+		type: "circle"
+		property string source: "fly-target-source"
+		// qmllint disable incompatible-type
+		paint: ({
+				"circle-color": "#5a9aef",
+				"circle-radius": 8,
+				"circle-stroke-color": "#ffffff",
+				"circle-stroke-width": 2,
+				"circle-opacity": 0.95
+			})
+	}
+
+	SourceParameter {
+		styleId: "look-target-source"
+		type: "geojson"
+		property var data: geometry.flyTargetGeoJson(root.lookTargetValid, root.lookTargetLatitude, root.lookTargetLongitude)
+	}
+	LayerParameter {
+		styleId: "look-target-layer"
+		type: "circle"
+		property string source: "look-target-source"
+		// qmllint disable incompatible-type
+		paint: ({
+				"circle-color": "#ffb347",
+				"circle-radius": 7,
+				"circle-stroke-color": "#1c1f26",
+				"circle-stroke-width": 2,
+				"circle-opacity": 0.95
 			})
 	}
 
