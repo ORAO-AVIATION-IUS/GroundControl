@@ -1,3 +1,4 @@
+import Agc.Style as S
 import QtQuick
 import QtQuick.Layouts
 
@@ -27,17 +28,17 @@ Item {
 
 		Text {
 			text: telRow.lbl
-			color: "#9090a0"
+			color: S.Style.telLabelColor
 			font.pixelSize: 10
-			font.family: "Segoe UI"
+			font.family: S.Style.fontFamily
 			Layout.preferredWidth: 46
 		}
 		Text {
 			text: telRow.val
 			Layout.fillWidth: true
-			color: telRow.warn ? "#7a5a00" : "#1a1a2e"
+			color: telRow.warn ? S.Style.telWarnColor : S.Style.telValueColor
 			font.pixelSize: 10
-			font.family: "Segoe UI"
+			font.family: S.Style.fontFamily
 			horizontalAlignment: Text.AlignRight
 		}
 	}
@@ -50,11 +51,11 @@ Item {
 
 		Text {
 			text: "TELEMETRY"
-			color: "#a0a8b0"
+			color: S.Style.telTitleColor
 			font.pixelSize: 9
 			font.bold: true
 			font.letterSpacing: 1.4
-			font.family: "Segoe UI"
+			font.family: S.Style.fontFamily
 			Layout.bottomMargin: 4
 		}
 

@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import Agc.Components
 import Agc.Mavlink
+import Agc.Style as S
 import QtQuick
 import QtQuick.Layouts
 import com.kdab.dockwidgets as KDDW
@@ -29,11 +30,17 @@ KDDW.DockWidget {
 	Item {
 		anchors.fill: parent
 
+		Rectangle {
+			anchors.fill: parent
+			color: S.Style.bgPanel
+		}
+
 		Text {
 			anchors.centerIn: parent
 			text: qsTr("No drone selected")
-			color: "#999"
+			color: S.Style.textSecondary
 			font.pixelSize: 16
+			font.family: S.Style.fontFamily
 			visible: !droneLoader.d
 		}
 
@@ -79,7 +86,7 @@ KDDW.DockWidget {
 
 			Rectangle {
 				anchors.fill: parent
-				color: "#ffffff"
+				color: S.Style.bgPanel
 
 				ColumnLayout {
 					anchors.fill: parent
@@ -99,7 +106,7 @@ KDDW.DockWidget {
 					Rectangle {
 						Layout.fillWidth: true
 						Layout.fillHeight: true
-						color: "#ffffff"
+						color: S.Style.bgPanel
 						clip: true
 
 						RowLayout {
@@ -124,7 +131,7 @@ KDDW.DockWidget {
 							Rectangle {
 								Layout.preferredWidth: 1
 								Layout.fillHeight: true
-								color: "#e8e8ec"
+								color: S.Style.separator
 							}
 
 							InstrumentGrid {
@@ -138,7 +145,7 @@ KDDW.DockWidget {
 							Rectangle {
 								Layout.preferredWidth: 1
 								Layout.fillHeight: true
-								color: "#e8e8ec"
+								color: S.Style.separator
 							}
 
 							DroneControls {
@@ -159,7 +166,7 @@ KDDW.DockWidget {
 							Rectangle {
 								Layout.preferredWidth: 1
 								Layout.fillHeight: true
-								color: "#e8e8ec"
+								color: S.Style.separator
 							}
 
 							StatusLog {

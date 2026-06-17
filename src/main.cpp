@@ -6,6 +6,8 @@
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QJSEngine>
+#include <QPalette>
+#include <QQuickStyle>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickWindow>
@@ -15,6 +17,7 @@
 
 #include "BreezeIconProvider.h"
 #include "Camera/CameraManager.h"
+#include "DarkViewFactory.h"
 #include "Mavlink/SwarmManager.h"
 #include "MessageHandler.h"
 
@@ -37,7 +40,35 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setOrganizationDomain("orao.local");
 	QCoreApplication::setApplicationName("GroundControl");
 
+	// Use Fusion style – fully respects QPalette for MenuBar, menus, dialogs.
+	QQuickStyle::setStyle("Fusion");
+
+	// Dark palette – propagates to KDDW tabs/separators/titlebars, MenuBar, and all dialogs.
+	QPalette darkPalette;
+	darkPalette.setColor(QPalette::Window, QColor("#0d1117"));
+	darkPalette.setColor(QPalette::WindowText, QColor("#e6edf3"));
+	darkPalette.setColor(QPalette::Base, QColor("#161b22"));
+	darkPalette.setColor(QPalette::AlternateBase, QColor("#1c2128"));
+	darkPalette.setColor(QPalette::Text, QColor("#e6edf3"));
+	darkPalette.setColor(QPalette::Button, QColor("#21262d"));
+	darkPalette.setColor(QPalette::ButtonText, QColor("#e6edf3"));
+	darkPalette.setColor(QPalette::BrightText, QColor("#f85149"));
+	darkPalette.setColor(QPalette::Highlight, QColor("#1f6feb"));
+	darkPalette.setColor(QPalette::HighlightedText, QColor("#ffffff"));
+	darkPalette.setColor(QPalette::Dark, QColor("#30363d"));
+	darkPalette.setColor(QPalette::Mid, QColor("#21262d"));
+	darkPalette.setColor(QPalette::Light, QColor("#484f58"));
+	darkPalette.setColor(QPalette::Midlight, QColor("#30363d"));
+	darkPalette.setColor(QPalette::Link, QColor("#58a6ff"));
+	darkPalette.setColor(QPalette::PlaceholderText, QColor("#6e7681"));
+	darkPalette.setColor(QPalette::ToolTipBase, QColor("#1c2128"));
+	darkPalette.setColor(QPalette::ToolTipText, QColor("#e6edf3"));
+	app.setPalette(darkPalette);
+
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
+
+	// Dark-themed view factory for KDDockWidgets (separator, title bar, group frame).
+	KDDockWidgets::Config::self().setViewFactory(new DarkViewFactory());
 
 	QQmlApplicationEngine appEngine;
 
