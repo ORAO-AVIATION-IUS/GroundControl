@@ -69,9 +69,9 @@ qt_add_qml_module(GroundControl
 
 add_subdirectory(src/Style)
 add_subdirectory(src/Components)
+add_subdirectory(src/Mavlink)
 add_subdirectory(src/Panels)
 add_subdirectory(src/Network)
-add_subdirectory(src/Mavlink)
 add_subdirectory(src/Camera)
 
 qt_add_resources(GroundControl

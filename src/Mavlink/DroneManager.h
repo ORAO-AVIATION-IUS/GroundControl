@@ -8,15 +8,18 @@
 
 #include <plugins/action/action.hpp>
 #include <plugins/mavlink_passthrough/mavlink_passthrough.hpp>
-#include <plugins/mission/mission.hpp>
 #include <plugins/telemetry/telemetry.hpp>
 #include <system.hpp>
 
 #include <memory>
 
+#include "MissionPlanModel.h"
+
 namespace mavsdk {
 class System;
 }
+
+class DroneMissionController;
 
 class DroneManager : public QObject {
 	Q_OBJECT
@@ -67,6 +70,7 @@ class DroneManager : public QObject {
 
 	Q_PROPERTY(int ping READ ping NOTIFY pingChanged)
 	Q_PROPERTY(double cpuLoad READ cpuLoad NOTIFY cpuLoadChanged)
+	Q_PROPERTY(MissionPlanModel* missionPlan READ missionPlan CONSTANT)
 
    public:
 	explicit DroneManager(
@@ -127,6 +131,7 @@ class DroneManager : public QObject {
 
 	[[nodiscard]] int ping() const;
 	[[nodiscard]] double cpuLoad() const;
+	[[nodiscard]] MissionPlanModel* missionPlan() const;
 
 	Q_INVOKABLE void arm();
 	Q_INVOKABLE void disarm();
@@ -218,7 +223,8 @@ class DroneManager : public QObject {
 	std::shared_ptr<mavsdk::System> m_system;
 	std::unique_ptr<mavsdk::Telemetry> m_telemetry;
 	std::unique_ptr<mavsdk::Action> m_action;
-	std::unique_ptr<mavsdk::Mission> m_mission;
+	std::unique_ptr<MissionPlanModel> m_missionPlan;
+	std::unique_ptr<DroneMissionController> m_missionController;
 	std::unique_ptr<mavsdk::MavlinkPassthrough> m_mavlinkPassthrough;
 
 	bool m_armed{false};
@@ -270,6 +276,5 @@ class DroneManager : public QObject {
 	mavsdk::Telemetry::VelocityNedHandle m_velocityNedHandle;
 	mavsdk::Telemetry::FixedwingMetricsHandle m_fixedwingMetricsHandle;
 	mavsdk::Telemetry::HomeHandle m_homeHandle;
-	mavsdk::Mission::MissionProgressHandle m_missionProgressHandle;
 	mavsdk::System::IsConnectedHandle m_isConnectedHandle;
 };

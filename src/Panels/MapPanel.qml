@@ -17,12 +17,11 @@ KDDW.DockWidget {
 	property int mapMode: 0
 	property string activePlanningTool: "edit"
 	property string activeTrackingTool: ""
-	property var missionItems: []
-	property int selectedMissionItemIndex: -1
-	property int missionRevision: 0
-	property real defaultMissionAltitude: 50
-	property real defaultMissionSpeed: 8
-	property bool returnHomeAfterMission: false
+	readonly property var missionPlan: selectedDrone && selectedDrone.missionPlan ? selectedDrone.missionPlan : fallbackMissionPlan
+	readonly property var missionItems: missionPlan.items
+	readonly property int selectedMissionItemIndex: missionPlan.selectedIndex
+	readonly property int missionRevision: missionPlan.revision
+	readonly property bool returnHomeAfterMission: missionPlan.returnHomeAfterMission
 	property bool missionUploaded: false
 	property bool missionDirty: false
 	property bool missionBusy: false
@@ -34,6 +33,8 @@ KDDW.DockWidget {
 	property int missionLibraryRevision: 0
 	property string missionBusyText: ""
 	property string missionErrorText: ""
+	property var missionStateByDrone: ({})
+	property int missionOperationSequence: 0
 	property double localHomeLatitude: 0
 	property double localHomeLongitude: 0
 	property double localHomeAltitude: 0
@@ -62,6 +63,10 @@ KDDW.DockWidget {
 		property string savedMissionPlans: "{}"
 	}
 
+	MissionPlanModel {
+		id: fallbackMissionPlan
+	}
+
 	property var _targetStore: ({})
 	property bool followSelectedDrone: false
 	property bool autoFollowSuppressed: false
@@ -72,7 +77,7 @@ KDDW.DockWidget {
 
 	onMapModeChanged: {
 		if (mapMode !== 1) {
-			selectedMissionItemIndex = -1;
+			missionPlan.selectedIndex = -1;
 			waypointConfigOpen = false;
 		}
 		if (mapMode !== 2) {
@@ -91,6 +96,7 @@ KDDW.DockWidget {
 		} else {
 			altTape.clearTarget();
 		}
+		syncMissionStateFromSelectedDrone();
 	}
 
 	function hasPosition(drone) {
@@ -139,18 +145,89 @@ KDDW.DockWidget {
 	}
 
 	function selectedMissionItem() {
-		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
-			return null;
-		return missionItems[selectedMissionItemIndex];
+		return missionPlan.selectedItem();
+	}
+
+	function missionSignatureFor(items, rtl) {
+		return JSON.stringify({
+			"returnHomeAfterMission": rtl === true,
+			"items": items || []
+		});
+	}
+
+	function currentMissionSignature() {
+		return missionPlan.signature;
+	}
+
+	function defaultMissionState() {
+		return {
+			"uploadedPlanSignature": "",
+			"pendingPlanSignature": "",
+			"busy": false,
+			"busyText": "",
+			"busyOperation": "",
+			"operationId": 0,
+			"running": false,
+			"paused": false,
+			"errorText": ""
+		};
+	}
+
+	function missionStateForDrone(drone) {
+		if (!drone)
+			return defaultMissionState();
+		const key = String(drone.droneUid);
+		return Object.assign(defaultMissionState(), missionStateByDrone[key] || {});
+	}
+
+	function updateMissionStateForDrone(drone, update) {
+		if (!drone)
+			return;
+		const key = String(drone.droneUid);
+		const states = Object.assign({}, missionStateByDrone);
+		states[key] = Object.assign(defaultMissionState(), states[key] || {}, update || {});
+		missionStateByDrone = states;
+		if (selectedDrone && selectedDrone.droneUid === drone.droneUid)
+			syncMissionStateFromSelectedDrone();
+	}
+
+	function syncMissionStateFromSelectedDrone() {
+		const state = missionStateForDrone(selectedDrone);
+		const signature = currentMissionSignature();
+		missionBusy = state.busy;
+		missionBusyText = state.busyText;
+		missionRunning = state.running;
+		missionPaused = state.paused;
+		missionErrorText = state.errorText;
+		missionUploaded = signature !== "" && state.uploadedPlanSignature === signature;
+		missionDirty = state.uploadedPlanSignature !== "" && state.uploadedPlanSignature !== signature;
+	}
+
+	function beginMissionOperation(operation, busyText, pendingSignature) {
+		missionOperationSequence += 1;
+		updateMissionStateForDrone(selectedDrone, {
+			"busy": true,
+			"busyText": busyText,
+			"busyOperation": operation,
+			"operationId": missionOperationSequence,
+			"pendingPlanSignature": pendingSignature || "",
+			"errorText": ""
+		});
 	}
 
 	function markMissionChanged() {
-		missionRevision += 1;
-		missionErrorText = "";
-		missionRunning = false;
-		missionPaused = false;
-		if (missionUploaded)
-			missionDirty = true;
+		if (selectedDrone) {
+			updateMissionStateForDrone(selectedDrone, {
+				"running": false,
+				"paused": false,
+				"errorText": ""
+			});
+		} else {
+			missionErrorText = "";
+			missionRunning = false;
+			missionPaused = false;
+		}
+		syncMissionStateFromSelectedDrone();
 	}
 
 	function missionStatusText() {
@@ -164,7 +241,7 @@ KDDW.DockWidget {
 			return "RUNNING";
 		if (missionPaused)
 			return "PAUSED";
-		if (missionUploaded && missionDirty)
+		if (missionDirty)
 			return "DIRTY";
 		if (missionUploaded)
 			return "UPLOADED";
@@ -172,8 +249,17 @@ KDDW.DockWidget {
 	}
 
 	function setMissionError(message) {
-		missionErrorText = message;
-		missionBusy = false;
+		if (selectedDrone) {
+			updateMissionStateForDrone(selectedDrone, {
+				"errorText": message,
+				"busy": false,
+				"busyText": "",
+				"busyOperation": ""
+			});
+		} else {
+			missionErrorText = message;
+			missionBusy = false;
+		}
 	}
 
 	function handlePlanMapClick(coordinate) {
@@ -374,48 +460,8 @@ KDDW.DockWidget {
 	function addMissionWaypoint(coordinate) {
 		if (!coordinate || !coordinate.isValid || activePlanningTool !== "waypoint")
 			return;
-		const items = missionItems.slice();
-		items.push(waypointFromCoordinate(coordinate, appendAltitude(), appendSpeed()));
-		missionItems = items;
-		selectedMissionItemIndex = items.length - 1;
+		missionPlan.addWaypoint(coordinate.latitude, coordinate.longitude);
 		markMissionChanged();
-	}
-
-	function waypointFromCoordinate(coordinate, altitude, speed) {
-		return {
-			"latitude": coordinate.latitude,
-			"longitude": coordinate.longitude,
-			"altitude": altitude,
-			"speed": speed,
-			"speedEnabled": false,
-			"acceptanceRadius": 3,
-			"acceptanceRadiusEnabled": false,
-			"flyThrough": true,
-			"loiter": 0,
-			"loiterEnabled": false,
-			"heading": 0,
-			"headingEnabled": false
-		};
-	}
-
-	function appendAltitude() {
-		return missionItems.length > 0 ? missionItems[missionItems.length - 1].altitude : defaultMissionAltitude;
-	}
-
-	function appendSpeed() {
-		return missionItems.length > 0 ? missionItems[missionItems.length - 1].speed : defaultMissionSpeed;
-	}
-
-	function segmentAltitude(segmentIndex) {
-		if (segmentIndex < 0 || segmentIndex >= missionItems.length - 1)
-			return appendAltitude();
-		return (missionItems[segmentIndex].altitude + missionItems[segmentIndex + 1].altitude) * 0.5;
-	}
-
-	function segmentSpeed(segmentIndex) {
-		if (segmentIndex < 0 || segmentIndex >= missionItems.length - 1)
-			return appendSpeed();
-		return (missionItems[segmentIndex].speed + missionItems[segmentIndex + 1].speed) * 0.5;
 	}
 
 	function nearestMissionSegmentIndex(coordinate) {
@@ -446,117 +492,76 @@ KDDW.DockWidget {
 	function insertMissionWaypointAtSegment(segmentIndex, coordinate) {
 		if (!coordinate || !coordinate.isValid)
 			return;
-		const items = missionItems.slice();
-		const insertIndex = missionItems.length < 2 ? missionItems.length : Math.max(0, Math.min(segmentIndex + 1, missionItems.length));
-		items.splice(insertIndex, 0, waypointFromCoordinate(coordinate, segmentAltitude(segmentIndex), segmentSpeed(segmentIndex)));
-		missionItems = items;
-		selectedMissionItemIndex = insertIndex;
+		missionPlan.insertWaypointAtSegment(segmentIndex, coordinate.latitude, coordinate.longitude);
 		markMissionChanged();
 	}
 
 	function moveMissionWaypoint(index, coordinate) {
 		if (index < 0 || index >= missionItems.length || !coordinate || !coordinate.isValid)
 			return;
-		const items = missionItems.slice();
-		items[index] = Object.assign({}, items[index], {
-			"latitude": coordinate.latitude,
-			"longitude": coordinate.longitude
-		});
-		missionItems = items;
-		selectedMissionItemIndex = index;
-		markMissionChanged();
-	}
-
-	function setSelectedMissionField(fieldName, value, minimumValue) {
-		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
-			return;
-		const items = missionItems.slice();
-		const update = {};
-		update[fieldName] = Math.max(minimumValue, value);
-		items[selectedMissionItemIndex] = Object.assign({}, items[selectedMissionItemIndex], update);
-		missionItems = items;
+		missionPlan.moveWaypoint(index, coordinate.latitude, coordinate.longitude);
 		markMissionChanged();
 	}
 
 	function setSelectedMissionAltitude(altitude) {
-		setSelectedMissionField("altitude", altitude, 5);
+		missionPlan.setSelectedField("altitude", altitude, 5);
+		markMissionChanged();
 	}
 
 	function setSelectedMissionSpeed(speed) {
-		setSelectedMissionField("speed", speed, 0.5);
+		missionPlan.setSelectedField("speed", speed, 0.5);
+		markMissionChanged();
 	}
 
 	function setSelectedMissionAcceptanceRadius(radius) {
-		setSelectedMissionField("acceptanceRadius", radius, 0.5);
+		missionPlan.setSelectedField("acceptanceRadius", radius, 0.5);
+		markMissionChanged();
 	}
 
 	function setSelectedMissionLoiter(loiter) {
-		setSelectedMissionField("loiter", loiter, 0);
+		missionPlan.setSelectedField("loiter", loiter, 0);
+		markMissionChanged();
 	}
 
 	function setSelectedMissionHeading(heading) {
-		setSelectedMissionField("heading", normalizeHeading(heading), 0);
+		missionPlan.setSelectedField("heading", normalizeHeading(heading), 0);
+		markMissionChanged();
 	}
 
 	function setSelectedMissionOptionEnabled(fieldName, enabled) {
-		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
-			return;
-		const items = missionItems.slice();
-		const update = {};
-		update[fieldName] = enabled;
-		items[selectedMissionItemIndex] = Object.assign({}, items[selectedMissionItemIndex], update);
-		missionItems = items;
+		missionPlan.setSelectedOptionEnabled(fieldName, enabled);
 		markMissionChanged();
 	}
 
 	function setSelectedMissionFlyThrough(flyThrough) {
-		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
-			return;
-		const items = missionItems.slice();
-		items[selectedMissionItemIndex] = Object.assign({}, items[selectedMissionItemIndex], {
-			"flyThrough": flyThrough
-		});
-		missionItems = items;
+		missionPlan.setSelectedFlyThrough(flyThrough);
 		markMissionChanged();
 	}
 
 	function removeSelectedMissionWaypoint() {
-		if (selectedMissionItemIndex < 0 || selectedMissionItemIndex >= missionItems.length)
-			return;
-		const items = missionItems.slice();
-		items.splice(selectedMissionItemIndex, 1);
-		missionItems = items;
-		selectedMissionItemIndex = Math.min(selectedMissionItemIndex, items.length - 1);
+		missionPlan.removeSelectedWaypoint();
 		markMissionChanged();
 	}
 
 	function clearLocalMission() {
-		missionItems = [];
-		selectedMissionItemIndex = -1;
+		missionPlan.clear();
 		waypointConfigOpen = false;
-		returnHomeAfterMission = false;
-		missionUploaded = false;
-		missionDirty = false;
-		missionBusy = false;
-		missionRunning = false;
-		missionPaused = false;
-		missionErrorText = "";
-		missionRevision += 1;
+		if (selectedDrone) {
+			updateMissionStateForDrone(selectedDrone, {
+				"running": false,
+				"paused": false,
+				"errorText": ""
+			});
+		}
+		syncMissionStateFromSelectedDrone();
 	}
 
 	function missionDistanceMeters() {
-		let distance = 0;
-		for (let i = 1; i < missionItems.length; ++i) {
-			const a = QtPositioning.coordinate(missionItems[i - 1].latitude, missionItems[i - 1].longitude);
-			const b = QtPositioning.coordinate(missionItems[i].latitude, missionItems[i].longitude);
-			distance += a.distanceTo(b);
-		}
-		return distance;
+		return missionPlan.distanceMeters;
 	}
 
 	function missionDistanceText() {
-		const distance = missionDistanceMeters();
-		return distance >= 1000 ? qsTr("%1 km").arg((distance / 1000).toFixed(2)) : qsTr("%1 m").arg(Math.round(distance));
+		return missionPlan.distanceText();
 	}
 
 	function savedMissionStore() {
@@ -616,17 +621,18 @@ KDDW.DockWidget {
 			setMissionError(qsTr("Saved mission draft is invalid"));
 			return;
 		}
-		missionItems = plan.items;
-		selectedMissionItemIndex = missionItems.length > 0 && mapMode === 1 ? 0 : -1;
-		returnHomeAfterMission = plan.returnHomeAfterMission === true;
+		missionPlan.items = plan.items;
+		missionPlan.selectedIndex = missionItems.length > 0 && mapMode === 1 ? 0 : -1;
+		missionPlan.returnHomeAfterMission = plan.returnHomeAfterMission === true;
 		missionDraftName = trimmedName;
-		missionUploaded = false;
-		missionDirty = false;
-		missionBusy = false;
-		missionRunning = false;
-		missionPaused = false;
-		missionErrorText = "";
-		missionRevision += 1;
+		if (selectedDrone) {
+			updateMissionStateForDrone(selectedDrone, {
+				"running": false,
+				"paused": false,
+				"errorText": ""
+			});
+		}
+		syncMissionStateFromSelectedDrone();
 	}
 
 	function deleteMissionDraft(name) {
@@ -644,16 +650,7 @@ KDDW.DockWidget {
 			return qsTr("Select a drone before uploading");
 		if (!selectedDrone.connected)
 			return qsTr("Selected drone is not connected");
-		if (missionItems.length < 2)
-			return qsTr("Add at least 2 waypoints");
-		for (let i = 0; i < missionItems.length; ++i) {
-			const item = missionItems[i];
-			if (item.altitude < 5)
-				return qsTr("Waypoint %1 altitude is too low").arg(i + 1);
-			if (item.speedEnabled && item.speed <= 0)
-				return qsTr("Waypoint %1 speed is invalid").arg(i + 1);
-		}
-		return "";
+		return missionPlan.validateForUpload();
 	}
 
 	function requestMissionUpload() {
@@ -664,9 +661,7 @@ KDDW.DockWidget {
 				selectedDrone.log(selectedDrone.droneName, error, "warning");
 			return;
 		}
-		missionBusy = true;
-		missionBusyText = "UPLOADING";
-		missionErrorText = "";
+		beginMissionOperation("upload", "UPLOADING", currentMissionSignature());
 		selectedDrone.uploadMission(missionItems, returnHomeAfterMission);
 	}
 
@@ -691,25 +686,22 @@ KDDW.DockWidget {
 			setMissionError(qsTr("Battery is too low for mission start"));
 			return;
 		}
-		missionBusy = true;
-		missionBusyText = "STARTING";
-		missionErrorText = "";
+		beginMissionOperation("start", "STARTING", currentMissionSignature());
 		selectedDrone.startMission();
 	}
 
 	function requestMissionPause() {
 		if (!selectedDrone || !selectedDrone.connected)
 			return;
-		missionBusy = true;
-		missionBusyText = "PAUSING";
+		beginMissionOperation("pause", "PAUSING", currentMissionSignature());
 		selectedDrone.pauseMission();
 	}
 
 	function requestMissionClear() {
 		if (selectedDrone && selectedDrone.connected) {
-			missionBusy = true;
-			missionBusyText = "CLEARING";
+			beginMissionOperation("clear", "CLEARING", currentMissionSignature());
 			selectedDrone.clearMission();
+			return;
 		}
 		clearLocalMission();
 	}
@@ -719,10 +711,94 @@ KDDW.DockWidget {
 			setMissionError(qsTr("Selected drone is not connected"));
 			return;
 		}
-		missionBusy = true;
-		missionBusyText = "DOWNLOADING";
-		missionErrorText = "";
+		beginMissionOperation("download", "DOWNLOADING", currentMissionSignature());
 		selectedDrone.downloadMission();
+	}
+
+	function missionResultApplies(drone, operation) {
+		const state = missionStateForDrone(drone);
+		return state.busy && state.busyOperation === operation;
+	}
+
+	function handleMissionUploadFinished(drone, success, message) {
+		if (!missionResultApplies(drone, "upload"))
+			return;
+		const state = missionStateForDrone(drone);
+		updateMissionStateForDrone(drone, {
+			"uploadedPlanSignature": success ? state.pendingPlanSignature : state.uploadedPlanSignature,
+			"pendingPlanSignature": "",
+			"busy": false,
+			"busyText": "",
+			"busyOperation": "",
+			"running": false,
+			"paused": false,
+			"errorText": success ? "" : message
+		});
+	}
+
+	function handleMissionStartFinished(drone, success, message) {
+		if (!missionResultApplies(drone, "start"))
+			return;
+		updateMissionStateForDrone(drone, {
+			"busy": false,
+			"busyText": "",
+			"busyOperation": "",
+			"running": success,
+			"paused": false,
+			"errorText": success ? "" : message
+		});
+	}
+
+	function handleMissionPauseFinished(drone, success, message) {
+		if (!missionResultApplies(drone, "pause"))
+			return;
+		updateMissionStateForDrone(drone, {
+			"busy": false,
+			"busyText": "",
+			"busyOperation": "",
+			"running": false,
+			"paused": success,
+			"errorText": success ? "" : message
+		});
+	}
+
+	function handleMissionClearFinished(drone, success, message) {
+		if (!missionResultApplies(drone, "clear"))
+			return;
+		updateMissionStateForDrone(drone, {
+			"uploadedPlanSignature": success ? "" : missionStateForDrone(drone).uploadedPlanSignature,
+			"pendingPlanSignature": "",
+			"busy": false,
+			"busyText": "",
+			"busyOperation": "",
+			"running": false,
+			"paused": false,
+			"errorText": success ? "" : message
+		});
+		if (success && selectedDrone && selectedDrone.droneUid === drone.droneUid)
+			clearLocalMission();
+	}
+
+	function handleMissionDownloadFinished(drone, success, message, downloadedMissionItems, returnToLaunchAfterMission) {
+		if (!missionResultApplies(drone, "download"))
+			return;
+		const downloadedSignature = success ? missionSignatureFor(downloadedMissionItems, returnToLaunchAfterMission) : "";
+		updateMissionStateForDrone(drone, {
+			"uploadedPlanSignature": success ? downloadedSignature : missionStateForDrone(drone).uploadedPlanSignature,
+			"pendingPlanSignature": "",
+			"busy": false,
+			"busyText": "",
+			"busyOperation": "",
+			"running": false,
+			"paused": false,
+			"errorText": success ? "" : message
+		});
+		if (success && selectedDrone && selectedDrone.droneUid === drone.droneUid) {
+			missionPlan.items = downloadedMissionItems;
+			missionPlan.selectedIndex = missionItems.length > 0 ? 0 : -1;
+			missionPlan.returnHomeAfterMission = returnToLaunchAfterMission;
+			syncMissionStateFromSelectedDrone();
+		}
 	}
 
 	Shortcut {
@@ -737,76 +813,6 @@ KDDW.DockWidget {
 	Item {
 		anchors.fill: parent
 
-		Connections {
-			target: dockRoot.selectedDrone
-			ignoreUnknownSignals: true
-
-			function onMissionUploadFinished(success, message) {
-				dockRoot.missionBusy = false;
-				if (success) {
-					dockRoot.missionUploaded = true;
-					dockRoot.missionDirty = false;
-					dockRoot.missionRunning = false;
-					dockRoot.missionPaused = false;
-					dockRoot.missionErrorText = "";
-				} else {
-					dockRoot.missionErrorText = message;
-				}
-			}
-
-			function onMissionStartFinished(success, message) {
-				dockRoot.missionBusy = false;
-				if (success) {
-					dockRoot.missionRunning = true;
-					dockRoot.missionPaused = false;
-					dockRoot.missionErrorText = "";
-				} else {
-					dockRoot.missionErrorText = message;
-				}
-			}
-
-			function onMissionPauseFinished(success, message) {
-				dockRoot.missionBusy = false;
-				if (success) {
-					dockRoot.missionRunning = false;
-					dockRoot.missionPaused = true;
-					dockRoot.missionErrorText = "";
-				} else {
-					dockRoot.missionErrorText = message;
-				}
-			}
-
-			function onMissionClearFinished(success, message) {
-				dockRoot.missionBusy = false;
-				if (success) {
-					dockRoot.missionUploaded = false;
-					dockRoot.missionDirty = false;
-					dockRoot.missionRunning = false;
-					dockRoot.missionPaused = false;
-					dockRoot.missionErrorText = "";
-				} else {
-					dockRoot.missionErrorText = message;
-				}
-			}
-
-			function onMissionDownloadFinished(success, message, missionItems, returnToLaunchAfterMission) {
-				dockRoot.missionBusy = false;
-				if (success) {
-					dockRoot.missionItems = missionItems;
-					dockRoot.selectedMissionItemIndex = missionItems.length > 0 ? 0 : -1;
-					dockRoot.returnHomeAfterMission = returnToLaunchAfterMission;
-					dockRoot.missionUploaded = missionItems.length > 0;
-					dockRoot.missionDirty = false;
-					dockRoot.missionRunning = false;
-					dockRoot.missionPaused = false;
-					dockRoot.missionErrorText = "";
-					dockRoot.missionRevision += 1;
-				} else {
-					dockRoot.missionErrorText = message;
-				}
-			}
-		}
-
 		Repeater {
 			model: SwarmManager.droneList
 			delegate: Item {
@@ -819,6 +825,26 @@ KDDW.DockWidget {
 
 					function onConnectedChanged() {
 						dockRoot.autoFollowSingleConnectedDrone();
+					}
+
+					function onMissionUploadFinished(success, message) {
+						dockRoot.handleMissionUploadFinished(followDelegate.modelData, success, message);
+					}
+
+					function onMissionStartFinished(success, message) {
+						dockRoot.handleMissionStartFinished(followDelegate.modelData, success, message);
+					}
+
+					function onMissionPauseFinished(success, message) {
+						dockRoot.handleMissionPauseFinished(followDelegate.modelData, success, message);
+					}
+
+					function onMissionClearFinished(success, message) {
+						dockRoot.handleMissionClearFinished(followDelegate.modelData, success, message);
+					}
+
+					function onMissionDownloadFinished(success, message, missionItems, returnToLaunchAfterMission) {
+						dockRoot.handleMissionDownloadFinished(followDelegate.modelData, success, message, missionItems, returnToLaunchAfterMission);
 					}
 
 					function onLatitudeChanged() {
@@ -877,7 +903,7 @@ KDDW.DockWidget {
 				dockRoot.handlePlanMapClick(coordinate);
 			}
 			onMissionItemClicked: function (index) {
-				dockRoot.selectedMissionItemIndex = index;
+				dockRoot.missionPlan.selectedIndex = index;
 			}
 			onMissionItemMoved: function (index, coordinate) {
 				dockRoot.moveMissionWaypoint(index, coordinate);
@@ -929,7 +955,7 @@ KDDW.DockWidget {
 				if (tool === "clear") {
 					dockRoot.clearLocalMission();
 				} else if (tool === "return") {
-					dockRoot.returnHomeAfterMission = !dockRoot.returnHomeAfterMission;
+					dockRoot.missionPlan.returnHomeAfterMission = !dockRoot.returnHomeAfterMission;
 					if (dockRoot.returnHomeAfterMission)
 						dockRoot.ensureVisibleHomePoint();
 					dockRoot.markMissionChanged();
