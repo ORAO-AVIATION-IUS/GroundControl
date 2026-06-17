@@ -65,10 +65,10 @@ GstFlowReturn onNewSample(GstAppSink* appsink, gpointer userData) {
 	if (gst_buffer_map(buffer, &map, GST_MAP_READ) != 0) {
 		QImage image(map.data, width, height, QImage::Format_RGBA8888);
 
-		QImage frame =
-			(image.bytesPerLine() == static_cast<qsizetype>(width) * 4)
-			? std::move(image)
-			: image.copy();
+		// Deep-copy: `image` aliases the GStreamer buffer, which is unmapped
+		// below — but the frame is consumed later on the GUI thread, so it must
+		// own its pixels or it renders black (use-after-unmap).
+		QImage frame = image.copy();
 
 		QVideoSink* sink = cam->sink;
 		if (sink != nullptr) {

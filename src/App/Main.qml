@@ -216,9 +216,10 @@ ApplicationWindow {
 				cameraModel: cameraModel
 				cameraDocks: cameraDocks
 				logDocks: logDocks
-				// The main "Selected Drone" panel is primary for the selected
-				// drone; this per-drone dock is primary only for other drones.
-				panelIsPrimary: perDroneDock.drone ? perDroneDock.drone !== SwarmManager.selectedDrone : false
+				// The main "Selected Drone" panel renders the selected drone's
+				// camera while it is open. This per-drone dock is primary unless
+				// the open main panel is already showing this same drone.
+				panelIsPrimary: !(dronePanel.isOpen && perDroneDock.drone === SwarmManager.selectedDrone)
 
 				Connections {
 					target: SwarmManager
@@ -250,7 +251,14 @@ ApplicationWindow {
 				uniqueName: "cameraConn_" + model.cameraId
 				onEditRequested: window.openEditCameraDialog(model.cameraId)
 				onRemoveRequested: window.removeCamera(model.cameraId)
-				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
+				Component.onCompleted: {
+					root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight);
+					// A drone-assigned camera shows inline in the drone panel tab,
+					// so keep its standalone dock closed. A global camera has no tab,
+					// so leave its dock open.
+					if (model.droneUid !== undefined && model.droneUid !== -1)
+						close();
+				}
 			}
 		}
 
@@ -301,6 +309,10 @@ ApplicationWindow {
 			{
 				"label": qsTr("Selected Drone"),
 				"dock": dronePanel
+			},
+			{
+				"label": qsTr("Logs (all)"),
+				"dock": logPanel
 			}
 		]
 		cameraModel: cameraModel

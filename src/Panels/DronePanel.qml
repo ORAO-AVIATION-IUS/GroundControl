@@ -186,12 +186,13 @@ KDDW.DockWidget {
 								panelOpen: root.isOpen
 							}
 
-							AltitudeTape {
-								Layout.preferredWidth: 110
-								Layout.fillHeight: true
-								darkMode: true
-								altitude: droneItem.d.altitude
-							}
+							// Altitude tape disabled for now.
+							// AltitudeTape {
+							// 	Layout.preferredWidth: 110
+							// 	Layout.fillHeight: true
+							// 	darkMode: true
+							// 	altitude: droneItem.d.altitude
+							// }
 						}
 					}
 				}

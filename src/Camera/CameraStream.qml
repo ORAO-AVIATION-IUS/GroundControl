@@ -16,6 +16,21 @@ Item {
 
 	anchors.fill: parent
 
+	// A camera's frames are pushed to a single sink. When several CameraStream
+	// instances can exist for the same camera (the standalone dock + the inline
+	// drone-panel tab), the most-recently-shown one must (re)claim the sink, or
+	// a hidden/destroyed instance keeps it and the visible one stays black.
+	function claimSink() {
+		if (root.streamId >= 0) {
+			CameraManager.attachSink(root.streamId, video.videoSink);
+			root.connected = CameraManager.streamConnected(root.streamId);
+			root.statusText = CameraManager.streamStatus(root.streamId);
+		}
+	}
+
+	onVisibleChanged: if (visible)
+		claimSink()
+
 	VideoOutput {
 		id: video
 		anchors.fill: parent
@@ -61,9 +76,5 @@ Item {
 		}
 	}
 
-	Component.onCompleted: {
-		CameraManager.attachSink(streamId, video.videoSink);
-		root.connected = CameraManager.streamConnected(streamId);
-		root.statusText = CameraManager.streamStatus(streamId);
-	}
+	Component.onCompleted: root.claimSink()
 }
