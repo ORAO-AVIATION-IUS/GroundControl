@@ -22,19 +22,18 @@ KDDW.DockWidget {
 	readonly property int selectedMissionItemIndex: missionPlan.selectedIndex
 	readonly property int missionRevision: missionPlan.revision
 	readonly property bool returnHomeAfterMission: missionPlan.returnHomeAfterMission
-	property bool missionUploaded: false
-	property bool missionDirty: false
-	property bool missionBusy: false
-	property bool missionRunning: false
-	property bool missionPaused: false
+	readonly property bool missionUploaded: selectedDrone ? selectedDrone.missionUploaded : false
+	readonly property bool missionDirty: selectedDrone ? selectedDrone.missionDirty : false
+	readonly property bool missionBusy: selectedDrone ? selectedDrone.missionBusy : false
+	readonly property bool missionRunning: selectedDrone ? selectedDrone.missionRunning : false
+	readonly property bool missionPaused: selectedDrone ? selectedDrone.missionPaused : false
 	property bool waypointConfigOpen: false
 	property bool missionLibraryOpen: false
 	property string missionDraftName: "Mission"
 	property int missionLibraryRevision: 0
-	property string missionBusyText: ""
-	property string missionErrorText: ""
-	property var missionStateByDrone: ({})
-	property int missionOperationSequence: 0
+	readonly property string missionBusyText: selectedDrone ? selectedDrone.missionBusyText : ""
+	readonly property string missionErrorText: localMissionError !== "" ? localMissionError : (selectedDrone ? selectedDrone.missionErrorText : "")
+	property string localMissionError: ""
 	property double localHomeLatitude: 0
 	property double localHomeLongitude: 0
 	property double localHomeAltitude: 0
@@ -96,7 +95,7 @@ KDDW.DockWidget {
 		} else {
 			altTape.clearTarget();
 		}
-		syncMissionStateFromSelectedDrone();
+		localMissionError = "";
 	}
 
 	function hasPosition(drone) {
@@ -159,75 +158,8 @@ KDDW.DockWidget {
 		return missionPlan.signature;
 	}
 
-	function defaultMissionState() {
-		return {
-			"uploadedPlanSignature": "",
-			"pendingPlanSignature": "",
-			"busy": false,
-			"busyText": "",
-			"busyOperation": "",
-			"operationId": 0,
-			"running": false,
-			"paused": false,
-			"errorText": ""
-		};
-	}
-
-	function missionStateForDrone(drone) {
-		if (!drone)
-			return defaultMissionState();
-		const key = String(drone.droneUid);
-		return Object.assign(defaultMissionState(), missionStateByDrone[key] || {});
-	}
-
-	function updateMissionStateForDrone(drone, update) {
-		if (!drone)
-			return;
-		const key = String(drone.droneUid);
-		const states = Object.assign({}, missionStateByDrone);
-		states[key] = Object.assign(defaultMissionState(), states[key] || {}, update || {});
-		missionStateByDrone = states;
-		if (selectedDrone && selectedDrone.droneUid === drone.droneUid)
-			syncMissionStateFromSelectedDrone();
-	}
-
-	function syncMissionStateFromSelectedDrone() {
-		const state = missionStateForDrone(selectedDrone);
-		const signature = currentMissionSignature();
-		missionBusy = state.busy;
-		missionBusyText = state.busyText;
-		missionRunning = state.running;
-		missionPaused = state.paused;
-		missionErrorText = state.errorText;
-		missionUploaded = signature !== "" && state.uploadedPlanSignature === signature;
-		missionDirty = state.uploadedPlanSignature !== "" && state.uploadedPlanSignature !== signature;
-	}
-
-	function beginMissionOperation(operation, busyText, pendingSignature) {
-		missionOperationSequence += 1;
-		updateMissionStateForDrone(selectedDrone, {
-			"busy": true,
-			"busyText": busyText,
-			"busyOperation": operation,
-			"operationId": missionOperationSequence,
-			"pendingPlanSignature": pendingSignature || "",
-			"errorText": ""
-		});
-	}
-
 	function markMissionChanged() {
-		if (selectedDrone) {
-			updateMissionStateForDrone(selectedDrone, {
-				"running": false,
-				"paused": false,
-				"errorText": ""
-			});
-		} else {
-			missionErrorText = "";
-			missionRunning = false;
-			missionPaused = false;
-		}
-		syncMissionStateFromSelectedDrone();
+		localMissionError = "";
 	}
 
 	function missionStatusText() {
@@ -249,17 +181,7 @@ KDDW.DockWidget {
 	}
 
 	function setMissionError(message) {
-		if (selectedDrone) {
-			updateMissionStateForDrone(selectedDrone, {
-				"errorText": message,
-				"busy": false,
-				"busyText": "",
-				"busyOperation": ""
-			});
-		} else {
-			missionErrorText = message;
-			missionBusy = false;
-		}
+		localMissionError = message;
 	}
 
 	function handlePlanMapClick(coordinate) {
@@ -546,14 +468,7 @@ KDDW.DockWidget {
 	function clearLocalMission() {
 		missionPlan.clear();
 		waypointConfigOpen = false;
-		if (selectedDrone) {
-			updateMissionStateForDrone(selectedDrone, {
-				"running": false,
-				"paused": false,
-				"errorText": ""
-			});
-		}
-		syncMissionStateFromSelectedDrone();
+		localMissionError = "";
 	}
 
 	function missionDistanceMeters() {
@@ -604,7 +519,7 @@ KDDW.DockWidget {
 		missionSettings.savedMissionPlan = JSON.stringify(store[trimmedName]);
 		missionDraftName = trimmedName;
 		missionLibraryRevision += 1;
-		missionErrorText = "";
+		localMissionError = "";
 		if (selectedDrone)
 			selectedDrone.log(selectedDrone.droneName, qsTr("Mission draft saved: %1").arg(trimmedName), "info");
 	}
@@ -625,14 +540,7 @@ KDDW.DockWidget {
 		missionPlan.selectedIndex = missionItems.length > 0 && mapMode === 1 ? 0 : -1;
 		missionPlan.returnHomeAfterMission = plan.returnHomeAfterMission === true;
 		missionDraftName = trimmedName;
-		if (selectedDrone) {
-			updateMissionStateForDrone(selectedDrone, {
-				"running": false,
-				"paused": false,
-				"errorText": ""
-			});
-		}
-		syncMissionStateFromSelectedDrone();
+		localMissionError = "";
 	}
 
 	function deleteMissionDraft(name) {
@@ -661,7 +569,7 @@ KDDW.DockWidget {
 				selectedDrone.log(selectedDrone.droneName, error, "warning");
 			return;
 		}
-		beginMissionOperation("upload", "UPLOADING", currentMissionSignature());
+		localMissionError = "";
 		selectedDrone.uploadMission(missionItems, returnHomeAfterMission);
 	}
 
@@ -686,20 +594,20 @@ KDDW.DockWidget {
 			setMissionError(qsTr("Battery is too low for mission start"));
 			return;
 		}
-		beginMissionOperation("start", "STARTING", currentMissionSignature());
+		localMissionError = "";
 		selectedDrone.startMission();
 	}
 
 	function requestMissionPause() {
 		if (!selectedDrone || !selectedDrone.connected)
 			return;
-		beginMissionOperation("pause", "PAUSING", currentMissionSignature());
+		localMissionError = "";
 		selectedDrone.pauseMission();
 	}
 
 	function requestMissionClear() {
 		if (selectedDrone && selectedDrone.connected) {
-			beginMissionOperation("clear", "CLEARING", currentMissionSignature());
+			localMissionError = "";
 			selectedDrone.clearMission();
 			return;
 		}
@@ -711,93 +619,54 @@ KDDW.DockWidget {
 			setMissionError(qsTr("Selected drone is not connected"));
 			return;
 		}
-		beginMissionOperation("download", "DOWNLOADING", currentMissionSignature());
+		localMissionError = "";
 		selectedDrone.downloadMission();
 	}
 
-	function missionResultApplies(drone, operation) {
-		const state = missionStateForDrone(drone);
-		return state.busy && state.busyOperation === operation;
-	}
-
 	function handleMissionUploadFinished(drone, success, message) {
-		if (!missionResultApplies(drone, "upload"))
-			return;
-		const state = missionStateForDrone(drone);
-		updateMissionStateForDrone(drone, {
-			"uploadedPlanSignature": success ? state.pendingPlanSignature : state.uploadedPlanSignature,
-			"pendingPlanSignature": "",
-			"busy": false,
-			"busyText": "",
-			"busyOperation": "",
-			"running": false,
-			"paused": false,
-			"errorText": success ? "" : message
-		});
+		void drone;
+		if (success)
+			localMissionError = "";
+		else
+			localMissionError = message;
 	}
 
 	function handleMissionStartFinished(drone, success, message) {
-		if (!missionResultApplies(drone, "start"))
-			return;
-		updateMissionStateForDrone(drone, {
-			"busy": false,
-			"busyText": "",
-			"busyOperation": "",
-			"running": success,
-			"paused": false,
-			"errorText": success ? "" : message
-		});
+		void drone;
+		if (success)
+			localMissionError = "";
+		else
+			localMissionError = message;
 	}
 
 	function handleMissionPauseFinished(drone, success, message) {
-		if (!missionResultApplies(drone, "pause"))
-			return;
-		updateMissionStateForDrone(drone, {
-			"busy": false,
-			"busyText": "",
-			"busyOperation": "",
-			"running": false,
-			"paused": success,
-			"errorText": success ? "" : message
-		});
+		void drone;
+		if (success)
+			localMissionError = "";
+		else
+			localMissionError = message;
 	}
 
 	function handleMissionClearFinished(drone, success, message) {
-		if (!missionResultApplies(drone, "clear"))
+		if (!success) {
+			localMissionError = message;
 			return;
-		updateMissionStateForDrone(drone, {
-			"uploadedPlanSignature": success ? "" : missionStateForDrone(drone).uploadedPlanSignature,
-			"pendingPlanSignature": "",
-			"busy": false,
-			"busyText": "",
-			"busyOperation": "",
-			"running": false,
-			"paused": false,
-			"errorText": success ? "" : message
-		});
-		if (success && selectedDrone && selectedDrone.droneUid === drone.droneUid)
+		}
+		localMissionError = "";
+		if (selectedDrone && selectedDrone.droneUid === drone.droneUid)
 			clearLocalMission();
 	}
 
 	function handleMissionDownloadFinished(drone, success, message, downloadedMissionItems, returnToLaunchAfterMission) {
-		if (!missionResultApplies(drone, "download"))
+		if (!success) {
+			localMissionError = message;
 			return;
-		const downloadedSignature = success ? missionSignatureFor(downloadedMissionItems, returnToLaunchAfterMission) : "";
-		updateMissionStateForDrone(drone, {
-			"uploadedPlanSignature": success ? downloadedSignature : missionStateForDrone(drone).uploadedPlanSignature,
-			"pendingPlanSignature": "",
-			"busy": false,
-			"busyText": "",
-			"busyOperation": "",
-			"running": false,
-			"paused": false,
-			"errorText": success ? "" : message
-		});
-		if (success && selectedDrone && selectedDrone.droneUid === drone.droneUid) {
+		}
+		localMissionError = "";
+		if (selectedDrone && selectedDrone.droneUid === drone.droneUid) {
 			missionPlan.items = downloadedMissionItems;
 			missionPlan.selectedIndex = missionItems.length > 0 ? 0 : -1;
 			missionPlan.returnHomeAfterMission = returnToLaunchAfterMission;
-			syncMissionStateFromSelectedDrone();
 		}
 	}
 

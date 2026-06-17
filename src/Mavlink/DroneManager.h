@@ -71,6 +71,17 @@ class DroneManager : public QObject {
 	Q_PROPERTY(int ping READ ping NOTIFY pingChanged)
 	Q_PROPERTY(double cpuLoad READ cpuLoad NOTIFY cpuLoadChanged)
 	Q_PROPERTY(MissionPlanModel* missionPlan READ missionPlan CONSTANT)
+	Q_PROPERTY(bool missionBusy READ missionBusy NOTIFY missionStateChanged)
+	Q_PROPERTY(
+		QString missionBusyText READ missionBusyText NOTIFY missionStateChanged)
+	Q_PROPERTY(
+		bool missionRunning READ missionRunning NOTIFY missionStateChanged)
+	Q_PROPERTY(bool missionPaused READ missionPaused NOTIFY missionStateChanged)
+	Q_PROPERTY(
+		bool missionUploaded READ missionUploaded NOTIFY missionStateChanged)
+	Q_PROPERTY(bool missionDirty READ missionDirty NOTIFY missionStateChanged)
+	Q_PROPERTY(QString missionErrorText READ missionErrorText NOTIFY
+			missionStateChanged)
 
    public:
 	explicit DroneManager(
@@ -132,6 +143,13 @@ class DroneManager : public QObject {
 	[[nodiscard]] int ping() const;
 	[[nodiscard]] double cpuLoad() const;
 	[[nodiscard]] MissionPlanModel* missionPlan() const;
+	[[nodiscard]] bool missionBusy() const;
+	[[nodiscard]] QString missionBusyText() const;
+	[[nodiscard]] bool missionRunning() const;
+	[[nodiscard]] bool missionPaused() const;
+	[[nodiscard]] bool missionUploaded() const;
+	[[nodiscard]] bool missionDirty() const;
+	[[nodiscard]] QString missionErrorText() const;
 
 	Q_INVOKABLE void arm();
 	Q_INVOKABLE void disarm();
@@ -200,6 +218,7 @@ class DroneManager : public QObject {
 	void missionClearFinished(bool success, const QString& message);
 	void missionDownloadFinished(bool success, const QString& message,
 		const QVariantList& missionItems, bool returnToLaunchAfterMission);
+	void missionStateChanged();
 
    private:
 	void setupTelemetry();

@@ -37,9 +37,9 @@ Key rules:
 - [x] Ensure mission async results are applied to the originating drone state, not blindly to the selected drone.
 - [x] Do not clear local mission until drone clear succeeds.
 - [x] Use mission plan signatures to detect uploaded/current plan mismatch.
-- [ ] Move mission status/busy/uploaded/running/paused/error state fully out of `MapPanel.qml`.
-- [ ] Expose mission state through a per-drone controller/property.
-- [ ] Make selected-drone switching load that drone's own plan and mission state.
+- [x] Move mission status/busy/uploaded/running/paused/error state fully out of `MapPanel.qml`.
+- [x] Expose mission state through a per-drone controller/property.
+- [x] Make selected-drone switching load that drone's own plan and mission state.
 - [ ] Add explicit operation ids in the C++ mission controller/state layer.
 
 ### Mission plan model
@@ -142,6 +142,12 @@ Concrete next tasks:
 
 Next concrete tasks:
 
-- [ ] Move mission status/busy/uploaded/running/paused/error state from `MapPanel.qml` into a per-drone mission state object.
-- [ ] Expose that state through `DroneManager` or `DroneMissionController`.
-- [ ] Remove the interim `missionStateByDrone` JavaScript map from `MapPanel.qml`.
+- [x] Move mission status/busy/uploaded/running/paused/error state from `MapPanel.qml` into a per-drone mission state object.
+- [x] Expose that state through `DroneManager` or `DroneMissionController`.
+- [x] Remove the interim `missionStateByDrone` JavaScript map from `MapPanel.qml`.
+
+Next concrete tasks:
+
+- [ ] Add explicit monotonically increasing operation ids in `DroneMissionController`.
+- [ ] Ignore stale MAVSDK async callbacks whose operation id is no longer current.
+- [ ] Then start the all-drone mission rendering data path.

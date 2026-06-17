@@ -51,6 +51,11 @@ DroneManager::DroneManager(int uid, QString name, QString url, QObject* parent)
 		&DroneMissionController::missionDownloadFinished, this,
 		&DroneManager::missionDownloadFinished);
 	connect(m_missionController.get(),
+		&DroneMissionController::missionStateChanged, this,
+		&DroneManager::missionStateChanged);
+	connect(m_missionPlan.get(), &MissionPlanModel::signatureChanged, this,
+		&DroneManager::missionStateChanged);
+	connect(m_missionController.get(),
 		&DroneMissionController::missionProgressChanged, this,
 		[this](int current, int total) {
 			updateAndEmit(
@@ -268,6 +273,34 @@ MissionPlanModel* DroneManager::missionPlan() const {
 	return m_missionPlan.get();
 }
 
+bool DroneManager::missionBusy() const {
+	return m_missionController->missionBusy();
+}
+
+QString DroneManager::missionBusyText() const {
+	return m_missionController->missionBusyText();
+}
+
+bool DroneManager::missionRunning() const {
+	return m_missionController->missionRunning();
+}
+
+bool DroneManager::missionPaused() const {
+	return m_missionController->missionPaused();
+}
+
+bool DroneManager::missionUploaded() const {
+	return m_missionController->missionUploaded(m_missionPlan->signature());
+}
+
+bool DroneManager::missionDirty() const {
+	return m_missionController->missionDirty(m_missionPlan->signature());
+}
+
+QString DroneManager::missionErrorText() const {
+	return m_missionController->missionErrorText();
+}
+
 void DroneManager::arm() {
 	if (!m_action) {
 		emit logMessage(m_name, "Cannot arm: not connected", "warning");
@@ -441,7 +474,7 @@ void DroneManager::goToLocation(double latitude, double longitude,
 void DroneManager::uploadMission(
 	const QVariantList& missionItems, bool returnToLaunchAfterMission) {
 	m_missionController->uploadMission(
-		missionItems, returnToLaunchAfterMission);
+		missionItems, returnToLaunchAfterMission, m_missionPlan->signature());
 }
 
 void DroneManager::startMission() {
