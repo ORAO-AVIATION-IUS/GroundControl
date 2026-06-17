@@ -7,6 +7,7 @@
 #include <plugins/mission/mission.hpp>
 #include <system.hpp>
 
+#include <cstdint>
 #include <memory>
 
 class DroneMissionController : public QObject {
@@ -58,12 +59,24 @@ class DroneMissionController : public QObject {
 	template <typename T>
 	void onThread(T&& fn);
 
-	void beginOperation(const QString& operation, const QString& busyText,
-		const QString& pendingSignature = {});
-	void finishOperation(
-		const QString& operation, bool success, const QString& message);
-	void setError(const QString& message);
+	enum class Operation : std::uint8_t {
+		None,
+		Upload,
+		Start,
+		Pause,
+		Clear,
+		Download
+	};
+
+	[[nodiscard]] int beginOperation(Operation operation,
+		const QString& busyText, const QString& pendingSignature = {});
+	[[nodiscard]] bool finishOperation(Operation operation, int operationId,
+		bool success, const QString& message);
+	void setError(Operation operation, int operationId, const QString& message);
 	void resetMissionState();
+	void handleUploadResult(int operationId, mavsdk::Mission::Result result);
+	[[nodiscard]] bool isCurrentOperation(
+		Operation operation, int operationId) const;
 	[[nodiscard]] static QString missionSignatureFor(
 		const QVariantList& missionItems, bool returnToLaunchAfterMission);
 
@@ -72,7 +85,9 @@ class DroneMissionController : public QObject {
 	mavsdk::Mission::MissionProgressHandle m_missionProgressHandle;
 	bool m_missionBusy{false};
 	QString m_missionBusyText;
-	QString m_busyOperation;
+	Operation m_activeOperation{Operation::None};
+	int m_operationSequence{0};
+	int m_activeOperationId{0};
 	QString m_uploadedPlanSignature;
 	QString m_pendingPlanSignature;
 	QString m_missionErrorText;

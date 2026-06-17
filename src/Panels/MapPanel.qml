@@ -3,10 +3,10 @@ pragma ComponentBehavior: Bound
 import Agc.Components
 import Agc.Mavlink
 import Agc.Style
-import QtCore
 import QtPositioning
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import com.kdab.dockwidgets as KDDW
 
 KDDW.DockWidget {
@@ -30,40 +30,77 @@ KDDW.DockWidget {
 	property bool waypointConfigOpen: false
 	property bool missionLibraryOpen: false
 	property string missionDraftName: "Mission"
-	property int missionLibraryRevision: 0
+	property int missionRenderRevision: 0
+	property bool missionConfirmOpen: false
+	property string missionConfirmAction: ""
+	property int missionConfirmDroneUid: -1
 	readonly property string missionBusyText: selectedDrone ? selectedDrone.missionBusyText : ""
 	readonly property string missionErrorText: localMissionError !== "" ? localMissionError : (selectedDrone ? selectedDrone.missionErrorText : "")
 	property string localMissionError: ""
-	property double localHomeLatitude: 0
-	property double localHomeLongitude: 0
-	property double localHomeAltitude: 0
-	property bool localHomeValid: false
-	property bool goTargetValid: false
-	property double goTargetLatitude: 0
-	property double goTargetLongitude: 0
-	property double goTargetAltitude: 0
-	property double goTargetHeading: 0
-	property bool lookTargetValid: false
-	property double lookTargetLatitude: 0
-	property double lookTargetLongitude: 0
-	property double lookTargetHeading: 0
-	property bool flyPromptOpen: false
-	property string flyPromptKind: ""
-	property bool mapContextOpen: false
-	property var mapContextCoordinate: QtPositioning.coordinate()
-	property real mapContextX: 0
-	property real mapContextY: 0
-	property var flyEditSnapshot: ({})
+	readonly property var guided: selectedDrone && selectedDrone.guided ? selectedDrone.guided : fallbackGuided
+	readonly property double localHomeLatitude: guided.localHomeLatitude
+	readonly property double localHomeLongitude: guided.localHomeLongitude
+	readonly property double localHomeAltitude: guided.localHomeAltitude
+	readonly property bool localHomeValid: guided.localHomeValid
+	readonly property bool goTargetValid: guided.goTargetValid
+	readonly property double goTargetLatitude: guided.goTargetLatitude
+	readonly property double goTargetLongitude: guided.goTargetLongitude
+	readonly property double goTargetAltitude: guided.goTargetAltitude
+	readonly property double goTargetHeading: guided.goTargetHeading
+	readonly property bool lookTargetValid: guided.lookTargetValid
+	readonly property double lookTargetLatitude: guided.lookTargetLatitude
+	readonly property double lookTargetLongitude: guided.lookTargetLongitude
+	readonly property double lookTargetHeading: guided.lookTargetHeading
+	readonly property bool flyPromptOpen: guided.flyPromptOpen
+	readonly property string flyPromptKind: guided.flyPromptKind
+	readonly property bool mapContextOpen: guided.mapContextOpen
+	readonly property var mapContextCoordinate: QtPositioning.coordinate(guided.mapContextLatitude, guided.mapContextLongitude)
+	readonly property real mapContextX: guided.mapContextX
+	readonly property real mapContextY: guided.mapContextY
 
-	Settings {
-		id: missionSettings
-		category: "MissionPlanning"
-		property string savedMissionPlan: ""
-		property string savedMissionPlans: "{}"
+	MissionPlanStore {
+		id: missionStore
+	}
+
+	FileDialog {
+		id: missionExportDialog
+		title: qsTr("Export mission plan")
+		fileMode: FileDialog.SaveFile
+		nameFilters: [qsTr("Mission JSON (*.json)")]
+		defaultSuffix: "json"
+		onAccepted: {
+			if (!missionStore.exportMission(selectedFile, dockRoot.missionDraftName, dockRoot.missionPlan)) {
+				dockRoot.setMissionError(missionStore.errorText);
+				return;
+			}
+			dockRoot.localMissionError = "";
+			if (dockRoot.selectedDrone)
+				dockRoot.selectedDrone.log(dockRoot.selectedDrone.droneName, qsTr("Mission exported"), "info");
+		}
+	}
+
+	FileDialog {
+		id: missionImportDialog
+		title: qsTr("Import mission plan")
+		fileMode: FileDialog.OpenFile
+		nameFilters: [qsTr("Mission JSON (*.json)")]
+		onAccepted: {
+			if (!missionStore.importMission(selectedFile, dockRoot.missionPlan)) {
+				dockRoot.setMissionError(missionStore.errorText);
+				return;
+			}
+			dockRoot.missionPlan.selectedIndex = dockRoot.missionItems.length > 0 && dockRoot.mapMode === 1 ? 0 : -1;
+			dockRoot.missionDraftName = qsTr("Imported Mission");
+			dockRoot.localMissionError = "";
+		}
 	}
 
 	MissionPlanModel {
 		id: fallbackMissionPlan
+	}
+
+	GuidedTargetModel {
+		id: fallbackGuided
 	}
 
 	property var _targetStore: ({})
@@ -80,12 +117,14 @@ KDDW.DockWidget {
 			waypointConfigOpen = false;
 		}
 		if (mapMode !== 2) {
-			flyPromptOpen = false;
-			mapContextOpen = false;
+			guided.closePrompt();
+			guided.closeMapContext();
 		}
 	}
 
 	onSelectedDroneChanged: {
+		if (!selectedDrone || missionConfirmDroneUid !== selectedDrone.droneUid)
+			missionConfirmOpen = false;
 		if (selectedDrone) {
 			var entry = _targetStore[String(selectedDrone.droneUid)];
 			if (entry && entry.locked)
@@ -125,6 +164,166 @@ KDDW.DockWidget {
 				indexes.push(i);
 		}
 		return indexes;
+	}
+
+	function droneMissionColor(index) {
+		const colors = ["#ff9d00", "#00d0ff", "#c77dff", "#6bffb8", "#ff6b9a", "#ffd06b", "#7aa7ff", "#ff7a45"];
+		return colors[Math.max(0, index) % colors.length];
+	}
+
+	function visibleMissionPlans() {
+		void missionRenderRevision;
+		const plans = [];
+		for (let i = 0; i < SwarmManager.droneList.length; ++i) {
+			const drone = SwarmManager.droneList[i];
+			const plan = drone && drone.missionPlan ? drone.missionPlan : null;
+			const items = plan && plan.items ? plan.items : [];
+			if (!drone || !plan || items.length === 0)
+				continue;
+			const selected = selectedDrone && drone.droneUid === selectedDrone.droneUid;
+			const useLocalHome = selected && !drone.homeValid && localHomeValid;
+			plans.push({
+				"droneUid": drone.droneUid,
+				"droneName": drone.droneName,
+				"items": items,
+				"selected": selected,
+				"selectedIndex": selected && mapMode === 1 ? plan.selectedIndex : -1,
+				"currentIndex": drone.wpCurrent,
+				"color": droneMissionColor(i),
+				"returnHomeAfterMission": plan.returnHomeAfterMission,
+				"homeLatitude": drone.homeValid ? drone.homeLatitude : localHomeLatitude,
+				"homeLongitude": drone.homeValid ? drone.homeLongitude : localHomeLongitude,
+				"homeValid": drone.homeValid || useLocalHome,
+				"revision": plan.revision,
+				"signature": plan.signature
+			});
+		}
+		return plans;
+	}
+
+	function missionInsertTargetsForPlan(plan) {
+		const targets = [];
+		const items = plan && plan.items ? plan.items : [];
+		if (!plan || !plan.selected || mapMode !== 1 || items.length < 2)
+			return targets;
+		for (let i = 0; i < items.length - 1; ++i) {
+			const a = QtPositioning.coordinate(items[i].latitude, items[i].longitude);
+			const b = QtPositioning.coordinate(items[i + 1].latitude, items[i + 1].longitude);
+			const mid = a.atDistanceAndAzimuth(a.distanceTo(b) * 0.5, a.azimuthTo(b));
+			targets.push({
+				"id": "mission-insert-" + plan.droneUid + "-" + i,
+				"type": "MissionInsertHandle",
+				"droneUid": plan.droneUid,
+				"latitude": mid.latitude,
+				"longitude": mid.longitude,
+				"altitude": 0,
+				"selected": false,
+				"editable": true,
+				"draggable": false,
+				"segmentIndex": i,
+				"fill": "#ffffff",
+				"stroke": plan.color,
+				"radius": 4,
+				"strokeWidth": 1.5,
+				"opacity": 0.58
+			});
+		}
+		return targets;
+	}
+
+	function mapTargets() {
+		const targets = [];
+		const plans = visibleMissionPlans();
+		for (let p = 0; p < plans.length; ++p) {
+			const plan = plans[p];
+			const items = plan.items || [];
+			for (let i = 0; i < items.length; ++i) {
+				const item = items[i];
+				if (!item)
+					continue;
+				const selected = plan.selected && mapMode === 1 && i === plan.selectedIndex;
+				const current = plan.currentIndex > 0 && i === plan.currentIndex - 1;
+				targets.push({
+					"id": "mission-waypoint-" + plan.droneUid + "-" + i,
+					"type": "MissionWaypoint",
+					"droneUid": plan.droneUid,
+					"latitude": item.latitude,
+					"longitude": item.longitude,
+					"altitude": item.altitude || 0,
+					"heading": item.heading || 0,
+					"selected": selected,
+					"editable": plan.selected,
+					"draggable": plan.selected && mapMode === 1,
+					"missionItemIndex": i,
+					"fill": current ? "#ffaa00" : (selected ? "#ffaa00" : plan.color),
+					"stroke": "#ffffff",
+					"radius": plan.selected ? (selected ? 8 : 6) : 4,
+					"strokeWidth": plan.selected ? (selected ? 3 : 2) : 1,
+					"opacity": plan.selected ? (mapSettings.is3d ? 0.55 : 0.95) : 0.46
+				});
+			}
+			const insertTargets = missionInsertTargetsForPlan(plan);
+			for (let j = 0; j < insertTargets.length; ++j)
+				targets.push(insertTargets[j]);
+		}
+		if (mapMode === 2 && selectedDrone) {
+			if (goTargetValid) {
+				targets.push({
+					"id": "go-" + selectedDrone.droneUid,
+					"type": "GoTarget",
+					"droneUid": selectedDrone.droneUid,
+					"latitude": goTargetLatitude,
+					"longitude": goTargetLongitude,
+					"altitude": goTargetAltitude,
+					"heading": goTargetHeading,
+					"selected": flyPromptKind === "go",
+					"editable": true,
+					"draggable": true,
+					"fill": "#5a9aef",
+					"stroke": "#ffffff",
+					"radius": 8,
+					"strokeWidth": 2,
+					"opacity": 0.95
+				});
+			}
+			if (lookTargetValid) {
+				targets.push({
+					"id": "look-" + selectedDrone.droneUid,
+					"type": "LookTarget",
+					"droneUid": selectedDrone.droneUid,
+					"latitude": lookTargetLatitude,
+					"longitude": lookTargetLongitude,
+					"heading": lookTargetHeading,
+					"selected": flyPromptKind === "look",
+					"editable": true,
+					"draggable": true,
+					"fill": "#ffb347",
+					"stroke": "#1c1f26",
+					"radius": 7,
+					"strokeWidth": 2,
+					"opacity": 0.95
+				});
+			}
+			if ((selectedDrone.homeValid || localHomeValid)) {
+				targets.push({
+					"id": "home-" + selectedDrone.droneUid,
+					"type": "HomeTarget",
+					"droneUid": selectedDrone.droneUid,
+					"latitude": selectedDrone.homeValid ? selectedDrone.homeLatitude : localHomeLatitude,
+					"longitude": selectedDrone.homeValid ? selectedDrone.homeLongitude : localHomeLongitude,
+					"altitude": selectedDrone.homeValid ? selectedDrone.homeAltitude : localHomeAltitude,
+					"selected": flyPromptKind === "home",
+					"editable": true,
+					"draggable": true,
+					"fill": "#6bffb8",
+					"stroke": "#ffffff",
+					"radius": 8,
+					"strokeWidth": 2,
+					"opacity": 0.95
+				});
+			}
+		}
+		return targets;
 	}
 
 	function autoFollowSingleConnectedDrone() {
@@ -196,10 +395,7 @@ KDDW.DockWidget {
 	function showMapContext(coordinate, screenPoint) {
 		if (mapMode !== 2 || !coordinate || !coordinate.isValid)
 			return;
-		mapContextCoordinate = coordinate;
-		mapContextX = screenPoint.x;
-		mapContextY = screenPoint.y;
-		mapContextOpen = true;
+		guided.setMapContext(coordinate.latitude, coordinate.longitude, screenPoint.x, screenPoint.y);
 	}
 
 	function targetHeading(coordinate) {
@@ -209,29 +405,7 @@ KDDW.DockWidget {
 	}
 
 	function snapshotTarget(kind) {
-		if (kind === "go" && goTargetValid) {
-			flyEditSnapshot = {
-				"kind": "go",
-				"valid": true,
-				"latitude": goTargetLatitude,
-				"longitude": goTargetLongitude,
-				"altitude": goTargetAltitude,
-				"heading": goTargetHeading
-			};
-		} else if (kind === "look" && lookTargetValid) {
-			flyEditSnapshot = {
-				"kind": "look",
-				"valid": true,
-				"latitude": lookTargetLatitude,
-				"longitude": lookTargetLongitude,
-				"heading": lookTargetHeading
-			};
-		} else {
-			flyEditSnapshot = {
-				"kind": kind,
-				"valid": false
-			};
-		}
+		guided.snapshotTarget(kind);
 	}
 
 	function applyTarget(kind, coordinate) {
@@ -239,16 +413,9 @@ KDDW.DockWidget {
 			return;
 		if (kind === "go") {
 			const altitude = goTargetValid ? goTargetAltitude : selectedDrone.altitude;
-			goTargetLatitude = coordinate.latitude;
-			goTargetLongitude = coordinate.longitude;
-			goTargetAltitude = altitude;
-			goTargetHeading = targetHeading(coordinate);
-			goTargetValid = true;
+			guided.setGoTarget(coordinate.latitude, coordinate.longitude, altitude, targetHeading(coordinate));
 		} else if (kind === "look") {
-			lookTargetLatitude = coordinate.latitude;
-			lookTargetLongitude = coordinate.longitude;
-			lookTargetHeading = targetHeading(coordinate);
-			lookTargetValid = true;
+			guided.setLookTarget(coordinate.latitude, coordinate.longitude, targetHeading(coordinate));
 		}
 	}
 
@@ -261,9 +428,8 @@ KDDW.DockWidget {
 		cancelPendingFlyEdit(kind);
 		snapshotTarget(kind);
 		applyTarget(kind, coordinate);
-		flyPromptKind = kind;
-		flyPromptOpen = true;
-		mapContextOpen = false;
+		guided.openPrompt(kind);
+		guided.closeMapContext();
 	}
 
 	function beginFlyTargetEdit(kind) {
@@ -284,50 +450,26 @@ KDDW.DockWidget {
 		if (kind === "home") {
 			if (localHomeValid)
 				setHomePoint(QtPositioning.coordinate(localHomeLatitude, localHomeLongitude), true);
-			flyPromptOpen = false;
-			flyPromptKind = "";
+			guided.closePrompt();
 			return;
 		}
 		cancelPendingFlyEdit(kind);
-		flyPromptKind = kind;
-		flyPromptOpen = true;
-		mapContextOpen = false;
+		guided.openPrompt(kind);
+		guided.closeMapContext();
 	}
 
 	function restoreFlyEditSnapshot() {
-		if (!flyEditSnapshot || flyEditSnapshot.kind !== flyPromptKind)
-			return;
-		if (flyPromptKind === "go") {
-			goTargetValid = flyEditSnapshot.valid === true;
-			if (goTargetValid) {
-				goTargetLatitude = flyEditSnapshot.latitude;
-				goTargetLongitude = flyEditSnapshot.longitude;
-				goTargetAltitude = flyEditSnapshot.altitude;
-				goTargetHeading = flyEditSnapshot.heading;
-			}
-		} else if (flyPromptKind === "look") {
-			lookTargetValid = flyEditSnapshot.valid === true;
-			if (lookTargetValid) {
-				lookTargetLatitude = flyEditSnapshot.latitude;
-				lookTargetLongitude = flyEditSnapshot.longitude;
-				lookTargetHeading = flyEditSnapshot.heading;
-			}
-		}
+		guided.restoreSnapshot();
 	}
 
 	function closeFlyPrompt() {
 		restoreFlyEditSnapshot();
-		flyPromptOpen = false;
-		flyPromptKind = "";
+		guided.closePrompt();
 	}
 
 	function deleteFlyPromptTarget() {
-		if (flyPromptKind === "go")
-			goTargetValid = false;
-		else if (flyPromptKind === "look")
-			lookTargetValid = false;
-		flyPromptOpen = false;
-		flyPromptKind = "";
+		guided.clearTarget(flyPromptKind);
+		guided.closePrompt();
 	}
 
 	function confirmFlyPrompt() {
@@ -337,9 +479,8 @@ KDDW.DockWidget {
 			selectedDrone.goToLocation(goTargetLatitude, goTargetLongitude, goTargetAltitude, goTargetHeading);
 		else if (flyPromptKind === "look" && lookTargetValid && hasPosition(selectedDrone))
 			selectedDrone.goToLocation(selectedDrone.latitude, selectedDrone.longitude, selectedDrone.altitude, lookTargetHeading);
-		flyPromptOpen = false;
-		flyPromptKind = "";
-		flyEditSnapshot = ({});
+		guided.closePrompt();
+		guided.clearSnapshot();
 	}
 
 	function focusFlyTarget(kind) {
@@ -364,10 +505,8 @@ KDDW.DockWidget {
 	function setHomePoint(coordinate, sendToDrone) {
 		if (!coordinate || !coordinate.isValid)
 			return;
-		localHomeLatitude = coordinate.latitude;
-		localHomeLongitude = coordinate.longitude;
-		localHomeAltitude = homeAltitudeForSetHome();
-		localHomeValid = true;
+		const altitude = homeAltitudeForSetHome();
+		guided.setLocalHome(coordinate.latitude, coordinate.longitude, altitude);
 		if (sendToDrone && selectedDrone && selectedDrone.connected)
 			selectedDrone.setHome(localHomeLatitude, localHomeLongitude, localHomeAltitude);
 	}
@@ -479,18 +618,9 @@ KDDW.DockWidget {
 		return missionPlan.distanceText();
 	}
 
-	function savedMissionStore() {
-		try {
-			const store = JSON.parse(missionSettings.savedMissionPlans || "{}");
-			return store && typeof store === "object" ? store : {};
-		} catch (error) {
-			return {};
-		}
-	}
-
 	function savedMissionNames() {
-		void missionLibraryRevision;
-		return Object.keys(savedMissionStore()).sort();
+		void missionStore.revision;
+		return missionStore.missionNames;
 	}
 
 	function selectedSavedMissionName() {
@@ -500,57 +630,35 @@ KDDW.DockWidget {
 
 	function saveMissionDraft(name) {
 		const trimmedName = String(name || "").trim();
-		if (trimmedName === "") {
-			setMissionError(qsTr("Name the mission before saving"));
+		if (!missionStore.saveMission(trimmedName, missionPlan)) {
+			setMissionError(missionStore.errorText);
 			return;
 		}
-		if (missionItems.length === 0) {
-			setMissionError(qsTr("No mission to save"));
-			return;
-		}
-		const store = savedMissionStore();
-		store[trimmedName] = {
-			"version": 1,
-			"name": trimmedName,
-			"returnHomeAfterMission": returnHomeAfterMission,
-			"items": missionItems
-		};
-		missionSettings.savedMissionPlans = JSON.stringify(store);
-		missionSettings.savedMissionPlan = JSON.stringify(store[trimmedName]);
 		missionDraftName = trimmedName;
-		missionLibraryRevision += 1;
 		localMissionError = "";
 		if (selectedDrone)
 			selectedDrone.log(selectedDrone.droneName, qsTr("Mission draft saved: %1").arg(trimmedName), "info");
 	}
 
 	function loadMissionDraft(name) {
-		const store = savedMissionStore();
 		const trimmedName = String(name || "").trim();
-		const plan = store[trimmedName];
-		if (!plan) {
+		if (trimmedName === "") {
 			setMissionError(qsTr("Select a saved mission draft"));
 			return;
 		}
-		if (!plan.items || !Array.isArray(plan.items)) {
-			setMissionError(qsTr("Saved mission draft is invalid"));
+		if (!missionStore.loadMission(trimmedName, missionPlan)) {
+			setMissionError(missionStore.errorText);
 			return;
 		}
-		missionPlan.items = plan.items;
 		missionPlan.selectedIndex = missionItems.length > 0 && mapMode === 1 ? 0 : -1;
-		missionPlan.returnHomeAfterMission = plan.returnHomeAfterMission === true;
 		missionDraftName = trimmedName;
 		localMissionError = "";
 	}
 
 	function deleteMissionDraft(name) {
 		const trimmedName = String(name || "").trim();
-		const store = savedMissionStore();
-		if (!store[trimmedName])
-			return;
-		delete store[trimmedName];
-		missionSettings.savedMissionPlans = JSON.stringify(store);
-		missionLibraryRevision += 1;
+		if (!missionStore.deleteMission(trimmedName) && missionStore.errorText !== "")
+			setMissionError(missionStore.errorText);
 	}
 
 	function validateMissionDraft() {
@@ -559,6 +667,42 @@ KDDW.DockWidget {
 		if (!selectedDrone.connected)
 			return qsTr("Selected drone is not connected");
 		return missionPlan.validateForUpload();
+	}
+
+	function missionConfirmText() {
+		if (!selectedDrone || !missionConfirmOpen)
+			return "";
+		const actionText = missionConfirmAction === "start" ? qsTr("START") : qsTr("CLEAR");
+		return qsTr("%1 %2  UID %3  %4 WP  %5").arg(actionText).arg(selectedDrone.droneName).arg(selectedDrone.droneUid).arg(missionItems.length).arg(missionStatusText());
+	}
+
+	function openMissionConfirmation(action) {
+		if (!selectedDrone)
+			return;
+		missionConfirmAction = action;
+		missionConfirmDroneUid = selectedDrone.droneUid;
+		missionConfirmOpen = true;
+	}
+
+	function cancelMissionConfirmation() {
+		missionConfirmOpen = false;
+		missionConfirmAction = "";
+		missionConfirmDroneUid = -1;
+	}
+
+	function confirmMissionCommand() {
+		if (!selectedDrone || selectedDrone.droneUid !== missionConfirmDroneUid) {
+			setMissionError(qsTr("Selected drone changed; command cancelled"));
+			cancelMissionConfirmation();
+			return;
+		}
+		const action = missionConfirmAction;
+		cancelMissionConfirmation();
+		localMissionError = "";
+		if (action === "start")
+			selectedDrone.startMission();
+		else if (action === "clear")
+			selectedDrone.clearMission();
 	}
 
 	function requestMissionUpload() {
@@ -594,8 +738,7 @@ KDDW.DockWidget {
 			setMissionError(qsTr("Battery is too low for mission start"));
 			return;
 		}
-		localMissionError = "";
-		selectedDrone.startMission();
+		openMissionConfirmation("start");
 	}
 
 	function requestMissionPause() {
@@ -607,8 +750,7 @@ KDDW.DockWidget {
 
 	function requestMissionClear() {
 		if (selectedDrone && selectedDrone.connected) {
-			localMissionError = "";
-			selectedDrone.clearMission();
+			openMissionConfirmation("clear");
 			return;
 		}
 		clearLocalMission();
@@ -673,7 +815,7 @@ KDDW.DockWidget {
 	Shortcut {
 		sequences: [StandardKey.Cancel]
 		onActivated: {
-			dockRoot.mapContextOpen = false;
+			dockRoot.guided.closeMapContext();
 			if (dockRoot.flyPromptOpen)
 				dockRoot.closeFlyPrompt();
 		}
@@ -729,6 +871,30 @@ KDDW.DockWidget {
 						else
 							dockRoot.autoFollowSingleConnectedDrone();
 					}
+
+					function onWpCurrentChanged() {
+						dockRoot.missionRenderRevision += 1;
+					}
+
+					function onHomeChanged() {
+						dockRoot.missionRenderRevision += 1;
+					}
+				}
+
+				Connections {
+					target: followDelegate.modelData ? followDelegate.modelData.missionPlan : null
+
+					function onRevisionChanged() {
+						dockRoot.missionRenderRevision += 1;
+					}
+
+					function onSelectedIndexChanged() {
+						dockRoot.missionRenderRevision += 1;
+					}
+
+					function onReturnHomeAfterMissionChanged() {
+						dockRoot.missionRenderRevision += 1;
+					}
 				}
 			}
 		}
@@ -747,6 +913,8 @@ KDDW.DockWidget {
 			activePlanningTool: dockRoot.activePlanningTool
 			activeTrackingTool: dockRoot.activeTrackingTool
 			missionItems: dockRoot.missionItems
+			visibleMissionPlans: dockRoot.visibleMissionPlans()
+			mapTargets: dockRoot.mapTargets()
 			selectedMissionItemIndex: dockRoot.mapMode === 1 ? dockRoot.selectedMissionItemIndex : -1
 			currentMissionItemIndex: dockRoot.selectedDrone ? dockRoot.selectedDrone.wpCurrent : 0
 			homeLatitude: dockRoot.selectedDrone && dockRoot.selectedDrone.homeValid ? dockRoot.selectedDrone.homeLatitude : dockRoot.localHomeLatitude
@@ -774,6 +942,13 @@ KDDW.DockWidget {
 			onMissionItemClicked: function (index) {
 				dockRoot.missionPlan.selectedIndex = index;
 			}
+			onMissionPlanItemClicked: function (droneUid, index) {
+				const drone = SwarmManager.droneByUid(droneUid);
+				if (!drone || !drone.missionPlan)
+					return;
+				dockRoot.selectDroneByUid(droneUid);
+				drone.missionPlan.selectedIndex = index;
+			}
 			onMissionItemMoved: function (index, coordinate) {
 				dockRoot.moveMissionWaypoint(index, coordinate);
 			}
@@ -786,7 +961,7 @@ KDDW.DockWidget {
 			onMapContextRequested: function (coordinate, screenPoint) {
 				dockRoot.showMapContext(coordinate, screenPoint);
 			}
-			onMapInteractionStarted: dockRoot.mapContextOpen = false
+			onMapInteractionStarted: dockRoot.guided.closeMapContext()
 			onFlyTargetEditStarted: function (targetKind) {
 				dockRoot.beginFlyTargetEdit(targetKind);
 			}
@@ -907,10 +1082,35 @@ KDDW.DockWidget {
 		}
 
 		ButtonGroup {
+			id: missionConfirmPanel
+			z: 7
+			anchors.left: missionOverlay.left
+			anchors.bottom: missionOverlay.top
+			anchors.bottomMargin: Style.sectionSpacing
+			title: dockRoot.missionConfirmText()
+			horizontal: true
+			visible: missionOverlay.visible && dockRoot.missionConfirmOpen
+
+			IconButton {
+				iconName: "dialog-ok"
+				label: "Confirm"
+				labelColor: dockRoot.missionConfirmAction === "clear" ? "#ff6b6b" : "#6bffb8"
+				enabled: dockRoot.selectedDrone && dockRoot.selectedDrone.connected && dockRoot.selectedDrone.droneUid === dockRoot.missionConfirmDroneUid
+				onClicked: dockRoot.confirmMissionCommand()
+			}
+			IconButton {
+				iconName: "dialog-cancel"
+				label: "Cancel"
+				labelColor: "#ffd06b"
+				onClicked: dockRoot.cancelMissionConfirmation()
+			}
+		}
+
+		ButtonGroup {
 			id: missionLibraryPanel
 			z: 6
 			anchors.left: missionOverlay.left
-			anchors.bottom: missionOverlay.top
+			anchors.bottom: dockRoot.missionConfirmOpen ? missionConfirmPanel.top : missionOverlay.top
 			anchors.bottomMargin: Style.sectionSpacing
 			title: "MISSION PLANS"
 			visible: missionOverlay.visible && dockRoot.missionLibraryOpen
@@ -973,6 +1173,22 @@ KDDW.DockWidget {
 						labelColor: "#ff6b6b"
 						enabled: missionPlanSelector.count > 0
 						onClicked: dockRoot.deleteMissionDraft(dockRoot.selectedSavedMissionName())
+					}
+				}
+
+				Row {
+					spacing: Style.sectionSpacing
+
+					IconButton {
+						iconName: "document-save"
+						label: "Export"
+						enabled: dockRoot.missionItems.length > 0
+						onClicked: missionExportDialog.open()
+					}
+					IconButton {
+						iconName: "document-open"
+						label: "Import"
+						onClicked: missionImportDialog.open()
 					}
 				}
 			}
@@ -1155,7 +1371,7 @@ KDDW.DockWidget {
 					enabled: dockRoot.selectedDrone && dockRoot.selectedDrone.connected
 					onClicked: {
 						dockRoot.setHomePoint(dockRoot.mapContextCoordinate, true);
-						dockRoot.mapContextOpen = false;
+						dockRoot.guided.closeMapContext();
 					}
 					background: Rectangle {
 						radius: 3
@@ -1201,7 +1417,7 @@ KDDW.DockWidget {
 				iconName: "edit-delete"
 				label: "Delete"
 				labelColor: "#ff6b6b"
-				visible: dockRoot.flyEditSnapshot && dockRoot.flyEditSnapshot.valid === true
+				visible: dockRoot.guided.snapshotValid
 				onClicked: dockRoot.deleteFlyPromptTarget()
 			}
 			IconButton {
@@ -1332,13 +1548,13 @@ KDDW.DockWidget {
 			z: 1
 			onTargetEdited: function (target) {
 				if (dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go")
-					dockRoot.goTargetAltitude = target;
+					dockRoot.guided.goTargetAltitude = target;
 				else
 					dockRoot.setSelectedMissionAltitude(target);
 			}
 			onTargetConfirmed: function (target) {
 				if (!altTape.liveEdit && dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go") {
-					dockRoot.goTargetAltitude = target;
+					dockRoot.guided.goTargetAltitude = target;
 				} else if (!altTape.liveEdit && dockRoot.selectedDrone) {
 					dockRoot._targetStore[String(dockRoot.selectedDrone.droneUid)] = {
 						"alt": target,
@@ -1349,7 +1565,7 @@ KDDW.DockWidget {
 			}
 			onTargetReset: {
 				if (!altTape.liveEdit && dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go") {
-					dockRoot.goTargetAltitude = dockRoot.selectedDrone ? dockRoot.selectedDrone.altitude : 0;
+					dockRoot.guided.goTargetAltitude = dockRoot.selectedDrone ? dockRoot.selectedDrone.altitude : 0;
 				} else if (!altTape.liveEdit && dockRoot.selectedDrone) {
 					dockRoot._targetStore[String(dockRoot.selectedDrone.droneUid)] = {
 						"alt": 0,

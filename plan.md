@@ -40,7 +40,7 @@ Key rules:
 - [x] Move mission status/busy/uploaded/running/paused/error state fully out of `MapPanel.qml`.
 - [x] Expose mission state through a per-drone controller/property.
 - [x] Make selected-drone switching load that drone's own plan and mission state.
-- [ ] Add explicit operation ids in the C++ mission controller/state layer.
+- [x] Add explicit operation ids in the C++ mission controller/state layer.
 
 ### Mission plan model
 
@@ -50,36 +50,36 @@ Key rules:
 - [x] Move upload validation into it.
 - [x] Move distance calculation into it.
 - [x] Add plan signature.
-- [ ] Add explicit serialization/deserialization API.
-- [ ] Add stable version/hash separate from display JSON.
+- [x] Add explicit serialization/deserialization/store API.
+- [x] Add versioned JSON documents for persisted/exported missions.
 - [x] Attach one `MissionPlanModel` to each drone.
-- [ ] Keep/view plans for non-selected drones without re-downloading.
+- [x] Keep/view plans for non-selected drones without re-downloading.
 
 ### Multi-drone mission display
 
-- [ ] Build a map-facing list/model of visible mission plans.
-- [ ] Render all drone mission plans at once.
-- [ ] Assign distinct colors per drone.
-- [ ] Render unselected drone missions with lower opacity/smaller/subdued markers.
-- [ ] Keep selected drone mission prominent and editable.
-- [ ] Prevent editing non-selected drone plans unless explicitly selected or confirmed.
+- [x] Build a map-facing list/model of visible mission plans.
+- [x] Render all drone mission plans at once.
+- [x] Assign distinct colors per drone.
+- [x] Render unselected drone missions with lower opacity/smaller/subdued markers.
+- [x] Keep selected drone mission prominent and editable.
+- [x] Prevent editing non-selected drone plans unless explicitly selected or confirmed.
 
 ### Unified map targets
 
-- [ ] Define one map target concept for mission waypoints, insert handles, Go, Look, and Home.
-- [ ] Add owner drone uid to every target.
-- [ ] Render generic target layers instead of duplicated mission/fly target layers.
-- [ ] Hit-test generic targets in `MapInteractionArea.qml`.
-- [ ] Emit generic target clicked/moved/dragged events.
-- [ ] Route target events to the right mission/fly/home controller.
+- [x] Define one map target concept for mission waypoints, insert handles, Go, Look, and Home.
+- [x] Add owner drone uid to every target.
+- [x] Render generic target layers for point targets instead of duplicated point layers.
+- [x] Hit-test generic targets in `MapInteractionArea.qml`.
+- [ ] Emit fully generic target clicked/moved/dragged events.
+- [x] Route current target events to the right mission/fly/home controller.
 
 ### Guided/fly command cleanup
 
-- [ ] Move Go/Look/Home target state out of `MapPanel.qml`.
-- [ ] Store Go/Look/Home targets per drone.
-- [ ] Preserve home altitude correctly when moving home.
-- [ ] Add safe operation ownership for `goToLocation`/home commands.
-- [ ] Use unified map targets for Go/Look/Home.
+- [x] Move Go/Look/Home target state out of `MapPanel.qml`.
+- [x] Store Go/Look/Home targets per drone.
+- [x] Preserve home altitude correctly when moving home.
+- [x] Add safe operation ownership for `goToLocation`/home commands.
+- [x] Use unified map targets for Go/Look/Home.
 
 ### MapPanel cleanup
 
@@ -95,11 +95,12 @@ Key rules:
 
 ### Later mission features
 
-- [ ] Add explicit command types: waypoint, takeoff, land, loiter, ROI/look-at, final action.
-- [ ] Clarify altitude reference: relative/home/MSL.
-- [ ] Improve mission progress highlighting.
-- [ ] Improve upload/download reconciliation.
-- [ ] Add import/export JSON files.
+- [x] Add explicit basic command types: waypoint, takeoff, land.
+- [x] Clarify initial altitude reference in mission items: relative.
+- [x] Improve mission progress highlighting across rendered plans.
+- [x] Improve upload/download reconciliation with operation ids/signatures.
+- [x] Add import/export JSON files.
+- [ ] Later: ROI/look-at/final action command UI.
 - [ ] Later: QGroundControl `.plan` import/export.
 - [ ] Later: survey/geofence/rally tools.
 
@@ -116,8 +117,7 @@ The code is now in a good intermediate state:
 
 Known lint warnings that remain:
 
-- `DroneManager::setupTelemetry()` cognitive complexity.
-- `DroneManager::teardownTelemetry()` cognitive complexity.
+- None from project code after the latest pass; third-party warnings are suppressed by tooling.
 
 ---
 
@@ -148,6 +148,7 @@ Next concrete tasks:
 
 Next concrete tasks:
 
-- [ ] Add explicit monotonically increasing operation ids in `DroneMissionController`.
-- [ ] Ignore stale MAVSDK async callbacks whose operation id is no longer current.
-- [ ] Then start the all-drone mission rendering data path.
+- [x] Add explicit monotonically increasing operation ids in `DroneMissionController`.
+- [x] Ignore stale MAVSDK async callbacks whose operation id is no longer current.
+- [x] Build the all-drone mission rendering data path.
+- [ ] Manual test with one or more drones/SITL before further UI-only component extraction.

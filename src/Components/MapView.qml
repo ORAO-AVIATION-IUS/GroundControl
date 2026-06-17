@@ -22,6 +22,8 @@ Item {
 	property string activePlanningTool: "edit"
 	property string activeTrackingTool: ""
 	property var missionItems: []
+	property var visibleMissionPlans: []
+	property var mapTargets: []
 	property int selectedMissionItemIndex: -1
 	property int currentMissionItemIndex: 0
 	property double homeLatitude: 0
@@ -58,6 +60,7 @@ Item {
 	signal flyTargetEditStarted(string targetKind)
 	signal flyTargetMoved(string targetKind, var coordinate)
 	signal missionItemClicked(int index)
+	signal missionPlanItemClicked(int droneUid, int index)
 	signal missionItemMoved(int index, var coordinate)
 	signal missionSegmentInsertRequested(int segmentIndex, var coordinate)
 	signal userMovedMap
@@ -150,6 +153,8 @@ Item {
 			satelliteMode: root.satelliteMode
 			trackedPaths: droneTracker.trackedPaths
 			missionItems: root.missionItems
+			visibleMissionPlans: root.visibleMissionPlans
+			mapTargets: root.mapTargets
 			selectedMissionItemIndex: root.selectedMissionItemIndex
 			currentMissionItemIndex: root.currentMissionItemIndex
 			homeLatitude: root.homeLatitude
@@ -178,11 +183,14 @@ Item {
 			targetMap: map
 			drones: root.drones
 			followedDroneUid: root.followedDroneUid
+			selectedDroneUid: root.selectedDroneUid
 			threeD: root.threeD
 			mapMode: root.mapMode
 			activePlanningTool: root.activePlanningTool
 			activeTrackingTool: root.activeTrackingTool
 			missionItems: root.missionItems
+			visibleMissionPlans: root.visibleMissionPlans
+			mapTargets: root.mapTargets
 			homeLatitude: root.homeLatitude
 			homeLongitude: root.homeLongitude
 			homeValid: root.homeValid
@@ -216,6 +224,9 @@ Item {
 			}
 			onMissionItemClicked: function (index) {
 				root.missionItemClicked(index);
+			}
+			onMissionPlanItemClicked: function (droneUid, index) {
+				root.missionPlanItemClicked(droneUid, index);
 			}
 			onMissionItemMoved: function (index, coordinate) {
 				root.missionItemMoved(index, coordinate);

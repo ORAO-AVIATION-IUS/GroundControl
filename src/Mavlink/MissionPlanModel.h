@@ -58,6 +58,7 @@ class MissionPlanModel : public QObject {
 	Q_INVOKABLE void setSelectedOptionEnabled(
 		const QString& fieldName, bool enabled);
 	Q_INVOKABLE void setSelectedFlyThrough(bool flyThrough);
+	Q_INVOKABLE void setSelectedCommand(const QString& command);
 	[[nodiscard]] Q_INVOKABLE QString validateForUpload() const;
 	[[nodiscard]] Q_INVOKABLE QString distanceText() const;
 

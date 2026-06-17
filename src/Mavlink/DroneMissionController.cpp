@@ -18,6 +18,10 @@ constexpr double kMinLatitudeDeg = -90.0;
 constexpr double kMaxLatitudeDeg = 90.0;
 constexpr double kMinLongitudeDeg = -180.0;
 constexpr double kMaxLongitudeDeg = 180.0;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+constexpr char kCommandTakeoff[] = "takeoff";
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+constexpr char kCommandLand[] = "land";
 
 QString missionResultString(mavsdk::Mission::Result result) {
 	return QString::fromStdString(std::string(to_string(result)));
@@ -48,10 +52,71 @@ QVariantList missionPlanToVariantList(
 		item.insert("heading",
 			std::isnan(missionItem.yaw_deg) ? 0.0F : missionItem.yaw_deg);
 		item.insert("headingEnabled", !std::isnan(missionItem.yaw_deg));
+		if (missionItem.vehicle_action ==
+			mavsdk::Mission::MissionItem::VehicleAction::Takeoff) {
+			item.insert("command", QString::fromLatin1(kCommandTakeoff));
+		} else if (missionItem.vehicle_action ==
+			mavsdk::Mission::MissionItem::VehicleAction::Land) {
+			item.insert("command", QString::fromLatin1(kCommandLand));
+		} else {
+			item.insert("command", "waypoint");
+		}
+		item.insert("altitudeReference", "relative");
 		missionItems.push_back(item);
 	}
 	return missionItems;
 }
+
+[[nodiscard]] bool missionItemFromVariant(const QVariantMap& item,
+	mavsdk::Mission::MissionItem& missionItem, QString& errorMessage) {
+	const double latitude = item.value("latitude").toDouble();
+	const double longitude = item.value("longitude").toDouble();
+	if (latitude < kMinLatitudeDeg || latitude > kMaxLatitudeDeg ||
+		longitude < kMinLongitudeDeg || longitude > kMaxLongitudeDeg) {
+		errorMessage =
+			QStringLiteral("Cannot upload mission: invalid waypoint");
+		return false;
+	}
+
+	missionItem.latitude_deg = latitude;
+	missionItem.longitude_deg = longitude;
+	missionItem.relative_altitude_m = static_cast<float>(
+		item.value("altitude", kDefaultMissionAltitudeM).toDouble());
+	if (item.value("speedEnabled", false).toBool()) {
+		missionItem.speed_m_s = static_cast<float>(
+			item.value("speed", kDefaultMissionSpeedMS).toDouble());
+	}
+	if (item.value("acceptanceRadiusEnabled", false).toBool()) {
+		missionItem.acceptance_radius_m = static_cast<float>(
+			item.value("acceptanceRadius", kDefaultAcceptanceRadiusM)
+				.toDouble());
+	}
+	missionItem.is_fly_through = item.value("flyThrough", true).toBool();
+	if (item.value("loiterEnabled", false).toBool()) {
+		missionItem.loiter_time_s =
+			static_cast<float>(item.value("loiter", 0.0).toDouble());
+	}
+	if (item.value("headingEnabled", false).toBool()) {
+		missionItem.yaw_deg =
+			static_cast<float>(item.value("heading", 0.0).toDouble());
+	}
+	missionItem.camera_action =
+		mavsdk::Mission::MissionItem::CameraAction::None;
+	const QString command =
+		item.value("command", "waypoint").toString().trimmed().toLower();
+	if (command == kCommandTakeoff) {
+		missionItem.vehicle_action =
+			mavsdk::Mission::MissionItem::VehicleAction::Takeoff;
+	} else if (command == kCommandLand) {
+		missionItem.vehicle_action =
+			mavsdk::Mission::MissionItem::VehicleAction::Land;
+	} else {
+		missionItem.vehicle_action =
+			mavsdk::Mission::MissionItem::VehicleAction::None;
+	}
+	return true;
+}
+
 }  // namespace
 
 DroneMissionController::DroneMissionController(
@@ -129,10 +194,11 @@ bool DroneMissionController::missionDirty(
 
 void DroneMissionController::uploadMission(const QVariantList& missionItems,
 	bool returnToLaunchAfterMission, const QString& planSignature) {
-	beginOperation("upload", "UPLOADING", planSignature);
+	const int operationId =
+		beginOperation(Operation::Upload, "UPLOADING", planSignature);
 	if (!m_mission) {
 		const QString message = "Cannot upload mission: not connected";
-		setError(message);
+		setError(Operation::Upload, operationId, message);
 		emit logMessage(m_droneName, message, "warning");
 		emit missionUploadFinished(false, message);
 		return;
@@ -140,7 +206,7 @@ void DroneMissionController::uploadMission(const QVariantList& missionItems,
 	if (missionItems.size() < 2) {
 		const QString message =
 			"Cannot upload mission: add at least 2 waypoints";
-		setError(message);
+		setError(Operation::Upload, operationId, message);
 		emit logMessage(m_droneName, message, "warning");
 		emit missionUploadFinished(false, message);
 		return;
@@ -149,87 +215,74 @@ void DroneMissionController::uploadMission(const QVariantList& missionItems,
 	mavsdk::Mission::MissionPlan plan;
 	plan.mission_items.reserve(static_cast<size_t>(missionItems.size()));
 	for (const QVariant& value : missionItems) {
-		const QVariantMap item = value.toMap();
-		const double latitude = item.value("latitude").toDouble();
-		const double longitude = item.value("longitude").toDouble();
-		if (latitude < kMinLatitudeDeg || latitude > kMaxLatitudeDeg ||
-			longitude < kMinLongitudeDeg || longitude > kMaxLongitudeDeg) {
-			const QString message = "Cannot upload mission: invalid waypoint";
-			setError(message);
+		mavsdk::Mission::MissionItem missionItem{};
+		QString message;
+		if (!missionItemFromVariant(value.toMap(), missionItem, message)) {
+			setError(Operation::Upload, operationId, message);
 			emit logMessage(m_droneName, message, "warning");
 			emit missionUploadFinished(false, message);
 			return;
 		}
-
-		mavsdk::Mission::MissionItem missionItem{};
-		missionItem.latitude_deg = latitude;
-		missionItem.longitude_deg = longitude;
-		missionItem.relative_altitude_m = static_cast<float>(
-			item.value("altitude", kDefaultMissionAltitudeM).toDouble());
-		if (item.value("speedEnabled", false).toBool()) {
-			missionItem.speed_m_s = static_cast<float>(
-				item.value("speed", kDefaultMissionSpeedMS).toDouble());
-		}
-		if (item.value("acceptanceRadiusEnabled", false).toBool()) {
-			missionItem.acceptance_radius_m = static_cast<float>(
-				item.value("acceptanceRadius", kDefaultAcceptanceRadiusM)
-					.toDouble());
-		}
-		missionItem.is_fly_through = item.value("flyThrough", true).toBool();
-		if (item.value("loiterEnabled", false).toBool()) {
-			missionItem.loiter_time_s =
-				static_cast<float>(item.value("loiter", 0.0).toDouble());
-		}
-		if (item.value("headingEnabled", false).toBool()) {
-			missionItem.yaw_deg =
-				static_cast<float>(item.value("heading", 0.0).toDouble());
-		}
-		missionItem.camera_action =
-			mavsdk::Mission::MissionItem::CameraAction::None;
-		missionItem.vehicle_action =
-			mavsdk::Mission::MissionItem::VehicleAction::None;
 		plan.mission_items.push_back(missionItem);
 	}
 
 	m_mission->set_return_to_launch_after_mission(returnToLaunchAfterMission);
 	m_mission->upload_mission_async(
-		plan, [this](mavsdk::Mission::Result result) {
-			onThread([this, result]() {
-				if (result == mavsdk::Mission::Result::Success) {
-					finishOperation("upload", true, "Mission uploaded");
-					emit logMessage(m_droneName, "Mission uploaded", "info");
-					emit missionUploadFinished(true, "Mission uploaded");
-				} else {
-					const QString message =
-						QString("Mission upload failed: %1")
-							.arg(missionResultString(result));
-					finishOperation("upload", false, message);
-					emit logMessage(m_droneName, message, "error");
-					emit missionUploadFinished(false, message);
-				}
+		plan, [this, operationId](mavsdk::Mission::Result result) {
+			onThread([this, operationId, result]() {
+				handleUploadResult(operationId, result);
 			});
 		});
 }
 
+void DroneMissionController::handleUploadResult(
+	int operationId, mavsdk::Mission::Result result) {
+	if (result == mavsdk::Mission::Result::Success) {
+		const QString message = "Mission uploaded";
+		if (!finishOperation(Operation::Upload, operationId, true, message)) {
+			return;
+		}
+		emit logMessage(m_droneName, message, "info");
+		emit missionUploadFinished(true, message);
+		return;
+	}
+
+	const QString message =
+		QString("Mission upload failed: %1").arg(missionResultString(result));
+	if (!finishOperation(Operation::Upload, operationId, false, message)) {
+		return;
+	}
+	emit logMessage(m_droneName, message, "error");
+	emit missionUploadFinished(false, message);
+}
+
 void DroneMissionController::startMission() {
-	beginOperation("start", "STARTING");
+	const int operationId = beginOperation(Operation::Start, "STARTING");
 	if (!m_mission) {
 		const QString message = "Cannot start mission: not connected";
-		setError(message);
+		setError(Operation::Start, operationId, message);
 		emit logMessage(m_droneName, message, "warning");
 		emit missionStartFinished(false, message);
 		return;
 	}
-	m_mission->start_mission_async([this](mavsdk::Mission::Result result) {
-		onThread([this, result]() {
+	m_mission->start_mission_async([this, operationId](
+									   mavsdk::Mission::Result result) {
+		onThread([this, operationId, result]() {
 			if (result == mavsdk::Mission::Result::Success) {
-				finishOperation("start", true, "Mission started");
-				emit logMessage(m_droneName, "Mission started", "info");
-				emit missionStartFinished(true, "Mission started");
+				const QString message = "Mission started";
+				if (!finishOperation(
+						Operation::Start, operationId, true, message)) {
+					return;
+				}
+				emit logMessage(m_droneName, message, "info");
+				emit missionStartFinished(true, message);
 			} else {
 				const QString message = QString("Mission start failed: %1")
 											.arg(missionResultString(result));
-				finishOperation("start", false, message);
+				if (!finishOperation(
+						Operation::Start, operationId, false, message)) {
+					return;
+				}
 				emit logMessage(m_droneName, message, "error");
 				emit missionStartFinished(false, message);
 			}
@@ -238,24 +291,32 @@ void DroneMissionController::startMission() {
 }
 
 void DroneMissionController::pauseMission() {
-	beginOperation("pause", "PAUSING");
+	const int operationId = beginOperation(Operation::Pause, "PAUSING");
 	if (!m_mission) {
 		const QString message = "Cannot pause mission: not connected";
-		setError(message);
+		setError(Operation::Pause, operationId, message);
 		emit logMessage(m_droneName, message, "warning");
 		emit missionPauseFinished(false, message);
 		return;
 	}
-	m_mission->pause_mission_async([this](mavsdk::Mission::Result result) {
-		onThread([this, result]() {
+	m_mission->pause_mission_async([this, operationId](
+									   mavsdk::Mission::Result result) {
+		onThread([this, operationId, result]() {
 			if (result == mavsdk::Mission::Result::Success) {
-				finishOperation("pause", true, "Mission paused");
-				emit logMessage(m_droneName, "Mission paused", "info");
-				emit missionPauseFinished(true, "Mission paused");
+				const QString message = "Mission paused";
+				if (!finishOperation(
+						Operation::Pause, operationId, true, message)) {
+					return;
+				}
+				emit logMessage(m_droneName, message, "info");
+				emit missionPauseFinished(true, message);
 			} else {
 				const QString message = QString("Mission pause failed: %1")
 											.arg(missionResultString(result));
-				finishOperation("pause", false, message);
+				if (!finishOperation(
+						Operation::Pause, operationId, false, message)) {
+					return;
+				}
 				emit logMessage(m_droneName, message, "error");
 				emit missionPauseFinished(false, message);
 			}
@@ -264,25 +325,33 @@ void DroneMissionController::pauseMission() {
 }
 
 void DroneMissionController::clearMission() {
-	beginOperation("clear", "CLEARING");
+	const int operationId = beginOperation(Operation::Clear, "CLEARING");
 	if (!m_mission) {
 		const QString message = "Cannot clear mission: not connected";
-		setError(message);
+		setError(Operation::Clear, operationId, message);
 		emit logMessage(m_droneName, message, "warning");
 		emit missionClearFinished(false, message);
 		return;
 	}
-	m_mission->clear_mission_async([this](mavsdk::Mission::Result result) {
-		onThread([this, result]() {
+	m_mission->clear_mission_async([this, operationId](
+									   mavsdk::Mission::Result result) {
+		onThread([this, operationId, result]() {
 			if (result == mavsdk::Mission::Result::Success) {
-				finishOperation("clear", true, "Mission cleared");
+				const QString message = "Mission cleared";
+				if (!finishOperation(
+						Operation::Clear, operationId, true, message)) {
+					return;
+				}
 				emit missionProgressChanged(0, 0);
-				emit logMessage(m_droneName, "Mission cleared", "info");
-				emit missionClearFinished(true, "Mission cleared");
+				emit logMessage(m_droneName, message, "info");
+				emit missionClearFinished(true, message);
 			} else {
 				const QString message = QString("Mission clear failed: %1")
 											.arg(missionResultString(result));
-				finishOperation("clear", false, message);
+				if (!finishOperation(
+						Operation::Clear, operationId, false, message)) {
+					return;
+				}
 				emit logMessage(m_droneName, message, "error");
 				emit missionClearFinished(false, message);
 			}
@@ -291,20 +360,20 @@ void DroneMissionController::clearMission() {
 }
 
 void DroneMissionController::downloadMission() {
-	beginOperation("download", "DOWNLOADING");
+	const int operationId = beginOperation(Operation::Download, "DOWNLOADING");
 	if (!m_mission) {
 		const QString message = "Cannot download mission: not connected";
-		setError(message);
+		setError(Operation::Download, operationId, message);
 		emit logMessage(m_droneName, message, "warning");
 		emit missionDownloadFinished(false, message, {}, false);
 		return;
 	}
 	m_mission->download_mission_async(
-		[this](mavsdk::Mission::Result result,
+		[this, operationId](mavsdk::Mission::Result result,
 			const mavsdk::Mission::MissionPlan& plan) {
 			auto returnToLaunch =
 				m_mission->get_return_to_launch_after_mission();
-			onThread([this, result, plan, returnToLaunch]() {
+			onThread([this, operationId, result, plan, returnToLaunch]() {
 				if (result == mavsdk::Mission::Result::Success) {
 					const QVariantList missionItems =
 						missionPlanToVariantList(plan);
@@ -312,17 +381,27 @@ void DroneMissionController::downloadMission() {
 						returnToLaunch.first == mavsdk::Mission::Result::Success
 						? returnToLaunch.second
 						: false;
-					m_uploadedPlanSignature =
+					if (!isCurrentOperation(Operation::Download, operationId)) {
+						return;
+					}
+					m_pendingPlanSignature =
 						missionSignatureFor(missionItems, rtl);
-					finishOperation("download", true, "Mission downloaded");
-					emit logMessage(m_droneName, "Mission downloaded", "info");
+					const QString message = "Mission downloaded";
+					if (!finishOperation(
+							Operation::Download, operationId, true, message)) {
+						return;
+					}
+					emit logMessage(m_droneName, message, "info");
 					emit missionDownloadFinished(
-						true, "Mission downloaded", missionItems, rtl);
+						true, message, missionItems, rtl);
 				} else {
 					const QString message =
 						QString("Mission download failed: %1")
 							.arg(missionResultString(result));
-					finishOperation("download", false, message);
+					if (!finishOperation(
+							Operation::Download, operationId, false, message)) {
+						return;
+					}
 					emit logMessage(m_droneName, message, "error");
 					emit missionDownloadFinished(false, message, {}, false);
 				}
@@ -335,37 +414,41 @@ void DroneMissionController::onThread(T&& fn) {
 	QMetaObject::invokeMethod(this, std::forward<T>(fn), Qt::QueuedConnection);
 }
 
-void DroneMissionController::beginOperation(const QString& operation,
+int DroneMissionController::beginOperation(Operation operation,
 	const QString& busyText, const QString& pendingSignature) {
 	m_missionBusy = true;
 	m_missionBusyText = busyText;
-	m_busyOperation = operation;
+	m_activeOperation = operation;
+	m_activeOperationId = ++m_operationSequence;
 	m_pendingPlanSignature = pendingSignature;
 	m_missionErrorText.clear();
 	emit missionStateChanged();
+	return m_activeOperationId;
 }
 
-void DroneMissionController::finishOperation(
-	const QString& operation, bool success, const QString& message) {
-	if (m_busyOperation != operation) {
-		return;
+bool DroneMissionController::finishOperation(Operation operation,
+	int operationId, bool success, const QString& message) {
+	if (!isCurrentOperation(operation, operationId)) {
+		return false;
 	}
 	m_missionBusy = false;
 	m_missionBusyText.clear();
-	m_busyOperation.clear();
+	m_activeOperation = Operation::None;
+	m_activeOperationId = 0;
 	if (success) {
 		m_missionErrorText.clear();
-		if (operation == "upload") {
+		if (operation == Operation::Upload ||
+			operation == Operation::Download) {
 			m_uploadedPlanSignature = m_pendingPlanSignature;
 			m_missionRunning = false;
 			m_missionPaused = false;
-		} else if (operation == "start") {
+		} else if (operation == Operation::Start) {
 			m_missionRunning = true;
 			m_missionPaused = false;
-		} else if (operation == "pause") {
+		} else if (operation == Operation::Pause) {
 			m_missionRunning = false;
 			m_missionPaused = true;
-		} else if (operation == "clear") {
+		} else if (operation == Operation::Clear) {
 			resetMissionState();
 		}
 	} else {
@@ -373,15 +456,26 @@ void DroneMissionController::finishOperation(
 	}
 	m_pendingPlanSignature.clear();
 	emit missionStateChanged();
+	return true;
 }
 
-void DroneMissionController::setError(const QString& message) {
+void DroneMissionController::setError(
+	Operation operation, int operationId, const QString& message) {
+	if (!isCurrentOperation(operation, operationId)) {
+		return;
+	}
 	m_missionBusy = false;
 	m_missionBusyText.clear();
-	m_busyOperation.clear();
+	m_activeOperation = Operation::None;
+	m_activeOperationId = 0;
 	m_pendingPlanSignature.clear();
 	m_missionErrorText = message;
 	emit missionStateChanged();
+}
+
+bool DroneMissionController::isCurrentOperation(
+	Operation operation, int operationId) const {
+	return m_activeOperation == operation && m_activeOperationId == operationId;
 }
 
 void DroneMissionController::resetMissionState() {

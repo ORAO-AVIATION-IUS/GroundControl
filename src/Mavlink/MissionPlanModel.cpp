@@ -19,6 +19,12 @@ constexpr double kHalf = 0.5;
 constexpr int kLatitudeMaxDegrees = 90;
 constexpr int kLongitudeMaxDegrees = 180;
 constexpr int kRequiredUploadWaypoints = 2;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+constexpr char kCommandWaypoint[] = "waypoint";
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+constexpr char kCommandTakeoff[] = "takeoff";
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+constexpr char kCommandLand[] = "land";
 
 [[nodiscard]] double valueFromItem(
 	const QVariant& item, const QString& key, double fallback) {
@@ -230,6 +236,17 @@ void MissionPlanModel::setSelectedFlyThrough(bool flyThrough) {
 	replaceSelectedItem(update);
 }
 
+void MissionPlanModel::setSelectedCommand(const QString& command) {
+	const QString normalized = command.trimmed().toLower();
+	if (normalized != kCommandWaypoint && normalized != kCommandTakeoff &&
+		normalized != kCommandLand) {
+		return;
+	}
+	QVariantMap update;
+	update.insert("command", normalized);
+	replaceSelectedItem(update);
+}
+
 QString MissionPlanModel::validateForUpload() const {
 	if (m_items.size() < kRequiredUploadWaypoints) {
 		return tr("Add at least 2 waypoints");
@@ -254,6 +271,14 @@ QString MissionPlanModel::validateForUpload() const {
 				kMinimumAcceptanceRadiusMeters) {
 			return tr("Waypoint %1 acceptance radius is invalid").arg(i + 1);
 		}
+		const QString command =
+			item.value("command", QString::fromLatin1(kCommandWaypoint))
+				.toString()
+				.toLower();
+		if (command != kCommandWaypoint && command != kCommandTakeoff &&
+			command != kCommandLand) {
+			return tr("Waypoint %1 command is unsupported").arg(i + 1);
+		}
 	}
 	return {};
 }
@@ -268,7 +293,9 @@ QString MissionPlanModel::distanceText() const {
 QVariantMap MissionPlanModel::waypointFromCoordinate(
 	double latitude, double longitude, double altitude, double speed) {
 	return {{"latitude", latitude}, {"longitude", longitude},
-		{"altitude", altitude}, {"speed", speed}, {"speedEnabled", false},
+		{"altitude", altitude}, {"altitudeReference", "relative"},
+		{"command", QString::fromLatin1(kCommandWaypoint)}, {"speed", speed},
+		{"speedEnabled", false},
 		{"acceptanceRadius", kMinimumAcceptanceRadiusMeters},
 		{"acceptanceRadiusEnabled", false}, {"flyThrough", true},
 		{"loiter", 0.0}, {"loiterEnabled", false}, {"heading", 0.0},

@@ -411,6 +411,257 @@ QtObject {
 		], revision);
 	}
 
+	function multiMissionPathGeoJson(plans, revision) {
+		void revision;
+		const features = [];
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			const items = plan && plan.items ? plan.items : [];
+			if (items.length < 2)
+				continue;
+			const coords = [];
+			for (let i = 0; i < items.length; ++i) {
+				if (!items[i])
+					continue;
+				coords.push([items[i].longitude, items[i].latitude]);
+			}
+			if (coords.length < 2)
+				continue;
+			features.push({
+				"type": "Feature",
+				"properties": {
+					"droneUid": plan.droneUid || -1,
+					"color": plan.color || "#ff9d00",
+					"opacity": plan.selected ? 0.92 : 0.36,
+					"width": plan.selected ? 4 : 2.4
+				},
+				"geometry": {
+					"type": "LineString",
+					"coordinates": coords
+				}
+			});
+		}
+		return featureCollection(features);
+	}
+
+	function multiMissionWaypointGeoJson(plans, mapMode, revision) {
+		void revision;
+		const flyMode = mapMode === 2;
+		const features = [];
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			const items = plan && plan.items ? plan.items : [];
+			const planSelected = plan && plan.selected === true;
+			for (let i = 0; i < items.length; ++i) {
+				const item = items[i];
+				if (!item)
+					continue;
+				const selected = planSelected && !flyMode && i === plan.selectedIndex;
+				const current = plan.currentIndex > 0 && i === plan.currentIndex - 1;
+				features.push({
+					"type": "Feature",
+					"properties": {
+						"droneUid": plan.droneUid || -1,
+						"index": i,
+						"label": String(i + 1),
+						"selectedPlan": planSelected,
+						"selected": selected,
+						"current": current,
+						"fill": current ? "#ffaa00" : (selected ? "#ffaa00" : (plan.color || "#00d0ff")),
+						"radius": planSelected ? (flyMode ? (current ? 5 : 3.5) : (selected ? 8 : 6)) : 4,
+						"strokeWidth": planSelected ? (flyMode ? 1.5 : (selected ? 3 : 2)) : 1,
+						"opacity": planSelected ? (flyMode ? 0.78 : 0.95) : 0.46
+					},
+					"geometry": {
+						"type": "Point",
+						"coordinates": [item.longitude, item.latitude]
+					}
+				});
+			}
+		}
+		return featureCollection(features);
+	}
+
+	function multiMissionInsertHandleGeoJson(plans, visible, revision) {
+		void revision;
+		if (!visible)
+			return emptyFeatureCollection;
+		const features = [];
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			if (!plan || plan.selected !== true)
+				continue;
+			const items = plan.items || [];
+			if (items.length < 2)
+				continue;
+			for (let i = 0; i < items.length - 1; ++i) {
+				const aItem = items[i];
+				const bItem = items[i + 1];
+				if (!aItem || !bItem)
+					continue;
+				const a = QtPositioning.coordinate(aItem.latitude, aItem.longitude);
+				const b = QtPositioning.coordinate(bItem.latitude, bItem.longitude);
+				const mid = a.atDistanceAndAzimuth(a.distanceTo(b) * 0.5, a.azimuthTo(b));
+				features.push({
+					"type": "Feature",
+					"properties": {
+						"droneUid": plan.droneUid || -1,
+						"segmentIndex": i,
+						"label": "+",
+						"color": plan.color || "#ff9d00"
+					},
+					"geometry": {
+						"type": "Point",
+						"coordinates": [mid.longitude, mid.latitude]
+					}
+				});
+			}
+		}
+		return featureCollection(features);
+	}
+
+	function multiMissionWaypointExtrusionGeoJson(plans, revision) {
+		void revision;
+		const features = [];
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			const items = plan && plan.items ? plan.items : [];
+			for (let i = 0; i < items.length; ++i) {
+				const item = items[i];
+				if (!item)
+					continue;
+				const c = QtPositioning.coordinate(item.latitude, item.longitude);
+				const alt = Math.max(0, item.altitude || 0);
+				features.push(polygonFeature(circleRing(c, 3.5, 18), {
+					"base": Math.max(0, alt - 1.5),
+					"height": alt + 1.5,
+					"color": plan.color || "#ffb000",
+					"opacity": plan.selected ? 0.95 : 0.38
+				}));
+			}
+		}
+		return featureCollection(features);
+	}
+
+	function multiMissionTetherGeoJson(plans, revision) {
+		void revision;
+		const features = [];
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			const items = plan && plan.items ? plan.items : [];
+			for (let i = 0; i < items.length; ++i) {
+				const item = items[i];
+				if (!item || (item.altitude || 0) <= 0)
+					continue;
+				const c = QtPositioning.coordinate(item.latitude, item.longitude);
+				features.push(polygonFeature(circleRing(c, 1.1, 10), {
+					"base": 0,
+					"height": item.altitude,
+					"color": plan.color || "#8fe8ff",
+					"opacity": plan.selected ? 0.55 : 0.22
+				}));
+			}
+		}
+		return featureCollection(features);
+	}
+
+	function multiMissionSegmentExtrusionGeoJson(plans, revision) {
+		void revision;
+		const features = [];
+		const dashLengthM = 4;
+		const gapLengthM = 9;
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			const items = plan && plan.items ? plan.items : [];
+			for (let i = 1; i < items.length; ++i) {
+				const aItem = items[i - 1];
+				const bItem = items[i];
+				if (!aItem || !bItem)
+					continue;
+				const a = QtPositioning.coordinate(aItem.latitude, aItem.longitude);
+				const b = QtPositioning.coordinate(bItem.latitude, bItem.longitude);
+				const distance = a.distanceTo(b);
+				if (distance <= 0.1)
+					continue;
+				const bearing = a.azimuthTo(b);
+				const aAlt = Math.max(0, aItem.altitude || 0);
+				const bAlt = Math.max(0, bItem.altitude || 0);
+				for (let startM = 0; startM < distance; startM += dashLengthM + gapLengthM) {
+					const endM = Math.min(startM + dashLengthM, distance);
+					if (endM - startM < 1)
+						continue;
+					const start = a.atDistanceAndAzimuth(startM, bearing);
+					const end = a.atDistanceAndAzimuth(endM, bearing);
+					const ring = segmentRect(start, end, 0.9);
+					if (ring.length === 0)
+						continue;
+					const midT = ((startM + endM) * 0.5) / distance;
+					const alt = aAlt + (bAlt - aAlt) * midT;
+					features.push(polygonFeature(ring, {
+						"base": Math.max(0, alt - 0.35),
+						"height": alt + 0.35,
+						"color": plan.color || "#ff9d00",
+						"opacity": plan.selected ? 0.92 : 0.32
+					}));
+				}
+			}
+		}
+		return featureCollection(features);
+	}
+
+	function multiReturnHomePathGeoJson(plans, revision) {
+		void revision;
+		const features = [];
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			const items = plan && plan.items ? plan.items : [];
+			if (!plan || !plan.returnHomeAfterMission || !plan.homeValid || items.length < 1)
+				continue;
+			const last = items[items.length - 1];
+			if (!last)
+				continue;
+			features.push({
+				"type": "Feature",
+				"properties": {
+					"droneUid": plan.droneUid || -1,
+					"color": plan.color || "#ff9d00",
+					"opacity": plan.selected ? 0.82 : 0.26,
+					"width": plan.selected ? 4 : 2
+				},
+				"geometry": {
+					"type": "LineString",
+					"coordinates": [[last.longitude, last.latitude], [plan.homeLongitude, plan.homeLatitude]]
+				}
+			});
+		}
+		return featureCollection(features);
+	}
+
+	function multiReturnHomeSegmentExtrusionGeoJson(plans, revision) {
+		const convertedPlans = [];
+		for (let p = 0; p < (plans || []).length; ++p) {
+			const plan = plans[p];
+			const items = plan && plan.items ? plan.items : [];
+			if (!plan || !plan.returnHomeAfterMission || !plan.homeValid || items.length < 1)
+				continue;
+			const last = items[items.length - 1];
+			if (!last)
+				continue;
+			convertedPlans.push({
+				"selected": plan.selected,
+				"color": plan.color,
+				"items": [last,
+					{
+						"latitude": plan.homeLatitude,
+						"longitude": plan.homeLongitude,
+						"altitude": 0
+					}
+				]
+			});
+		}
+		return multiMissionSegmentExtrusionGeoJson(convertedPlans, revision);
+	}
+
 	function flyTargetGeoJson(valid, latitude, longitude) {
 		if (!valid)
 			return emptyFeatureCollection;
@@ -463,6 +714,39 @@ QtObject {
 			"base": Math.max(0, alt - 0.5),
 			"height": alt + 0.5
 		}));
+		return featureCollection(features);
+	}
+
+	function mapTargetGeoJson(targets, revision) {
+		void revision;
+		const features = [];
+		for (let i = 0; i < (targets || []).length; ++i) {
+			const target = targets[i];
+			if (!target || target.valid === false)
+				continue;
+			features.push({
+				"type": "Feature",
+				"properties": {
+					"id": target.id || "",
+					"type": target.type || "",
+					"droneUid": target.droneUid || -1,
+					"missionItemIndex": target.missionItemIndex === undefined ? -1 : target.missionItemIndex,
+					"segmentIndex": target.segmentIndex === undefined ? -1 : target.segmentIndex,
+					"selected": target.selected === true,
+					"editable": target.editable === true,
+					"draggable": target.draggable === true,
+					"fill": target.fill || "#00d0ff",
+					"radius": target.radius || 6,
+					"stroke": target.stroke || "#ffffff",
+					"strokeWidth": target.strokeWidth || 2,
+					"opacity": target.opacity === undefined ? 0.95 : target.opacity
+				},
+				"geometry": {
+					"type": "Point",
+					"coordinates": [target.longitude, target.latitude]
+				}
+			});
+		}
 		return featureCollection(features);
 	}
 

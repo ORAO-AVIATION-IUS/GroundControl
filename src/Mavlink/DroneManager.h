@@ -13,6 +13,7 @@
 
 #include <memory>
 
+#include "GuidedTargetModel.h"
 #include "MissionPlanModel.h"
 
 namespace mavsdk {
@@ -71,6 +72,7 @@ class DroneManager : public QObject {
 	Q_PROPERTY(int ping READ ping NOTIFY pingChanged)
 	Q_PROPERTY(double cpuLoad READ cpuLoad NOTIFY cpuLoadChanged)
 	Q_PROPERTY(MissionPlanModel* missionPlan READ missionPlan CONSTANT)
+	Q_PROPERTY(GuidedTargetModel* guided READ guided CONSTANT)
 	Q_PROPERTY(bool missionBusy READ missionBusy NOTIFY missionStateChanged)
 	Q_PROPERTY(
 		QString missionBusyText READ missionBusyText NOTIFY missionStateChanged)
@@ -143,6 +145,7 @@ class DroneManager : public QObject {
 	[[nodiscard]] int ping() const;
 	[[nodiscard]] double cpuLoad() const;
 	[[nodiscard]] MissionPlanModel* missionPlan() const;
+	[[nodiscard]] GuidedTargetModel* guided() const;
 	[[nodiscard]] bool missionBusy() const;
 	[[nodiscard]] QString missionBusyText() const;
 	[[nodiscard]] bool missionRunning() const;
@@ -222,7 +225,23 @@ class DroneManager : public QObject {
 
    private:
 	void setupTelemetry();
+	void configureTelemetryRates();
+	void setupPositionTelemetry();
+	void setupAttitudeTelemetry();
+	void setupVehicleStateTelemetry();
+	void setupHealthTelemetry();
+	void setupMotionTelemetry();
+	void setupHomeTelemetry();
+	void initializeTelemetrySnapshot();
+	void setupConnectionTelemetry();
 	void teardownTelemetry();
+	void teardownPositionTelemetry();
+	void teardownAttitudeTelemetry();
+	void teardownVehicleStateTelemetry();
+	void teardownHealthTelemetry();
+	void teardownMotionTelemetry();
+	void teardownHomeTelemetry();
+	void teardownConnectionTelemetry();
 	void updateReadyToFly();
 
 	template <typename T>
@@ -232,6 +251,10 @@ class DroneManager : public QObject {
 	void updateAndEmit(
 		M& member, const V& value, void (DroneManager::*signal)());
 
+	[[nodiscard]] int beginGuidedOperation();
+	[[nodiscard]] bool isCurrentGuidedOperation(int operationId) const;
+	[[nodiscard]] int beginSetHomeOperation();
+	[[nodiscard]] bool isCurrentSetHomeOperation(int operationId) const;
 	static QString flightModeToString(mavsdk::Telemetry::FlightMode mode);
 
 	int m_uid;
@@ -243,6 +266,7 @@ class DroneManager : public QObject {
 	std::unique_ptr<mavsdk::Telemetry> m_telemetry;
 	std::unique_ptr<mavsdk::Action> m_action;
 	std::unique_ptr<MissionPlanModel> m_missionPlan;
+	std::unique_ptr<GuidedTargetModel> m_guidedTargetModel;
 	std::unique_ptr<DroneMissionController> m_missionController;
 	std::unique_ptr<mavsdk::MavlinkPassthrough> m_mavlinkPassthrough;
 
@@ -282,6 +306,10 @@ class DroneManager : public QObject {
 
 	int m_ping{0};
 	double m_cpuLoad{0.0};
+
+	int m_guidedOperationSequence{0};
+	int m_activeGuidedOperationId{0};
+	int m_activeSetHomeOperationId{0};
 
 	mavsdk::Telemetry::PositionHandle m_positionHandle;
 	mavsdk::Telemetry::AttitudeEulerHandle m_attitudeEulerHandle;

@@ -1,6 +1,7 @@
 #include "DroneManager.h"
 
 #include "DroneMissionController.h"
+#include "GuidedTargetModel.h"
 #include "MissionPlanModel.h"
 
 #include <cmath>
@@ -31,6 +32,7 @@ DroneManager::DroneManager(int uid, QString name, QString url, QObject* parent)
 	  m_name(std::move(name)),
 	  m_connectionUrl(std::move(url)),
 	  m_missionPlan(std::make_unique<MissionPlanModel>(this)),
+	  m_guidedTargetModel(std::make_unique<GuidedTargetModel>(this)),
 	  m_missionController(
 		  std::make_unique<DroneMissionController>(m_name, this)) {
 	connect(m_missionController.get(), &DroneMissionController::logMessage,
@@ -273,6 +275,10 @@ MissionPlanModel* DroneManager::missionPlan() const {
 	return m_missionPlan.get();
 }
 
+GuidedTargetModel* DroneManager::guided() const {
+	return m_guidedTargetModel.get();
+}
+
 bool DroneManager::missionBusy() const {
 	return m_missionController->missionBusy();
 }
@@ -413,11 +419,15 @@ void DroneManager::setAltitude(double altitudeMeters) {
 		return;
 	}
 
+	const int operationId = beginGuidedOperation();
 	const double absoluteAlt = m_altitudeMsl + (altitudeMeters - m_altitude);
 	m_action->goto_location_async(m_latitude, m_longitude,
 		static_cast<float>(absoluteAlt), static_cast<float>(m_heading),
-		[this](mavsdk::Action::Result result) {
-			onThread([this, result]() {
+		[this, operationId](mavsdk::Action::Result result) {
+			onThread([this, operationId, result]() {
+				if (!isCurrentGuidedOperation(operationId)) {
+					return;
+				}
 				if (result == mavsdk::Action::Result::Success) {
 					emit logMessage(m_name, "Altitude target sent", "info");
 				} else {
@@ -453,11 +463,15 @@ void DroneManager::goToLocation(double latitude, double longitude,
 
 	const double heading =
 		std::fmod(std::fmod(headingDegrees, 360.0) + 360.0, 360.0);
+	const int operationId = beginGuidedOperation();
 	const double absoluteAlt = m_altitudeMsl + (altitudeMeters - m_altitude);
 	m_action->goto_location_async(latitude, longitude,
 		static_cast<float>(absoluteAlt), static_cast<float>(heading),
-		[this](mavsdk::Action::Result result) {
-			onThread([this, result]() {
+		[this, operationId](mavsdk::Action::Result result) {
+			onThread([this, operationId, result]() {
+				if (!isCurrentGuidedOperation(operationId)) {
+					return;
+				}
 				if (result == mavsdk::Action::Result::Success) {
 					emit logMessage(m_name, "Go Here command sent", "info");
 				} else {
@@ -505,6 +519,8 @@ void DroneManager::setHome(double latitude, double longitude, double altitude) {
 		return;
 	}
 
+	const int operationId = beginSetHomeOperation();
+
 	mavsdk::MavlinkPassthrough::CommandLong command{};
 	command.target_sysid = m_mavlinkPassthrough->get_target_sysid();
 	command.target_compid = m_mavlinkPassthrough->get_target_compid();
@@ -515,6 +531,9 @@ void DroneManager::setHome(double latitude, double longitude, double altitude) {
 	command.param7 = static_cast<float>(altitude);
 
 	const auto result = m_mavlinkPassthrough->send_command_long(command);
+	if (!isCurrentSetHomeOperation(operationId)) {
+		return;
+	}
 	if (result == mavsdk::MavlinkPassthrough::Result::Success) {
 		updateAndEmit(m_homeLatitude, latitude, &DroneManager::homeChanged);
 		updateAndEmit(m_homeLongitude, longitude, &DroneManager::homeChanged);
@@ -531,11 +550,41 @@ void DroneManager::log(
 	emit logMessage(source, message, level);
 }
 
+int DroneManager::beginGuidedOperation() {
+	m_activeGuidedOperationId = ++m_guidedOperationSequence;
+	return m_activeGuidedOperationId;
+}
+
+bool DroneManager::isCurrentGuidedOperation(int operationId) const {
+	return m_activeGuidedOperationId == operationId;
+}
+
+int DroneManager::beginSetHomeOperation() {
+	m_activeSetHomeOperationId = ++m_guidedOperationSequence;
+	return m_activeSetHomeOperationId;
+}
+
+bool DroneManager::isCurrentSetHomeOperation(int operationId) const {
+	return m_activeSetHomeOperationId == operationId;
+}
+
 void DroneManager::setupTelemetry() {
 	if (!m_telemetry || !m_system) {
 		return;
 	}
 
+	configureTelemetryRates();
+	setupPositionTelemetry();
+	setupAttitudeTelemetry();
+	setupVehicleStateTelemetry();
+	setupHealthTelemetry();
+	setupMotionTelemetry();
+	setupHomeTelemetry();
+	initializeTelemetrySnapshot();
+	setupConnectionTelemetry();
+}
+
+void DroneManager::configureTelemetryRates() {
 	m_telemetry->set_rate_position(kRatePosition);
 	m_telemetry->set_rate_attitude_euler(kRateAttitude);
 	m_telemetry->set_rate_battery(kRateBattery);
@@ -546,7 +595,9 @@ void DroneManager::setupTelemetry() {
 	m_telemetry->set_rate_fixedwing_metrics(kRateFixedwingMetrics);
 	m_telemetry->set_rate_in_air(kRateInFlight);
 	m_telemetry->set_rate_home(1.0);
+}
 
+void DroneManager::setupPositionTelemetry() {
 	m_positionHandle = m_telemetry->subscribe_position(
 		[this](mavsdk::Telemetry::Position pos) {
 			onThread([this, pos]() {
@@ -560,7 +611,9 @@ void DroneManager::setupTelemetry() {
 					&DroneManager::altitudeMslChanged);
 			});
 		});
+}
 
+void DroneManager::setupAttitudeTelemetry() {
 	m_attitudeEulerHandle = m_telemetry->subscribe_attitude_euler(
 		[this](mavsdk::Telemetry::EulerAngle euler) {
 			onThread([this, euler]() {
@@ -579,7 +632,9 @@ void DroneManager::setupTelemetry() {
 					m_heading, hdg.heading_deg, &DroneManager::headingChanged);
 			});
 		});
+}
 
+void DroneManager::setupVehicleStateTelemetry() {
 	m_batteryHandle =
 		m_telemetry->subscribe_battery([this](mavsdk::Telemetry::Battery bat) {
 			onThread([this, bat]() {
@@ -618,7 +673,9 @@ void DroneManager::setupTelemetry() {
 					m_flightMode, str, &DroneManager::flightModeChanged);
 			});
 		});
+}
 
+void DroneManager::setupHealthTelemetry() {
 	m_healthHandle =
 		m_telemetry->subscribe_health([this](mavsdk::Telemetry::Health health) {
 			onThread([this, health]() {
@@ -652,7 +709,9 @@ void DroneManager::setupTelemetry() {
 				}
 			});
 		});
+}
 
+void DroneManager::setupMotionTelemetry() {
 	m_velocityNedHandle = m_telemetry->subscribe_velocity_ned(
 		[this](mavsdk::Telemetry::VelocityNed vel) {
 			onThread([this, vel]() {
@@ -680,7 +739,9 @@ void DroneManager::setupTelemetry() {
 				}
 			});
 		});
+}
 
+void DroneManager::setupHomeTelemetry() {
 	m_homeHandle = m_telemetry->subscribe_home(
 		[this](mavsdk::Telemetry::HomePosition home) {
 			onThread([this, home]() {
@@ -697,30 +758,31 @@ void DroneManager::setupTelemetry() {
 				updateAndEmit(m_homeValid, true, &DroneManager::homeChanged);
 			});
 		});
+}
 
-	{
-		bool armed = m_telemetry->armed();
-		bool inAir = m_telemetry->in_air();
-		QString mode = flightModeToString(m_telemetry->flight_mode());
-		auto position = m_telemetry->position();
-		auto hdg = m_telemetry->heading();
+void DroneManager::initializeTelemetrySnapshot() {
+	bool armed = m_telemetry->armed();
+	bool inAir = m_telemetry->in_air();
+	QString mode = flightModeToString(m_telemetry->flight_mode());
+	auto position = m_telemetry->position();
+	auto hdg = m_telemetry->heading();
 
-		updateAndEmit(m_armed, armed, &DroneManager::armedChanged);
-		updateAndEmit(m_inFlight, inAir, &DroneManager::inFlightChanged);
-		updateAndEmit(m_flightMode, mode, &DroneManager::flightModeChanged);
+	updateAndEmit(m_armed, armed, &DroneManager::armedChanged);
+	updateAndEmit(m_inFlight, inAir, &DroneManager::inFlightChanged);
+	updateAndEmit(m_flightMode, mode, &DroneManager::flightModeChanged);
 
-		updateAndEmit(
-			m_latitude, position.latitude_deg, &DroneManager::latitudeChanged);
-		updateAndEmit(m_longitude, position.longitude_deg,
-			&DroneManager::longitudeChanged);
-		updateAndEmit(m_altitude, position.relative_altitude_m,
-			&DroneManager::altitudeChanged);
-		updateAndEmit(m_altitudeMsl, position.absolute_altitude_m,
-			&DroneManager::altitudeMslChanged);
-		updateAndEmit(
-			m_heading, hdg.heading_deg, &DroneManager::headingChanged);
-	}
+	updateAndEmit(
+		m_latitude, position.latitude_deg, &DroneManager::latitudeChanged);
+	updateAndEmit(
+		m_longitude, position.longitude_deg, &DroneManager::longitudeChanged);
+	updateAndEmit(m_altitude, position.relative_altitude_m,
+		&DroneManager::altitudeChanged);
+	updateAndEmit(m_altitudeMsl, position.absolute_altitude_m,
+		&DroneManager::altitudeMslChanged);
+	updateAndEmit(m_heading, hdg.heading_deg, &DroneManager::headingChanged);
+}
 
+void DroneManager::setupConnectionTelemetry() {
 	m_isConnectedHandle = m_system->subscribe_is_connected([this](
 															   bool connected) {
 		onThread([this, connected]() {
@@ -732,57 +794,82 @@ void DroneManager::setupTelemetry() {
 }
 
 void DroneManager::teardownTelemetry() {
-	if (m_telemetry) {
-		if (m_positionHandle.valid()) {
-			m_telemetry->unsubscribe_position(m_positionHandle);
-			m_positionHandle = {};
-		}
-		if (m_attitudeEulerHandle.valid()) {
-			m_telemetry->unsubscribe_attitude_euler(m_attitudeEulerHandle);
-			m_attitudeEulerHandle = {};
-		}
-		if (m_headingHandle.valid()) {
-			m_telemetry->unsubscribe_heading(m_headingHandle);
-			m_headingHandle = {};
-		}
-		if (m_batteryHandle.valid()) {
-			m_telemetry->unsubscribe_battery(m_batteryHandle);
-			m_batteryHandle = {};
-		}
-		if (m_armedHandle.valid()) {
-			m_telemetry->unsubscribe_armed(m_armedHandle);
-			m_armedHandle = {};
-		}
-		if (m_inAirHandle.valid()) {
-			m_telemetry->unsubscribe_in_air(m_inAirHandle);
-			m_inAirHandle = {};
-		}
-		if (m_flightModeHandle.valid()) {
-			m_telemetry->unsubscribe_flight_mode(m_flightModeHandle);
-			m_flightModeHandle = {};
-		}
-		if (m_healthHandle.valid()) {
-			m_telemetry->unsubscribe_health(m_healthHandle);
-			m_healthHandle = {};
-		}
-		if (m_gpsInfoHandle.valid()) {
-			m_telemetry->unsubscribe_gps_info(m_gpsInfoHandle);
-			m_gpsInfoHandle = {};
-		}
-		if (m_velocityNedHandle.valid()) {
-			m_telemetry->unsubscribe_velocity_ned(m_velocityNedHandle);
-			m_velocityNedHandle = {};
-		}
-		if (m_fixedwingMetricsHandle.valid()) {
-			m_telemetry->unsubscribe_fixedwing_metrics(
-				m_fixedwingMetricsHandle);
-			m_fixedwingMetricsHandle = {};
-		}
-		if (m_homeHandle.valid()) {
-			m_telemetry->unsubscribe_home(m_homeHandle);
-			m_homeHandle = {};
-		}
+	teardownPositionTelemetry();
+	teardownAttitudeTelemetry();
+	teardownVehicleStateTelemetry();
+	teardownHealthTelemetry();
+	teardownMotionTelemetry();
+	teardownHomeTelemetry();
+	teardownConnectionTelemetry();
+}
+
+void DroneManager::teardownPositionTelemetry() {
+	if (m_telemetry && m_positionHandle.valid()) {
+		m_telemetry->unsubscribe_position(m_positionHandle);
+		m_positionHandle = {};
 	}
+}
+
+void DroneManager::teardownAttitudeTelemetry() {
+	if (m_telemetry && m_attitudeEulerHandle.valid()) {
+		m_telemetry->unsubscribe_attitude_euler(m_attitudeEulerHandle);
+		m_attitudeEulerHandle = {};
+	}
+	if (m_telemetry && m_headingHandle.valid()) {
+		m_telemetry->unsubscribe_heading(m_headingHandle);
+		m_headingHandle = {};
+	}
+}
+
+void DroneManager::teardownVehicleStateTelemetry() {
+	if (m_telemetry && m_batteryHandle.valid()) {
+		m_telemetry->unsubscribe_battery(m_batteryHandle);
+		m_batteryHandle = {};
+	}
+	if (m_telemetry && m_armedHandle.valid()) {
+		m_telemetry->unsubscribe_armed(m_armedHandle);
+		m_armedHandle = {};
+	}
+	if (m_telemetry && m_inAirHandle.valid()) {
+		m_telemetry->unsubscribe_in_air(m_inAirHandle);
+		m_inAirHandle = {};
+	}
+	if (m_telemetry && m_flightModeHandle.valid()) {
+		m_telemetry->unsubscribe_flight_mode(m_flightModeHandle);
+		m_flightModeHandle = {};
+	}
+}
+
+void DroneManager::teardownHealthTelemetry() {
+	if (m_telemetry && m_healthHandle.valid()) {
+		m_telemetry->unsubscribe_health(m_healthHandle);
+		m_healthHandle = {};
+	}
+	if (m_telemetry && m_gpsInfoHandle.valid()) {
+		m_telemetry->unsubscribe_gps_info(m_gpsInfoHandle);
+		m_gpsInfoHandle = {};
+	}
+}
+
+void DroneManager::teardownMotionTelemetry() {
+	if (m_telemetry && m_velocityNedHandle.valid()) {
+		m_telemetry->unsubscribe_velocity_ned(m_velocityNedHandle);
+		m_velocityNedHandle = {};
+	}
+	if (m_telemetry && m_fixedwingMetricsHandle.valid()) {
+		m_telemetry->unsubscribe_fixedwing_metrics(m_fixedwingMetricsHandle);
+		m_fixedwingMetricsHandle = {};
+	}
+}
+
+void DroneManager::teardownHomeTelemetry() {
+	if (m_telemetry && m_homeHandle.valid()) {
+		m_telemetry->unsubscribe_home(m_homeHandle);
+		m_homeHandle = {};
+	}
+}
+
+void DroneManager::teardownConnectionTelemetry() {
 	if (m_system && m_isConnectedHandle.valid()) {
 		m_system->unsubscribe_is_connected(m_isConnectedHandle);
 		m_isConnectedHandle = {};

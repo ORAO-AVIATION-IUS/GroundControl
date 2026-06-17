@@ -12,6 +12,8 @@ Style {
 	property bool satelliteMode: false
 	property var trackedPaths: []
 	property var missionItems: []
+	property var visibleMissionPlans: []
+	property var mapTargets: []
 	property int mapMode: 0
 	property int selectedMissionItemIndex: -1
 	property int currentMissionItemIndex: 0
@@ -227,7 +229,7 @@ Style {
 	SourceParameter {
 		styleId: "mission-segment-3d-source"
 		type: "geojson"
-		property var data: root.threeD ? geometry.missionSegmentExtrusionGeoJson(root.missionItems, root.missionRevision) : geometry.emptyFeatureCollection
+		property var data: root.threeD ? geometry.multiMissionSegmentExtrusionGeoJson(root.visibleMissionPlans, root.missionRevision) : geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "mission-segment-3d-layer"
@@ -235,17 +237,17 @@ Style {
 		property string source: "mission-segment-3d-source"
 		// qmllint disable incompatible-type
 		paint: ({
-				"fill-extrusion-color": "#ff9d00",
+				"fill-extrusion-color": ["get", "color"],
 				"fill-extrusion-base": ["get", "base"],
 				"fill-extrusion-height": ["get", "height"],
-				"fill-extrusion-opacity": 0.92
+				"fill-extrusion-opacity": ["get", "opacity"]
 			})
 	}
 
 	SourceParameter {
 		styleId: "return-home-3d-source"
 		type: "geojson"
-		property var data: root.threeD ? geometry.returnHomeSegmentExtrusionGeoJson(root.missionItems, root.homeLatitude, root.homeLongitude, root.homeValid, root.returnHomeAfterMission, root.missionRevision) : geometry.emptyFeatureCollection
+		property var data: root.threeD ? geometry.multiReturnHomeSegmentExtrusionGeoJson(root.visibleMissionPlans, root.missionRevision) : geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "return-home-3d-layer"
@@ -253,17 +255,17 @@ Style {
 		property string source: "return-home-3d-source"
 		// qmllint disable incompatible-type
 		paint: ({
-				"fill-extrusion-color": "#ff9d00",
+				"fill-extrusion-color": ["get", "color"],
 				"fill-extrusion-base": ["get", "base"],
 				"fill-extrusion-height": ["get", "height"],
-				"fill-extrusion-opacity": 0.72
+				"fill-extrusion-opacity": ["get", "opacity"]
 			})
 	}
 
 	SourceParameter {
 		styleId: "mission-tether-source"
 		type: "geojson"
-		property var data: root.threeD ? geometry.missionTetherGeoJson(root.missionItems, root.missionRevision) : geometry.emptyFeatureCollection
+		property var data: root.threeD ? geometry.multiMissionTetherGeoJson(root.visibleMissionPlans, root.missionRevision) : geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "mission-tether-layer"
@@ -271,17 +273,17 @@ Style {
 		property string source: "mission-tether-source"
 		// qmllint disable incompatible-type
 		paint: ({
-				"fill-extrusion-color": "#8fe8ff",
+				"fill-extrusion-color": ["get", "color"],
 				"fill-extrusion-base": ["get", "base"],
 				"fill-extrusion-height": ["get", "height"],
-				"fill-extrusion-opacity": 0.55
+				"fill-extrusion-opacity": ["get", "opacity"]
 			})
 	}
 
 	SourceParameter {
 		styleId: "mission-waypoint-3d-source"
 		type: "geojson"
-		property var data: root.threeD ? geometry.missionWaypointExtrusionGeoJson(root.missionItems, root.missionRevision) : geometry.emptyFeatureCollection
+		property var data: root.threeD ? geometry.multiMissionWaypointExtrusionGeoJson(root.visibleMissionPlans, root.missionRevision) : geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "mission-waypoint-3d-layer"
@@ -289,17 +291,17 @@ Style {
 		property string source: "mission-waypoint-3d-source"
 		// qmllint disable incompatible-type
 		paint: ({
-				"fill-extrusion-color": "#ffb000",
+				"fill-extrusion-color": ["get", "color"],
 				"fill-extrusion-base": ["get", "base"],
 				"fill-extrusion-height": ["get", "height"],
-				"fill-extrusion-opacity": 0.95
+				"fill-extrusion-opacity": ["get", "opacity"]
 			})
 	}
 
 	SourceParameter {
 		styleId: "mission-path-source"
 		type: "geojson"
-		property var data: geometry.missionPathGeoJson(root.missionItems, root.missionRevision)
+		property var data: geometry.multiMissionPathGeoJson(root.visibleMissionPlans, root.missionRevision)
 	}
 	LayerParameter {
 		styleId: "mission-path-layer"
@@ -307,9 +309,9 @@ Style {
 		property string source: "mission-path-source"
 		// qmllint disable incompatible-type
 		paint: ({
-				"line-color": "#ff9d00",
-				"line-width": 4,
-				"line-opacity": 0.9,
+				"line-color": ["get", "color"],
+				"line-width": ["get", "width"],
+				"line-opacity": ["get", "opacity"],
 				"line-dasharray": [1.5, 0.8]
 			})
 	}
@@ -317,7 +319,7 @@ Style {
 	SourceParameter {
 		styleId: "mission-insert-source"
 		type: "geojson"
-		property var data: geometry.missionInsertHandleGeoJson(root.missionItems, root.showMissionInsertHandles, root.missionRevision)
+		property var data: geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "mission-insert-layer"
@@ -327,7 +329,7 @@ Style {
 		paint: ({
 				"circle-color": "#ffffff",
 				"circle-radius": 4,
-				"circle-stroke-color": "#ff9d00",
+				"circle-stroke-color": ["get", "color"],
 				"circle-stroke-width": 1.5,
 				"circle-opacity": 0.58
 			})
@@ -336,7 +338,7 @@ Style {
 	SourceParameter {
 		styleId: "mission-waypoint-source"
 		type: "geojson"
-		property var data: geometry.missionWaypointGeoJson(root.missionItems, root.selectedMissionItemIndex, root.currentMissionItemIndex, root.mapMode, root.missionRevision)
+		property var data: geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "mission-waypoint-layer"
@@ -348,14 +350,14 @@ Style {
 				"circle-radius": ["get", "radius"],
 				"circle-stroke-color": "#ffffff",
 				"circle-stroke-width": ["get", "strokeWidth"],
-				"circle-opacity": root.threeD ? 0.55 : 0.95
+				"circle-opacity": ["get", "opacity"]
 			})
 	}
 
 	SourceParameter {
 		styleId: "fly-target-source"
 		type: "geojson"
-		property var data: geometry.flyTargetGeoJson(root.goTargetValid, root.goTargetLatitude, root.goTargetLongitude)
+		property var data: geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "fly-target-layer"
@@ -374,7 +376,7 @@ Style {
 	SourceParameter {
 		styleId: "look-target-source"
 		type: "geojson"
-		property var data: geometry.flyTargetGeoJson(root.lookTargetValid, root.lookTargetLatitude, root.lookTargetLongitude)
+		property var data: geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "look-target-layer"
@@ -393,7 +395,7 @@ Style {
 	SourceParameter {
 		styleId: "return-home-source"
 		type: "geojson"
-		property var data: geometry.returnHomePathGeoJson(root.missionItems, root.homeLatitude, root.homeLongitude, root.homeValid, root.returnHomeAfterMission, root.missionRevision)
+		property var data: geometry.multiReturnHomePathGeoJson(root.visibleMissionPlans, root.missionRevision)
 	}
 	LayerParameter {
 		styleId: "return-home-layer"
@@ -401,9 +403,9 @@ Style {
 		property string source: "return-home-source"
 		// qmllint disable incompatible-type
 		paint: ({
-				"line-color": "#ff9d00",
-				"line-width": 4,
-				"line-opacity": 0.82,
+				"line-color": ["get", "color"],
+				"line-width": ["get", "width"],
+				"line-opacity": ["get", "opacity"],
 				"line-dasharray": [0.8, 1.2]
 			})
 	}
@@ -411,7 +413,7 @@ Style {
 	SourceParameter {
 		styleId: "home-source"
 		type: "geojson"
-		property var data: geometry.homeGeoJson(root.homeLatitude, root.homeLongitude, root.homeValid)
+		property var data: geometry.emptyFeatureCollection
 	}
 	LayerParameter {
 		styleId: "home-layer"
@@ -424,6 +426,24 @@ Style {
 				"circle-stroke-color": "#ffffff",
 				"circle-stroke-width": 2,
 				"circle-opacity": 0.95
+			})
+	}
+	SourceParameter {
+		styleId: "map-target-source"
+		type: "geojson"
+		property var data: geometry.mapTargetGeoJson(root.mapTargets, root.missionRevision)
+	}
+	LayerParameter {
+		styleId: "map-target-layer"
+		type: "circle"
+		property string source: "map-target-source"
+		// qmllint disable incompatible-type
+		paint: ({
+				"circle-color": ["get", "fill"],
+				"circle-radius": ["get", "radius"],
+				"circle-stroke-color": ["get", "stroke"],
+				"circle-stroke-width": ["get", "strokeWidth"],
+				"circle-opacity": ["get", "opacity"]
 			})
 	}
 }
