@@ -33,6 +33,14 @@ QtObject {
 	readonly property color error: "#f85149"
 	readonly property color info: "#58a6ff"
 
+	// ─── Mission / per-drone plan colors ───────────────────────
+	// Shared so the map overlay and the drone-panel waypoint list pick the
+	// same color for a given drone index.
+	readonly property var missionColors: ["#ff9d00", "#00d0ff", "#c77dff", "#6bffb8", "#ff6b9a", "#ffd06b", "#7aa7ff", "#ff7a45"]
+	function missionColor(index) {
+		return missionColors[Math.max(0, index) % missionColors.length];
+	}
+
 	// ─── Semantic: Icon Button ─────────────────────────────────
 	readonly property int iconBtnSize: 28
 	readonly property int iconBtnLabelSize: 10

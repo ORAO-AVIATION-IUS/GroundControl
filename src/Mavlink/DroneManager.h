@@ -80,6 +80,8 @@ class DroneManager : public QObject {
 		bool missionRunning READ missionRunning NOTIFY missionStateChanged)
 	Q_PROPERTY(bool missionPaused READ missionPaused NOTIFY missionStateChanged)
 	Q_PROPERTY(
+		bool missionFinished READ missionFinished NOTIFY missionStateChanged)
+	Q_PROPERTY(
 		bool missionUploaded READ missionUploaded NOTIFY missionStateChanged)
 	Q_PROPERTY(bool missionDirty READ missionDirty NOTIFY missionStateChanged)
 	Q_PROPERTY(QString missionErrorText READ missionErrorText NOTIFY
@@ -150,6 +152,7 @@ class DroneManager : public QObject {
 	[[nodiscard]] QString missionBusyText() const;
 	[[nodiscard]] bool missionRunning() const;
 	[[nodiscard]] bool missionPaused() const;
+	[[nodiscard]] bool missionFinished() const;
 	[[nodiscard]] bool missionUploaded() const;
 	[[nodiscard]] bool missionDirty() const;
 	[[nodiscard]] QString missionErrorText() const;
@@ -162,9 +165,10 @@ class DroneManager : public QObject {
 	Q_INVOKABLE void setAltitude(double altitudeMeters);
 	Q_INVOKABLE void goToLocation(double latitude, double longitude,
 		double altitudeMeters, double headingDegrees);
-	Q_INVOKABLE void uploadMission(
-		const QVariantList& missionItems, bool returnToLaunchAfterMission);
+	Q_INVOKABLE void uploadMission(const QVariantList& missionItems,
+		bool returnToLaunchAfterMission, bool landAfterMission);
 	Q_INVOKABLE void startMission();
+	Q_INVOKABLE void restartMission();
 	Q_INVOKABLE void pauseMission();
 	Q_INVOKABLE void clearMission();
 	Q_INVOKABLE void downloadMission();

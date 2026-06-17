@@ -12,6 +12,7 @@ Column {
 	property string activePlanningTool: "edit"
 	property string activeTrackingTool: ""
 	property bool returnHomeAfterMission: false
+	property bool landAfterMission: false
 	property bool canReturnFromSelectedWaypoint: false
 
 	signal mapModeRequested(int mode)
@@ -74,12 +75,13 @@ Column {
 			onClicked: root.planningToolRequested("clear")
 		}
 		IconButton {
-			iconName: "go-home-large"
-			label: "Return"
+			// Tri-state end-of-mission action: Normal → Return → Land → Normal
+			iconName: root.landAfterMission ? "flightmode-on" : "go-home-large"
+			label: root.returnHomeAfterMission ? "Return" : root.landAfterMission ? "Land" : "End: Off"
 			checkable: true
-			checked: root.returnHomeAfterMission
+			checked: root.returnHomeAfterMission || root.landAfterMission
 			enabled: root.canReturnFromSelectedWaypoint
-			onClicked: root.planningToolRequested("return")
+			onClicked: root.planningToolRequested("endaction")
 		}
 	}
 

@@ -295,6 +295,10 @@ bool DroneManager::missionPaused() const {
 	return m_missionController->missionPaused();
 }
 
+bool DroneManager::missionFinished() const {
+	return m_missionController->missionFinished();
+}
+
 bool DroneManager::missionUploaded() const {
 	return m_missionController->missionUploaded(m_missionPlan->signature());
 }
@@ -485,14 +489,18 @@ void DroneManager::goToLocation(double latitude, double longitude,
 		});
 }
 
-void DroneManager::uploadMission(
-	const QVariantList& missionItems, bool returnToLaunchAfterMission) {
-	m_missionController->uploadMission(
-		missionItems, returnToLaunchAfterMission, m_missionPlan->signature());
+void DroneManager::uploadMission(const QVariantList& missionItems,
+	bool returnToLaunchAfterMission, bool landAfterMission) {
+	m_missionController->uploadMission(missionItems, returnToLaunchAfterMission,
+		landAfterMission, m_missionPlan->signature());
 }
 
 void DroneManager::startMission() {
 	m_missionController->startMission();
+}
+
+void DroneManager::restartMission() {
+	m_missionController->restartMission();
 }
 
 void DroneManager::pauseMission() {

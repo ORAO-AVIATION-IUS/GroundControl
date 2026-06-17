@@ -31,14 +31,17 @@ class DroneMissionController : public QObject {
 	[[nodiscard]] QString missionBusyText() const;
 	[[nodiscard]] bool missionRunning() const;
 	[[nodiscard]] bool missionPaused() const;
+	[[nodiscard]] bool missionFinished() const;
 	[[nodiscard]] QString missionErrorText() const;
 	[[nodiscard]] QString uploadedPlanSignature() const;
 	[[nodiscard]] bool missionUploaded(const QString& currentSignature) const;
 	[[nodiscard]] bool missionDirty(const QString& currentSignature) const;
 
 	void uploadMission(const QVariantList& missionItems,
-		bool returnToLaunchAfterMission, const QString& planSignature);
+		bool returnToLaunchAfterMission, bool landAfterMission,
+		const QString& planSignature);
 	void startMission();
+	void restartMission();
 	void pauseMission();
 	void clearMission();
 	void downloadMission();
@@ -63,6 +66,7 @@ class DroneMissionController : public QObject {
 		None,
 		Upload,
 		Start,
+		Restart,
 		Pause,
 		Clear,
 		Download
@@ -78,7 +82,13 @@ class DroneMissionController : public QObject {
 	[[nodiscard]] bool isCurrentOperation(
 		Operation operation, int operationId) const;
 	[[nodiscard]] static QString missionSignatureFor(
-		const QVariantList& missionItems, bool returnToLaunchAfterMission);
+		const QVariantList& missionItems, bool returnToLaunchAfterMission,
+		bool landAfterMission);
+	void beginStartLikeMission(Operation operation, const QString& busyText,
+		const QString& successMessage);
+	void startMissionAsync(
+		Operation operation, int operationId, const QString& successMessage);
+	void handleMissionProgress(int current, int total);
 
 	QString m_droneName;
 	std::unique_ptr<mavsdk::Mission> m_mission;
@@ -93,4 +103,7 @@ class DroneMissionController : public QObject {
 	QString m_missionErrorText;
 	bool m_missionRunning{false};
 	bool m_missionPaused{false};
+	bool m_missionFinished{false};
+	int m_lastProgressCurrent{0};
+	int m_lastProgressTotal{0};
 };

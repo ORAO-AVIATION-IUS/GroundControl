@@ -15,6 +15,8 @@ class MissionPlanModel : public QObject {
 			NOTIFY selectedIndexChanged)
 	Q_PROPERTY(bool returnHomeAfterMission READ returnHomeAfterMission WRITE
 			setReturnHomeAfterMission NOTIFY returnHomeAfterMissionChanged)
+	Q_PROPERTY(bool landAfterMission READ landAfterMission WRITE
+			setLandAfterMission NOTIFY landAfterMissionChanged)
 	Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
 	Q_PROPERTY(QString signature READ signature NOTIFY signatureChanged)
 	Q_PROPERTY(double distanceMeters READ distanceMeters NOTIFY distanceChanged)
@@ -34,6 +36,9 @@ class MissionPlanModel : public QObject {
 
 	[[nodiscard]] bool returnHomeAfterMission() const;
 	void setReturnHomeAfterMission(bool enabled);
+
+	[[nodiscard]] bool landAfterMission() const;
+	void setLandAfterMission(bool enabled);
 
 	[[nodiscard]] int revision() const;
 	[[nodiscard]] QString signature() const;
@@ -66,6 +71,7 @@ class MissionPlanModel : public QObject {
 	void itemsChanged();
 	void selectedIndexChanged();
 	void returnHomeAfterMissionChanged();
+	void landAfterMissionChanged();
 	void revisionChanged();
 	void signatureChanged();
 	void distanceChanged();
@@ -87,6 +93,7 @@ class MissionPlanModel : public QObject {
 	QVariantList m_items;
 	int m_selectedIndex{-1};
 	bool m_returnHomeAfterMission{false};
+	bool m_landAfterMission{false};
 	int m_revision{0};
 	double m_defaultAltitude;
 	double m_defaultSpeed;

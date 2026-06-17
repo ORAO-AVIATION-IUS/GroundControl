@@ -84,6 +84,8 @@ bool MissionPlanStore::loadMission(
 	missionPlan->setItems(document.value("items").toList());
 	missionPlan->setReturnHomeAfterMission(
 		document.value("returnHomeAfterMission").toBool());
+	missionPlan->setLandAfterMission(
+		document.value("landAfterMission").toBool());
 	clearError();
 	return true;
 }
@@ -161,6 +163,8 @@ bool MissionPlanStore::importMission(
 	missionPlan->setItems(document.value("items").toList());
 	missionPlan->setReturnHomeAfterMission(
 		document.value("returnHomeAfterMission").toBool());
+	missionPlan->setLandAfterMission(
+		document.value("landAfterMission").toBool());
 	clearError();
 	return true;
 }
@@ -198,6 +202,7 @@ QVariantMap MissionPlanStore::documentFromPlan(const QString& name,
 		{"createdAt", previousDocument.value("createdAt", now)},
 		{"modifiedAt", now},
 		{"returnHomeAfterMission", missionPlan->returnHomeAfterMission()},
+		{"landAfterMission", missionPlan->landAfterMission()},
 		{"items", missionPlan->items()}};
 }
 

@@ -97,7 +97,30 @@ void MissionPlanModel::setReturnHomeAfterMission(bool enabled) {
 		return;
 	}
 	m_returnHomeAfterMission = enabled;
+	// Return and Land are mutually exclusive end-of-mission actions.
+	if (enabled && m_landAfterMission) {
+		m_landAfterMission = false;
+		emit landAfterMissionChanged();
+	}
 	emit returnHomeAfterMissionChanged();
+	emit signatureChanged();
+	markEdited();
+}
+
+bool MissionPlanModel::landAfterMission() const {
+	return m_landAfterMission;
+}
+
+void MissionPlanModel::setLandAfterMission(bool enabled) {
+	if (m_landAfterMission == enabled) {
+		return;
+	}
+	m_landAfterMission = enabled;
+	if (enabled && m_returnHomeAfterMission) {
+		m_returnHomeAfterMission = false;
+		emit returnHomeAfterMissionChanged();
+	}
+	emit landAfterMissionChanged();
 	emit signatureChanged();
 	markEdited();
 }
@@ -112,6 +135,7 @@ QString MissionPlanModel::signature() const {
 	}
 	QJsonObject root;
 	root.insert("returnHomeAfterMission", m_returnHomeAfterMission);
+	root.insert("landAfterMission", m_landAfterMission);
 	root.insert("items", QJsonArray::fromVariantList(m_items));
 	return QString::fromUtf8(
 		QJsonDocument(root).toJson(QJsonDocument::Compact));
@@ -201,7 +225,7 @@ void MissionPlanModel::removeSelectedWaypoint() {
 
 void MissionPlanModel::clear() {
 	if (m_items.isEmpty() && m_selectedIndex == -1 &&
-		!m_returnHomeAfterMission) {
+		!m_returnHomeAfterMission && !m_landAfterMission) {
 		return;
 	}
 	m_items.clear();
@@ -209,6 +233,10 @@ void MissionPlanModel::clear() {
 	if (m_returnHomeAfterMission) {
 		m_returnHomeAfterMission = false;
 		emit returnHomeAfterMissionChanged();
+	}
+	if (m_landAfterMission) {
+		m_landAfterMission = false;
+		emit landAfterMissionChanged();
 	}
 	markEdited();
 }

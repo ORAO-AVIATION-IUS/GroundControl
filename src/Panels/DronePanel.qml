@@ -68,6 +68,18 @@ KDDW.DockWidget {
 
 			property DroneManager d: droneLoader.d
 
+			// This drone's index in the swarm, used to pick its plan color so
+			// the panel matches the map overlay.
+			readonly property int droneIndex: {
+				if (!droneItem.d)
+					return 0;
+				for (let i = 0; i < SwarmManager.droneCount; ++i) {
+					if (SwarmManager.droneAt(i) === droneItem.d)
+						return i;
+				}
+				return 0;
+			}
+
 			// This drone's per-drone Log dock, resolved from root.logDocks.
 			// Re-evaluates when docks appear or the drone changes.
 			readonly property var myLogDock: {
@@ -158,6 +170,7 @@ KDDW.DockWidget {
 								totalWp: droneItem.d.wpTotal
 								running: droneItem.d.missionRunning
 								paused: droneItem.d.missionPaused
+								finished: droneItem.d.missionFinished
 								uploaded: droneItem.d.missionUploaded
 								dirty: droneItem.d.missionDirty
 								busy: droneItem.d.missionBusy
@@ -165,8 +178,13 @@ KDDW.DockWidget {
 								errorText: droneItem.d.missionErrorText
 								connected: droneItem.d.connected
 								readyToFly: droneItem.d.readyToFly
+								returnHome: droneItem.d.missionPlan ? droneItem.d.missionPlan.returnHomeAfterMission : false
+								landAtEnd: droneItem.d.missionPlan ? droneItem.d.missionPlan.landAfterMission : false
+								defaultSpeed: droneItem.d.missionPlan ? droneItem.d.missionPlan.defaultSpeed : 0
+								accentColor: S.Style.missionColor(droneItem.droneIndex)
 								onStartClicked: droneItem.d.startMission()
 								onPauseClicked: droneItem.d.pauseMission()
+								onRestartClicked: droneItem.d.restartMission()
 							}
 
 							Rectangle {

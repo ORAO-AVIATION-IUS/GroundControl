@@ -31,6 +31,7 @@ KDDW.DockWidget {
 		return missionPlan.selectedItem();
 	}
 	readonly property bool returnHomeAfterMission: missionPlan.returnHomeAfterMission
+	readonly property bool landAfterMission: missionPlan.landAfterMission
 	readonly property bool missionUploaded: selectedDrone ? selectedDrone.missionUploaded : false
 	readonly property bool missionDirty: selectedDrone ? selectedDrone.missionDirty : false
 	readonly property bool missionBusy: selectedDrone ? selectedDrone.missionBusy : false
@@ -176,8 +177,7 @@ KDDW.DockWidget {
 	}
 
 	function droneMissionColor(index) {
-		const colors = ["#ff9d00", "#00d0ff", "#c77dff", "#6bffb8", "#ff6b9a", "#ffd06b", "#7aa7ff", "#ff7a45"];
-		return colors[Math.max(0, index) % colors.length];
+		return Style.missionColor(index);
 	}
 
 	function visibleMissionPlans() {
@@ -708,10 +708,16 @@ KDDW.DockWidget {
 		const action = missionConfirmAction;
 		cancelMissionConfirmation();
 		localMissionError = "";
-		if (action === "start")
-			selectedDrone.startMission();
-		else if (action === "clear")
+		if (action === "start") {
+			// A finished mission must be restarted (reset to WP 0), otherwise
+			// the vehicle reports "No valid mission available" and loiters.
+			if (selectedDrone.missionFinished)
+				selectedDrone.restartMission();
+			else
+				selectedDrone.startMission();
+		} else if (action === "clear") {
 			selectedDrone.clearMission();
+		}
 	}
 
 	function requestMissionUpload() {
@@ -723,7 +729,7 @@ KDDW.DockWidget {
 			return;
 		}
 		localMissionError = "";
-		selectedDrone.uploadMission(missionItems, returnHomeAfterMission);
+		selectedDrone.uploadMission(missionItems, returnHomeAfterMission, landAfterMission);
 	}
 
 	function requestMissionStart() {
@@ -994,6 +1000,7 @@ KDDW.DockWidget {
 			activePlanningTool: dockRoot.activePlanningTool
 			activeTrackingTool: dockRoot.activeTrackingTool
 			returnHomeAfterMission: dockRoot.returnHomeAfterMission
+			landAfterMission: dockRoot.landAfterMission
 			canReturnFromSelectedWaypoint: dockRoot.selectedMissionItemIndex === dockRoot.missionItems.length - 1 && dockRoot.missionItems.length > 0
 			followSelectedDrone: dockRoot.followSelectedDrone
 			canFollowSelectedDrone: dockRoot.selectedDrone ? dockRoot.hasPosition(dockRoot.selectedDrone) : false
@@ -1007,10 +1014,16 @@ KDDW.DockWidget {
 			onPlanningToolRequested: function (tool) {
 				if (tool === "clear") {
 					dockRoot.clearLocalMission();
-				} else if (tool === "return") {
-					dockRoot.missionPlan.returnHomeAfterMission = !dockRoot.returnHomeAfterMission;
-					if (dockRoot.returnHomeAfterMission)
+				} else if (tool === "endaction") {
+					// Cycle: Normal → Return home → Land → Normal
+					if (dockRoot.returnHomeAfterMission) {
+						dockRoot.missionPlan.landAfterMission = true;
+					} else if (dockRoot.landAfterMission) {
+						dockRoot.missionPlan.landAfterMission = false;
+					} else {
+						dockRoot.missionPlan.returnHomeAfterMission = true;
 						dockRoot.ensureVisibleHomePoint();
+					}
 					dockRoot.markMissionChanged();
 				} else {
 					dockRoot.activePlanningTool = tool;
@@ -1037,7 +1050,7 @@ KDDW.DockWidget {
 			anchors.left: parent.left
 			anchors.bottom: parent.bottom
 			anchors.margins: Style.overlayMargin
-			title: "MISSION  " + dockRoot.missionStatusText() + "  " + dockRoot.missionItems.length + " WP  " + dockRoot.missionDistanceText() + (dockRoot.returnHomeAfterMission ? "  RTH" : "")
+			title: "MISSION  " + dockRoot.missionStatusText() + "  " + dockRoot.missionItems.length + " WP  " + dockRoot.missionDistanceText() + (dockRoot.returnHomeAfterMission ? "  RTH" : dockRoot.landAfterMission ? "  LAND" : "")
 			horizontal: true
 			visible: dockRoot.mapMode === 1 || dockRoot.missionItems.length > 0
 
