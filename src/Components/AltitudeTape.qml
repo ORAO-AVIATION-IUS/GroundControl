@@ -91,7 +91,7 @@ Item {
 			}
 			GradientStop {
 				position: 1.0
-				color: root.darkMode ? "#cc1a1a2e" : "#c8e0e0e0"
+				color: root.darkMode ? "#d00d1117" : "#c8e0e0e0"
 			}
 		}
 	}

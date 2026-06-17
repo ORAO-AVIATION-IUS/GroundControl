@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Agc.Camera
+import Agc.Style as S
 import QtMultimedia
 import QtQuick
 import QtQuick.Controls
@@ -22,7 +23,7 @@ Item {
 
 	Rectangle {
 		anchors.fill: parent
-		color: "#14141e"
+		color: S.Style.bgWindow
 		visible: !root.connected
 
 		Column {
@@ -31,9 +32,10 @@ Item {
 
 			Text {
 				anchors.horizontalCenter: parent.horizontalCenter
-				text: root.statusText || "No stream connected"
-				color: "#888"
+				text: root.statusText || qsTr("No stream connected")
+				color: S.Style.textMuted
 				font.pixelSize: 14
+				font.family: S.Style.fontFamily
 			}
 
 			Button {

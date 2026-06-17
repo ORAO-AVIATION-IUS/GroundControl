@@ -13,6 +13,13 @@ KDDW.DockWidget {
 	// The drone this panel is bound to. null = no drone selected.
 	property DroneManager drone: null
 
+	// Wiring for the Log / Cameras tab area (supplied by Main.qml).
+	property var cameraModel: null   // full camera ListModel (rows carry droneUid)
+	property var cameraDocks: null   // Repeater of standalone CameraPanel docks
+	property var logDocks: null      // Repeater of per-drone Log docks
+	// Only the primary panel for a drone renders inline camera streams.
+	property bool panelIsPrimary: true
+
 	uniqueName: "dronePanel"
 	title: drone ? drone.droneName : qsTr("Drone Control")
 
@@ -61,28 +68,23 @@ KDDW.DockWidget {
 
 			property DroneManager d: droneLoader.d
 
+			// This drone's per-drone Log dock, resolved from root.logDocks.
+			// Re-evaluates when docks appear or the drone changes.
+			readonly property var myLogDock: {
+				const dks = root.logDocks;
+				if (!dks || !droneItem.d)
+					return null;
+				const n = dks.count;
+				for (let i = 0; i < n; ++i) {
+					const dk = dks.itemAt(i);
+					if (dk && dk.droneUid === droneItem.d.droneUid)
+						return dk;
+				}
+				return null;
+			}
+
 			onDChanged: if (!d)
 				droneLoader.sourceComponent = null
-
-			ListModel {
-				id: logModel
-			}
-
-			Connections {
-				target: droneItem.d
-				function onLogMessage(source, message, level) {
-					const dt = new Date();
-					const ts = String(dt.getHours()).padStart(2, '0') + ":" + String(dt.getMinutes()).padStart(2, '0') + ":" + String(dt.getSeconds()).padStart(2, '0');
-					logModel.insert(0, {
-						"ts": ts,
-						"src": source,
-						"msg": message,
-						"level": level
-					});
-					if (logModel.count > 200)
-						logModel.remove(200, logModel.count - 200);
-				}
-			}
 
 			Rectangle {
 				anchors.fill: parent
@@ -148,19 +150,23 @@ KDDW.DockWidget {
 								color: S.Style.separator
 							}
 
-							DroneControls {
+							MissionWaypointList {
 								Layout.preferredWidth: 230
 								Layout.fillHeight: true
-								armed: droneItem.d.armed
-								inFlight: droneItem.d.inFlight
+								items: droneItem.d.missionPlan ? droneItem.d.missionPlan.items : []
+								currentWp: droneItem.d.wpCurrent
+								totalWp: droneItem.d.wpTotal
+								running: droneItem.d.missionRunning
+								paused: droneItem.d.missionPaused
+								uploaded: droneItem.d.missionUploaded
+								dirty: droneItem.d.missionDirty
+								busy: droneItem.d.missionBusy
+								busyText: droneItem.d.missionBusyText
+								errorText: droneItem.d.missionErrorText
 								connected: droneItem.d.connected
-								flightMode: droneItem.d.flightMode
-								droneId: droneItem.d.droneName
-								onArmClicked: droneItem.d.arm()
-								onDisarmClicked: droneItem.d.disarm()
-								onTakeoffClicked: droneItem.d.takeoff()
-								onLandClicked: droneItem.d.land()
-								onRthClicked: droneItem.d.rth()
+								readyToFly: droneItem.d.readyToFly
+								onStartClicked: droneItem.d.startMission()
+								onPauseClicked: droneItem.d.pauseMission()
 							}
 
 							Rectangle {
@@ -169,16 +175,21 @@ KDDW.DockWidget {
 								color: S.Style.separator
 							}
 
-							StatusLog {
+							DroneTabArea {
 								Layout.fillWidth: true
 								Layout.fillHeight: true
-								model: logModel
-								onClearClicked: logModel.clear()
+								drone: droneItem.d
+								cameraModel: root.cameraModel
+								cameraDocks: root.cameraDocks
+								logDock: droneItem.myLogDock
+								panelIsPrimary: root.panelIsPrimary
+								panelOpen: root.isOpen
 							}
 
 							AltitudeTape {
 								Layout.preferredWidth: 110
 								Layout.fillHeight: true
+								darkMode: true
 								altitude: droneItem.d.altitude
 							}
 						}

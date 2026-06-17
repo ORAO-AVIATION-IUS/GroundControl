@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Agc.Log
+import Agc.Style as S
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -47,7 +48,7 @@ Item {
 
 	Rectangle {
 		anchors.fill: parent
-		color: "#ffffff"
+		color: S.Style.bgPanel
 
 		ColumnLayout {
 			anchors.fill: parent
@@ -93,11 +94,12 @@ Item {
 					visible: root.showSearch
 					Layout.fillWidth: true
 					placeholderText: qsTr("Search…")
-					color: "#2a3038"
-					placeholderTextColor: "#a0a8b0"
+					color: S.Style.textPrimary
+					placeholderTextColor: S.Style.textMuted
+					font.family: S.Style.fontFamily
 					background: Rectangle {
-						color: "#f6f7f9"
-						border.color: "#d8dde2"
+						color: S.Style.bgSection
+						border.color: S.Style.borderDefault
 						radius: 2
 					}
 					onTextChanged: root._applyFilters()
@@ -122,8 +124,8 @@ Item {
 			Rectangle {
 				Layout.fillWidth: true
 				Layout.fillHeight: true
-				color: "#fafbfc"
-				border.color: "#e8e8ec"
+				color: S.Style.bgSection
+				border.color: S.Style.borderDefault
 
 				ListView {
 					id: list
@@ -160,8 +162,8 @@ Item {
 
 						Rectangle {
 							anchors.fill: parent
-							color: (rowItem.level >= 3) ? "#ffe8e0"
-							     : (rowItem.level === 2) ? "#fff5d6"
+							color: (rowItem.level >= 3) ? Qt.rgba(0.973, 0.318, 0.286, 0.12)
+							     : (rowItem.level === 2) ? Qt.rgba(0.824, 0.6, 0.133, 0.12)
 							     : "transparent"
 						}
 
@@ -173,38 +175,38 @@ Item {
 
 							Text {
 								text: rowItem.timestamp
-								color: "#9098a4"
+								color: S.Style.textMuted
 								font.pixelSize: 11
-								font.family: "Consolas, Menlo, monospace"
+								font.family: S.Style.fontFamilyMono
 							}
 							Text {
 								Layout.preferredWidth: 72
 								text: "[" + rowItem.source + "]"
-								color: "#2a5080"
+								color: S.Style.info
 								font.pixelSize: 11
 								font.bold: true
-								font.family: "Consolas, Menlo, monospace"
+								font.family: S.Style.fontFamilyMono
 								elide: Text.ElideRight
 							}
 							Text {
 								Layout.preferredWidth: 60
 								text: rowItem.levelName
-								color: rowItem.level >= 3 ? "#8a2010"
-								     : rowItem.level === 2 ? "#7a5a00"
-								     : rowItem.level === 1 ? "#4a5060"
-								     : "#9098a4"
+								color: rowItem.level >= 3 ? S.Style.error
+								     : rowItem.level === 2 ? S.Style.warning
+								     : rowItem.level === 1 ? S.Style.textSecondary
+								     : S.Style.textMuted
 								font.pixelSize: 11
-								font.family: "Consolas, Menlo, monospace"
+								font.family: S.Style.fontFamilyMono
 							}
 							Text {
 								id: rowText
 								Layout.fillWidth: true
 								text: rowItem.message
-								color: rowItem.level >= 3 ? "#8a2010"
-								     : rowItem.level === 2 ? "#7a5a00"
-								     : "#2a3038"
+								color: rowItem.level >= 3 ? S.Style.error
+								     : rowItem.level === 2 ? S.Style.warning
+								     : S.Style.textSecondary
 								font.pixelSize: 11
-								font.family: "Consolas, Menlo, monospace"
+								font.family: S.Style.fontFamilyMono
 								wrapMode: Text.NoWrap
 								elide: Text.ElideRight
 							}
@@ -223,9 +225,9 @@ Item {
 					property int shown: 0
 					property int total: 0
 					text: qsTr("%1 / %2 lines").arg(shown).arg(total)
-					color: "#9098a4"
+					color: S.Style.textMuted
 					font.pixelSize: 10
-					font.family: "Segoe UI"
+					font.family: S.Style.fontFamily
 					Connections {
 						target: proxy
 						function onRowsInserted() { counter.shown = proxy.rowCount() }
@@ -248,8 +250,9 @@ Item {
 					onToggled: list.stickToBottom = checked
 					contentItem: Text {
 						text: tailToggle.text
-						color: "#4a5060"
+						color: S.Style.textSecondary
 						font.pixelSize: 11
+						font.family: S.Style.fontFamily
 						leftPadding: tailToggle.indicator.width + 4
 						verticalAlignment: Text.AlignVCenter
 					}

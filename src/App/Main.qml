@@ -58,6 +58,7 @@ ApplicationWindow {
 		cameraDialog.pipelineString = r.pipeline;
 		cameraDialog.useCustomPipeline = r.isCustom;
 		cameraDialog.editingId = id;
+		cameraDialog.setDroneUid(r.droneUid !== undefined ? r.droneUid : -1);
 		cameraDialog.open();
 	}
 
@@ -100,7 +101,8 @@ ApplicationWindow {
 					"name": name,
 					"connection": connectionString,
 					"pipeline": pipelineString,
-					"isCustom": useCustomPipeline
+					"isCustom": useCustomPipeline,
+					"droneUid": selectedDroneUid
 				});
 			} else {
 				const row = window.rowForId(editingId);
@@ -111,7 +113,8 @@ ApplicationWindow {
 						"name": name,
 						"connection": connectionString,
 						"pipeline": pipelineString,
-						"isCustom": useCustomPipeline
+						"isCustom": useCustomPipeline,
+						"droneUid": selectedDroneUid
 					});
 				}
 				editingId = -1;
@@ -138,6 +141,10 @@ ApplicationWindow {
 		DronePanel {
 			id: dronePanel
 			drone: SwarmManager.selectedDrone
+			cameraModel: cameraModel
+			cameraDocks: cameraDocks
+			logDocks: logDocks
+			panelIsPrimary: true
 
 			title: SwarmManager.selectedDrone ? qsTr("Selected: %1").arg(SwarmManager.selectedDrone.droneName) : qsTr("Selected Drone")
 		}
@@ -157,6 +164,14 @@ ApplicationWindow {
 
 		Connections {
 			target: SwarmManager
+			// When a drone goes away, reassign its cameras to Global so they
+			// keep streaming and the app stays healthy.
+			function onDroneAboutToBeRemoved(uid) {
+				for (let i = 0; i < cameraModel.count; ++i) {
+					if (cameraModel.get(i).droneUid === uid)
+						cameraModel.setProperty(i, "droneUid", -1);
+				}
+			}
 			function onDronesChanged() {
 				let i = 0;
 				while (i < droneModel.count && i < SwarmManager.droneCount) {
@@ -198,6 +213,12 @@ ApplicationWindow {
 
 				drone: model.droneRef
 				uniqueName: "dronePanel_" + model.uid
+				cameraModel: cameraModel
+				cameraDocks: cameraDocks
+				logDocks: logDocks
+				// The main "Selected Drone" panel is primary for the selected
+				// drone; this per-drone dock is primary only for other drones.
+				panelIsPrimary: perDroneDock.drone ? perDroneDock.drone !== SwarmManager.selectedDrone : false
 
 				Connections {
 					target: SwarmManager
@@ -230,6 +251,43 @@ ApplicationWindow {
 				onEditRequested: window.openEditCameraDialog(model.cameraId)
 				onRemoveRequested: window.removeCamera(model.cameraId)
 				Component.onCompleted: root.addDockWidget(camDock, KDDW.KDDockWidgets.Location_OnRight)
+			}
+		}
+
+		// Per-drone Log panels (the detached form of the drone panel's Log tab).
+		// Closed by default; shown when the user detaches the Log tab.
+		Repeater {
+			id: logDocks
+			model: droneModel
+			delegate: KDDW.DockWidget {
+				id: logDock
+				required property var model
+				property int droneUid: model.uid
+				property string droneName: model.droneRef ? model.droneRef.droneName : ""
+
+				uniqueName: "droneLog_" + model.uid
+				title: qsTr("Log - %1").arg(droneName)
+
+				LogView {
+					anchors.fill: parent
+					boundSource: logDock.droneName
+					pinned: true
+					showAttach: false
+					showDetach: false
+				}
+
+				Component.onCompleted: {
+					root.addDockWidget(logDock, KDDW.KDDockWidgets.Location_OnRight);
+					close();
+				}
+
+				Connections {
+					target: SwarmManager
+					function onDroneAboutToBeRemoved(uid) {
+						if (uid === logDock.droneUid)
+							logDock.close();
+					}
+				}
 			}
 		}
 	}

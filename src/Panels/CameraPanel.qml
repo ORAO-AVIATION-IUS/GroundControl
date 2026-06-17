@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import Agc.Camera
 import Agc.Components
 import QtQuick
@@ -22,8 +24,15 @@ KDDW.DockWidget {
 		implicitHeight: 300
 		color: "#222"
 
-		CameraStream {
-			streamId: dockRoot.cameraId
+		// Only instantiate the stream (which claims the single video sink) while
+		// the dock is actually open, so a closed dock releases the sink for an
+		// inline drone-panel tab to use.
+		Loader {
+			anchors.fill: parent
+			active: dockRoot.isOpen
+			sourceComponent: CameraStream {
+				streamId: dockRoot.cameraId
+			}
 		}
 
 		HamburgerMenu {

@@ -12,4 +12,4 @@ qt_add_qml_module(AgcMavlink
     IMPORT_PATH "${CMAKE_BINARY_DIR}"
 )
 
-target_link_libraries(AgcMavlink PRIVATE mavsdk)
+target_link_libraries(AgcMavlink PRIVATE mavsdk AgcLog)

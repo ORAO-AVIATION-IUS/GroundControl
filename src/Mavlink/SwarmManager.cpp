@@ -1,10 +1,35 @@
 #include "SwarmManager.h"
 
 #include "DroneManager.h"
+#include "LogEntry.h"
+#include "LogManager.h"
 
 #include <mavsdk.hpp>
 
 #include <algorithm>
+
+namespace {
+
+// Map the textual level used by DroneManager::logMessage to the numeric
+// LogLevel understood by LogManager::emitLog.
+int logLevelFromString(const QString& level) {
+	const QString l = level.toLower();
+	if (l == "debug") {
+		return static_cast<int>(agc::LogLevel::Debug);
+	}
+	if (l == "warn" || l == "warning") {
+		return static_cast<int>(agc::LogLevel::Warning);
+	}
+	if (l == "err" || l == "error") {
+		return static_cast<int>(agc::LogLevel::Error);
+	}
+	if (l == "critical" || l == "fatal") {
+		return static_cast<int>(agc::LogLevel::Critical);
+	}
+	return static_cast<int>(agc::LogLevel::Info);
+}
+
+}  // namespace
 
 struct SwarmManager::Impl {
 	struct DroneConnection {
@@ -102,6 +127,15 @@ int SwarmManager::addDrone(const QString& name, const QString& url) {
 	int uid = m_nextUid++;
 	auto* drone = new DroneManager(uid, name, url, this);
 	drone->setConnecting(true);
+
+	// Route every drone's log messages into the central LogManager so they
+	// appear in the log panel / per-drone log view and are persisted to file.
+	QObject::connect(drone, &DroneManager::logMessage, this,
+		[](const QString& source, const QString& message,
+			const QString& level) {
+			agc::LogManager::instance().emitLog(
+				source, logLevelFromString(level), message);
+		});
 
 	m_drones.append(drone);
 	m_pending.append(drone);

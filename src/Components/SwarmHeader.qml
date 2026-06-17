@@ -65,103 +65,100 @@ Item {
 			Layout.alignment: Qt.AlignVCenter
 		}
 
+		Item {
+			Layout.fillWidth: true
+		}
+
+		// ── Battery: inline mini-battery glyph + readout ──
+		RowLayout {
+			Layout.alignment: Qt.AlignVCenter
+			Layout.rightMargin: 14
+			spacing: 7
+
+			// battery glyph
+			Item {
+				Layout.alignment: Qt.AlignVCenter
+				implicitWidth: 24
+				implicitHeight: 12
+
+				Rectangle {
+					id: battBody
+					anchors.left: parent.left
+					anchors.verticalCenter: parent.verticalCenter
+					width: 21
+					height: 12
+					radius: 2
+					color: "transparent"
+					border.width: 1.5
+					border.color: S.Style.textMuted
+
+					Rectangle {
+						anchors.left: parent.left
+						anchors.leftMargin: 2
+						anchors.verticalCenter: parent.verticalCenter
+						height: parent.height - 4
+						width: Math.max(0, (parent.width - 4) * Math.min(100, Math.max(0, root.battery)) / 100)
+						radius: 1
+						color: root.battery > 50 ? S.Style.success : root.battery > 20 ? S.Style.warning : S.Style.error
+					}
+				}
+				// terminal nub
+				Rectangle {
+					anchors.left: battBody.right
+					anchors.leftMargin: 1
+					anchors.verticalCenter: parent.verticalCenter
+					width: 2
+					height: 5
+					radius: 1
+					color: S.Style.textMuted
+				}
+			}
+
+			Text {
+				text: root.battery + "%"
+				font.pixelSize: 14
+				font.bold: true
+				font.family: S.Style.fontFamily
+				color: root.battery > 50 ? S.Style.textPrimary : root.battery > 20 ? S.Style.warning : S.Style.error
+				Layout.alignment: Qt.AlignVCenter
+			}
+			Text {
+				text: root.voltage.toFixed(1) + " V"
+				font.pixelSize: 13
+				font.family: S.Style.fontFamily
+				color: S.Style.textSecondary
+				Layout.alignment: Qt.AlignVCenter
+			}
+		}
+
 		Rectangle {
 			Layout.preferredWidth: 1
 			Layout.preferredHeight: 20
 			color: S.Style.headerDivider
 			Layout.alignment: Qt.AlignVCenter
-			Layout.leftMargin: 12
 			Layout.rightMargin: 12
 		}
 
-		Text {
-			text: root.inFlight ? "IN AIR" : root.armed ? "ARMED" : "DISARMED"
-			font.pixelSize: 15
-			font.bold: true
-			font.family: S.Style.fontFamily
-			color: root.inFlight ? S.Style.info : root.armed ? S.Style.success : S.Style.textSecondary
+		// ── Status: inline dot + armed / in-air state ──
+		RowLayout {
 			Layout.alignment: Qt.AlignVCenter
-		}
-
-		Item {
-			Layout.fillWidth: true
-		}
-
-		Rectangle {
-			Layout.alignment: Qt.AlignVCenter
-			Layout.rightMargin: 6
-			Layout.preferredWidth: 76
-			Layout.preferredHeight: 30
-			radius: 0
-			color: S.Style.bgSection
-			border.color: S.Style.borderDefault
-			border.width: 1
+			spacing: 7
 
 			Rectangle {
-				width: 3
-				height: parent.height
-				radius: 0
-				color: root.battery > 50 ? S.Style.success : root.battery > 20 ? S.Style.warning : S.Style.error
+				Layout.alignment: Qt.AlignVCenter
+				Layout.preferredWidth: 9
+				Layout.preferredHeight: 9
+				radius: 4.5
+				color: root.inFlight ? S.Style.info : root.armed ? S.Style.success : S.Style.textMuted
 			}
 
-			Column {
-				anchors.left: parent.left
-				anchors.leftMargin: 9
-				anchors.verticalCenter: parent.verticalCenter
-				spacing: 1
-
-				Text {
-					text: "BATTERY"
-					font.pixelSize: 8
-					font.family: S.Style.fontFamily
-					color: S.Style.textMuted
-				}
-				Text {
-					text: root.battery + "%  " + root.voltage.toFixed(1) + " V"
-					font.pixelSize: 9
-					font.bold: true
-					font.family: S.Style.fontFamily
-					color: S.Style.textPrimary
-				}
-			}
-		}
-
-		Rectangle {
-			Layout.alignment: Qt.AlignVCenter
-			Layout.rightMargin: 12
-			Layout.preferredWidth: 76
-			Layout.preferredHeight: 30
-			radius: 0
-			color: S.Style.bgSection
-			border.color: root.armed ? S.Style.success : S.Style.borderDefault
-			border.width: 1
-
-			Rectangle {
-				width: 3
-				height: parent.height
-				radius: 0
-				color: root.armed ? S.Style.success : S.Style.textMuted
-			}
-
-			Column {
-				anchors.left: parent.left
-				anchors.leftMargin: 9
-				anchors.verticalCenter: parent.verticalCenter
-				spacing: 1
-
-				Text {
-					text: "STATUS"
-					font.pixelSize: 8
-					font.family: S.Style.fontFamily
-					color: S.Style.textMuted
-				}
-				Text {
-					text: root.armed ? "ARMED" : "DISARMED"
-					font.pixelSize: 9
-					font.bold: true
-					font.family: S.Style.fontFamily
-					color: root.armed ? S.Style.success : S.Style.textSecondary
-				}
+			Text {
+				text: root.inFlight ? "IN AIR" : root.armed ? "ARMED" : "DISARMED"
+				font.pixelSize: 15
+				font.bold: true
+				font.family: S.Style.fontFamily
+				color: root.inFlight ? S.Style.info : root.armed ? S.Style.success : S.Style.textSecondary
+				Layout.alignment: Qt.AlignVCenter
 			}
 		}
 	}

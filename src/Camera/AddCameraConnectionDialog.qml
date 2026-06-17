@@ -1,3 +1,4 @@
+import Agc.Mavlink
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -11,6 +12,33 @@ Dialog {
 	property alias useCustomPipeline: customToggle.checked
 	// -1 = add mode; otherwise the id of the camera being edited.
 	property int editingId: -1
+	// UID of the drone this camera is assigned to; -1 = Global (no drone).
+	property int selectedDroneUid: droneCombo.currentValue !== undefined ? droneCombo.currentValue : -1
+
+	// Drone choices: a "Global" entry followed by the connected drones.
+	readonly property var droneOptions: {
+		const arr = [{
+			"label": qsTr("Global (no drone)"),
+			"uid": -1
+		}];
+		const drones = SwarmManager.droneList;
+		for (let i = 0; i < drones.length; ++i)
+			arr.push({
+				"label": drones[i].droneName,
+				"uid": drones[i].droneUid
+			});
+		return arr;
+	}
+
+	function setDroneUid(uid) {
+		for (let i = 0; i < droneOptions.length; ++i) {
+			if (droneOptions[i].uid === uid) {
+				droneCombo.currentIndex = i;
+				return;
+			}
+		}
+		droneCombo.currentIndex = 0;
+	}
 
 	title: editingId === -1 ? qsTr("Add Camera Connection") : qsTr("Edit Camera Connection")
 	modal: true
@@ -25,6 +53,7 @@ Dialog {
 			connectionField.clear();
 			pipelineField.clear();
 			customToggle.checked = false;
+			droneCombo.currentIndex = 0;
 		}
 		nameField.forceActiveFocus();
 	}
@@ -44,6 +73,17 @@ Dialog {
 			id: nameField
 			Layout.fillWidth: true
 			placeholderText: qsTr("e.g. Front Camera")
+		}
+
+		Label {
+			text: qsTr("Assign to")
+		}
+		ComboBox {
+			id: droneCombo
+			Layout.fillWidth: true
+			model: dialog.droneOptions
+			textRole: "label"
+			valueRole: "uid"
 		}
 
 		CheckBox {
