@@ -18,10 +18,11 @@
 #include "BreezeIconProvider.h"
 #include "Camera/CameraManager.h"
 #include "DarkViewFactory.h"
+#include "Log/LogManager.h"
 #include "Mavlink/SwarmManager.h"
-#include "MessageHandler.h"
 
 Q_IMPORT_QML_PLUGIN(Agc_StylePlugin)
+Q_IMPORT_QML_PLUGIN(Agc_LogPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_ComponentsPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_PanelsPlugin)
 Q_IMPORT_QML_PLUGIN(Agc_NetworkPlugin)
@@ -33,7 +34,7 @@ int main(int argc, char* argv[]) {
 	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 #endif
 
-	installMessageHandler();
+	QQuickStyle::setStyle(QStringLiteral("Fusion"));
 
 	QGuiApplication app(argc, argv);
 	QCoreApplication::setOrganizationName("ORAO");
@@ -64,6 +65,8 @@ int main(int argc, char* argv[]) {
 	darkPalette.setColor(QPalette::ToolTipBase, QColor("#1c2128"));
 	darkPalette.setColor(QPalette::ToolTipText, QColor("#e6edf3"));
 	app.setPalette(darkPalette);
+
+	agc::LogManager::instance().bootstrap();
 
 	KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtQuick);
 

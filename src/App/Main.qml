@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Agc.Camera
+import Agc.Log
 import Agc.Mavlink
 import Agc.Panels
 import QtQuick
@@ -123,10 +124,12 @@ ApplicationWindow {
 		id: root
 
 		anchors.fill: parent
-		uniqueName: "MainLayout-3"
+		uniqueName: "MainLayout-7"
 		Component.onCompleted: {
 			addDockWidget(dronePanel, KDDW.KDDockWidgets.Location_OnTop);
 			addDockWidget(mapPanel, KDDW.KDDockWidgets.Location_OnBottom);
+			addDockWidget(logPanel, KDDW.KDDockWidgets.Location_OnBottom);
+			logPanel.close();
 			dronePanel.show();
 			mapPanel.raise();
 		}
@@ -141,6 +144,9 @@ ApplicationWindow {
 
 		MapPanel {
 			id: mapPanel
+		}
+		LogPanel {
+			id: logPanel
 		}
 
 		// Per-drone panels (closed by default, toggled from Drone menu)

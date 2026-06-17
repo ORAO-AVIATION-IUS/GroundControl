@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QDirIterator>
+#include <QFile>
 #include <QFileInfo>
 #include <QHash>
 #include <QIcon>
@@ -103,12 +104,45 @@ QPixmap pixmapFromIcon(const QIcon& icon, int size) {
 	return icon.pixmap(size, size);
 }
 
+// On Windows, breeze-icons' Unix symlinks are checked out as small text files
+// whose content is just the target filename (e.g. "go-home.svg"). Follow
+// these textual references until we reach a real SVG (or a cycle / depth cap).
+QString resolveTextSymlink(const QString& path, int maxDepth = 8) {
+    if (path.isEmpty() || maxDepth <= 0) {
+        return path;
+    }
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return path;
+    }
+    const qint64 size = f.size();
+    if (size <= 0 || size >= 512) {
+        return path;
+    }
+    const QByteArray content = f.readAll().trimmed();
+    if (content.isEmpty() || content.startsWith('<')) {
+        return path;
+    }
+    const QString target = QString::fromUtf8(content);
+    if (target.contains('<') || target.contains('\n')) {
+        return path;
+    }
+    const QFileInfo info(path);
+    const QString resolved = QDir::cleanPath(info.absoluteDir().filePath(target));
+    if (resolved == path || !QFile::exists(resolved)) {
+        return path;
+    }
+    return resolveTextSymlink(resolved, maxDepth - 1);
+}
+
 QPixmap pixmapFromSvg(const QString& path, int size) {
 	if (path.isEmpty()) {
 		return {};
 	}
 
-	QSvgRenderer renderer(path);
+	const QString realPath = resolveTextSymlink(path);
+
+	QSvgRenderer renderer(realPath);
 	if (!renderer.isValid()) {
 		return {};
 	}

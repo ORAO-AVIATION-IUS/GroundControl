@@ -73,10 +73,7 @@ run:
 
 [windows]
 run:
-    Copy-Item -Force "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\bin\*.dll" "{{justfile_directory()}}\build\"; \
-    $env:QT_PLUGIN_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\plugins"; \
-    $env:QML_IMPORT_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\qml"; \
-    .\build\GroundControl.exe
+    Copy-Item -Force "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\bin\*.dll" "{{justfile_directory()}}\build\"; $env:QT_PLUGIN_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\plugins"; $env:QML_IMPORT_PATH = "{{justfile_directory()}}\third_party\maplibre-prebuilt\windows\qml"; .\build\GroundControl.exe
 
 # Format code using clang-format and qmlformat
 [unix]
@@ -94,13 +91,13 @@ format:
 [unix]
 lint:
 	find src/ \( -name '*.cpp' -o -name '*.h' \) -exec clang-tidy -p build {} \;
-	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcCamera_qmllint
+	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcLog_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcCamera_qmllint
 
 # Lint code using clang-tidy and qmllint
 [windows]
 lint:
 	Get-ChildItem -Recurse -Include *.cpp,*.h | Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\third_party\\' } | ForEach-Object { clang-tidy $_.FullName -p build --header-filter=".*" 2>&1 | Out-Null }
-	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcCamera_qmllint
+	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcLog_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcCamera_qmllint
 
 # Clean build directory and LSP files
 [unix]
