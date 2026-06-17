@@ -21,6 +21,15 @@ KDDW.DockWidget {
 	readonly property var missionItems: missionPlan.items
 	readonly property int selectedMissionItemIndex: missionPlan.selectedIndex
 	readonly property int missionRevision: missionPlan.revision
+	// Reactive snapshot of the selected waypoint. selectedItem() returns a
+	// QVariant snapshot, so a plain selectedMissionItem() call in a binding
+	// can't be tracked; depending on the index/revision here makes consumers
+	// (e.g. the altitude tape) update when the selection or plan changes.
+	readonly property var selectedMissionItemData: {
+		void selectedMissionItemIndex;
+		void missionRevision;
+		return missionPlan.selectedItem();
+	}
 	readonly property bool returnHomeAfterMission: missionPlan.returnHomeAfterMission
 	readonly property bool missionUploaded: selectedDrone ? selectedDrone.missionUploaded : false
 	readonly property bool missionDirty: selectedDrone ? selectedDrone.missionDirty : false
@@ -1200,9 +1209,9 @@ KDDW.DockWidget {
 			anchors.left: missionOverlay.right
 			anchors.bottom: parent.bottom
 			anchors.margins: Style.overlayMargin
-			title: dockRoot.selectedMissionItem() ? "WAYPOINT " + (dockRoot.selectedMissionItemIndex + 1) : "WAYPOINT"
+			title: dockRoot.selectedMissionItemData ? "WAYPOINT " + (dockRoot.selectedMissionItemIndex + 1) : "WAYPOINT"
 			horizontal: true
-			visible: dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() !== null
+			visible: dockRoot.mapMode === 1 && dockRoot.selectedMissionItemData !== null
 
 			IconButton {
 				iconName: "configure"
@@ -1212,10 +1221,10 @@ KDDW.DockWidget {
 				onClicked: dockRoot.waypointConfigOpen = checked
 			}
 			IconButton {
-				iconName: dockRoot.selectedMissionItem() && dockRoot.selectedMissionItem().flyThrough ? "media-seek-forward" : "media-playback-pause"
-				label: dockRoot.selectedMissionItem() && dockRoot.selectedMissionItem().flyThrough ? "Fly through" : "Stop at WP"
+				iconName: dockRoot.selectedMissionItemData && dockRoot.selectedMissionItemData.flyThrough ? "media-seek-forward" : "media-playback-pause"
+				label: dockRoot.selectedMissionItemData && dockRoot.selectedMissionItemData.flyThrough ? "Fly through" : "Stop at WP"
 				checkable: true
-				checked: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().flyThrough : false
+				checked: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.flyThrough : false
 				onClicked: dockRoot.setSelectedMissionFlyThrough(checked)
 			}
 			IconButton {
@@ -1241,8 +1250,8 @@ KDDW.DockWidget {
 				MissionOptionEditor {
 					title: "Speed"
 					suffix: "m/s"
-					value: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().speed : 0
-					optionEnabled: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().speedEnabled : false
+					value: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.speed : 0
+					optionEnabled: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.speedEnabled : false
 					minimumValue: 0.5
 					maximumValue: 100
 					decimals: 1
@@ -1256,8 +1265,8 @@ KDDW.DockWidget {
 				MissionOptionEditor {
 					title: "Radius"
 					suffix: "m"
-					value: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().acceptanceRadius : 0
-					optionEnabled: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().acceptanceRadiusEnabled : false
+					value: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.acceptanceRadius : 0
+					optionEnabled: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.acceptanceRadiusEnabled : false
 					minimumValue: 0.5
 					maximumValue: 200
 					decimals: 1
@@ -1271,8 +1280,8 @@ KDDW.DockWidget {
 				MissionOptionEditor {
 					title: "Loiter"
 					suffix: "s"
-					value: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().loiter : 0
-					optionEnabled: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().loiterEnabled : false
+					value: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.loiter : 0
+					optionEnabled: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.loiterEnabled : false
 					minimumValue: 0
 					maximumValue: 3600
 					decimals: 0
@@ -1286,8 +1295,8 @@ KDDW.DockWidget {
 				MissionOptionEditor {
 					title: "Heading"
 					suffix: "°"
-					value: dockRoot.selectedMissionItem() && dockRoot.selectedMissionItem().heading !== undefined ? dockRoot.selectedMissionItem().heading : 0
-					optionEnabled: dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().headingEnabled === true : false
+					value: dockRoot.selectedMissionItemData && dockRoot.selectedMissionItemData.heading !== undefined ? dockRoot.selectedMissionItemData.heading : 0
+					optionEnabled: dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.headingEnabled === true : false
 					minimumValue: 0
 					maximumValue: 359
 					decimals: 0
@@ -1536,13 +1545,13 @@ KDDW.DockWidget {
 
 		AltitudeTape {
 			id: altTape
-			enabled: dockRoot.selectedDroneIndex >= 0 || (dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() !== null) || (dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go" && dockRoot.goTargetValid)
+			enabled: dockRoot.selectedDroneIndex >= 0 || (dockRoot.mapMode === 1 && dockRoot.selectedMissionItemData !== null) || (dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go" && dockRoot.goTargetValid)
 			anchors.right: parent.right
 			anchors.top: parent.top
 			anchors.bottom: parent.bottom
-			altitude: dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() ? dockRoot.selectedMissionItem().altitude : (dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go" ? dockRoot.goTargetAltitude : (dockRoot.selectedDrone ? dockRoot.selectedDrone.altitude : 0))
+			altitude: dockRoot.mapMode === 1 && dockRoot.selectedMissionItemData ? dockRoot.selectedMissionItemData.altitude : (dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go" ? dockRoot.goTargetAltitude : (dockRoot.selectedDrone ? dockRoot.selectedDrone.altitude : 0))
 			darkMode: mapSettings.isDark
-			liveEdit: dockRoot.mapMode === 1 && dockRoot.selectedMissionItem() !== null
+			liveEdit: dockRoot.mapMode === 1 && dockRoot.selectedMissionItemData !== null
 			immediateTargetEdit: dockRoot.mapMode === 2 && dockRoot.flyPromptOpen && dockRoot.flyPromptKind === "go"
 			minimumAltitude: liveEdit ? 5 : 0
 			z: 1
