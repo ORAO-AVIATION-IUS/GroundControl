@@ -148,52 +148,59 @@ Item {
 				ToolTip.text: ctrlBtn.mode === "pause" ? qsTr("Pause mission") : ctrlBtn.mode === "restart" ? qsTr("Restart mission") : root.paused ? qsTr("Resume mission") : qsTr("Start mission")
 			}
 
-			Rectangle {
+			// Progress bar with the status / percent text stacked underneath.
+			// The column fits within the button height, so the text adds no
+			// extra vertical space.
+			ColumnLayout {
 				Layout.fillWidth: true
-				Layout.preferredHeight: 4
-				radius: 2
-				color: S.Style.bgElevated
+				Layout.alignment: Qt.AlignVCenter
+				spacing: 3
 
 				Rectangle {
-					width: parent.width * root._progress
-					height: parent.height
+					Layout.fillWidth: true
+					Layout.preferredHeight: 4
 					radius: 2
-					color: root.finished ? S.Style.success : root.running ? S.Style.info : root.paused ? S.Style.warning : S.Style.success
-					Behavior on width {
-						NumberAnimation {
-							duration: 250
-							easing.type: Easing.OutCubic
+					color: S.Style.bgElevated
+
+					Rectangle {
+						width: parent.width * root._progress
+						height: parent.height
+						radius: 2
+						color: root.finished ? S.Style.success : root.running ? S.Style.info : root.paused ? S.Style.warning : S.Style.success
+						Behavior on width {
+							NumberAnimation {
+								duration: 250
+								easing.type: Easing.OutCubic
+							}
 						}
 					}
 				}
-			}
-		}
 
-		// ── Status line ──
-		Text {
-			Layout.fillWidth: true
-			Layout.topMargin: 6
-			text: {
-				if (root.busy && root.busyText !== "")
-					return root.busyText;
-				if (root.errorText !== "")
-					return root.errorText;
-				if (root._listCount === 0)
-					return "No mission planned";
-				if (root.finished)
-					return "Mission complete";
-				if (!root.uploaded || root.dirty)
-					return "Upload plan from map to fly";
-				if (root.running)
-					return Math.round(root._progress * 100) + "% complete";
-				if (root.paused)
-					return "Paused · " + Math.round(root._progress * 100) + "% complete";
-				return "Ready to start";
+				Text {
+					Layout.fillWidth: true
+					text: {
+						if (root.busy && root.busyText !== "")
+							return root.busyText;
+						if (root.errorText !== "")
+							return root.errorText;
+						if (root._listCount === 0)
+							return "No mission planned";
+						if (root.finished)
+							return "Mission complete";
+						if (!root.uploaded || root.dirty)
+							return "Upload plan from map to fly";
+						if (root.running)
+							return Math.round(root._progress * 100) + "% complete";
+						if (root.paused)
+							return "Paused · " + Math.round(root._progress * 100) + "% complete";
+						return "Ready to start";
+					}
+					color: root.errorText !== "" ? S.Style.error : S.Style.textMuted
+					font.pixelSize: 9
+					font.family: S.Style.fontFamily
+					elide: Text.ElideRight
+				}
 			}
-			color: root.errorText !== "" ? S.Style.error : S.Style.textMuted
-			font.pixelSize: 10
-			font.family: S.Style.fontFamily
-			elide: Text.ElideRight
 		}
 
 		Rectangle {

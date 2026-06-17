@@ -113,6 +113,17 @@ KDDW.DockWidget {
 		id: fallbackGuided
 	}
 
+	// Once the user explicitly deselects a drone, stop auto-follow from
+	// immediately reselecting the lone connected drone on the next telemetry
+	// tick (same suppression as panning the map).
+	Connections {
+		target: SwarmManager
+		function onSelectedDroneIndexChanged() {
+			if (SwarmManager.selectedDroneIndex === -1)
+				dockRoot.autoFollowSuppressed = true;
+		}
+	}
+
 	property var _targetStore: ({})
 	property bool followSelectedDrone: false
 	property bool autoFollowSuppressed: false
