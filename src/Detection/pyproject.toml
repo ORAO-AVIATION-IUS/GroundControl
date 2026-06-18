@@ -1,0 +1,13 @@
+[project]
+name = "agc-detection"
+version = "0.1.0"
+description = "Adaptive Ground Control object detection runtime"
+requires-python = ">=3.11"
+dependencies = [
+    "google-genai",
+    "numpy",
+    "opencv-python-headless",
+    "sahi",
+    "torch",
+    "ultralytics",
+]

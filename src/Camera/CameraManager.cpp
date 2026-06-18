@@ -2,6 +2,7 @@
 
 #include <QDebug>
 #include <QImage>
+#include <QSize>
 #include <QUrl>
 #include <QVideoFrame>
 
@@ -30,6 +31,25 @@ struct CameraInfo {
 };
 
 namespace {
+
+constexpr qsizetype kRgbaBytesPerPixel = 4;
+constexpr qsizetype kBgrBytesPerPixel = 3;
+
+QVariantList detectionsToVariantList(const QList<Detection>& detections) {
+	QVariantList out;
+	out.reserve(detections.size());
+	for (const auto& detection : detections) {
+		QVariantMap item;
+		item.insert(QStringLiteral("x"), detection.x);
+		item.insert(QStringLiteral("y"), detection.y);
+		item.insert(QStringLiteral("w"), detection.w);
+		item.insert(QStringLiteral("h"), detection.h);
+		item.insert(QStringLiteral("label"), detection.label);
+		item.insert(QStringLiteral("score"), detection.score);
+		out.append(item);
+	}
+	return out;
+}
 
 // Walk up GstObject hierarchy to find the pipeline tagged with our stream id.
 int findStreamId(GstObject* obj) {
@@ -86,16 +106,20 @@ GstFlowReturn onNewSample(GstAppSink* appsink, gpointer userData) {
 		}
 
 		if (cam->detectionEnabled && cam->detectionWorker) {
-			const int pixels = width * height;
-			QByteArray bgr(pixels * 3, Qt::Uninitialized);
+			const qsizetype pixels =
+				static_cast<qsizetype>(width) * static_cast<qsizetype>(height);
+			QByteArray bgr(pixels * kBgrBytesPerPixel, Qt::Uninitialized);
 			const uchar* src = map.data;
 			auto* dst = reinterpret_cast<uchar*>(bgr.data());
-			for (int i = 0; i < pixels; ++i) {
-				dst[(i * 3) + 0] = src[(i * 4) + 2];
-				dst[(i * 3) + 1] = src[(i * 4) + 1];
-				dst[(i * 3) + 2] = src[(i * 4) + 0];
+			for (qsizetype i = 0; i < pixels; ++i) {
+				dst[(i * kBgrBytesPerPixel) + 0] =
+					src[(i * kRgbaBytesPerPixel) + 2];
+				dst[(i * kBgrBytesPerPixel) + 1] =
+					src[(i * kRgbaBytesPerPixel) + 1];
+				dst[(i * kBgrBytesPerPixel) + 2] =
+					src[(i * kRgbaBytesPerPixel) + 0];
 			}
-			cam->detectionWorker->submitFrame(bgr, width, height);
+			cam->detectionWorker->submitFrame(bgr, QSize(width, height));
 		}
 
 		gst_buffer_unmap(buffer, &map);
@@ -328,8 +352,9 @@ CameraManager* CameraManager::create(
 }
 
 CameraManager::~CameraManager() {
-	for (auto& [key, value] : m_cameras) {
-		stopPipeline(key);
+	for (const auto& camera : m_cameras) {
+		setDetectionEnabled(camera.first, false);
+		stopPipeline(camera.first);
 	}
 }
 
@@ -358,6 +383,7 @@ void CameraManager::removeStream(int id) {
 		return;
 	}
 
+	setDetectionEnabled(id, false);
 	stopPipeline(id);
 	m_cameras.erase(it);
 	qInfo() << "Removed stream:" << id;
@@ -512,15 +538,16 @@ void CameraManager::stopPipeline(int id) {
 	cam->pipeline = nullptr;
 }
 
-// ai sahi detection stuff
 void CameraManager::setDetectionEnabled(int id, bool enabled) {
 	auto it = m_cameras.find(id);
-	if (it == m_cameras.end())
+	if (it == m_cameras.end()) {
 		return;
+	}
 	auto* cam = it->second.get();
 
-	if (enabled == cam->detectionEnabled)
+	if (enabled == cam->detectionEnabled) {
 		return;
+	}
 	cam->detectionEnabled = enabled;
 
 	if (enabled) {
@@ -528,30 +555,18 @@ void CameraManager::setDetectionEnabled(int id, bool enabled) {
 		cam->detectionWorker = std::make_unique<DetectionWorker>(id);
 		cam->detectionWorker->moveToThread(cam->detectionThread.get());
 
-		// Wire results back to CameraManager on the GUI thread
 		connect(
 			cam->detectionWorker.get(), &DetectionWorker::detectionsReady, this,
-			[this](int streamId, QList<Detection> dets) {
+			[this](int streamId, const QList<Detection>& detections) {
 				auto it2 = m_cameras.find(streamId);
-				if (it2 == m_cameras.end())
+				if (it2 == m_cameras.end()) {
 					return;
-				it2->second->lastDetections = dets;
-
-				QVariantList out;
-				for (const auto& d : dets) {
-					QVariantMap m;
-					m["x"] = d.x;
-					m["y"] = d.y;
-					m["w"] = d.w;
-					m["h"] = d.h;
-					m["label"] = d.label;
-					m["score"] = d.score;
-					out.append(m);
 				}
-				emit detectionsChanged(streamId, out);
+				it2->second->lastDetections = detections;
+				emit detectionsChanged(
+					streamId, detectionsToVariantList(detections));
 			},
 			Qt::QueuedConnection);
-
 		connect(cam->detectionThread.get(), &QThread::started,
 			cam->detectionWorker.get(), &DetectionWorker::start);
 		connect(
@@ -562,34 +577,34 @@ void CameraManager::setDetectionEnabled(int id, bool enabled) {
 			Qt::QueuedConnection);
 
 		cam->detectionThread->start();
-	} else {
-		if (cam->detectionWorker)
-			cam->detectionWorker->stop();
-		if (cam->detectionThread) {
-			cam->detectionThread->quit();
-			cam->detectionThread->wait();
-		}
-		cam->detectionWorker.reset();
-		cam->detectionThread.reset();
-		cam->lastDetections.clear();
-		emit detectionsChanged(id, {});
+		return;
 	}
+
+	if (cam->detectionWorker != nullptr) {
+		DetectionWorker* worker = cam->detectionWorker.get();
+		QThread* targetThread = thread();
+		QMetaObject::invokeMethod(
+			worker,
+			[worker, targetThread]() {
+				worker->stop();
+				worker->moveToThread(targetThread);
+			},
+			Qt::BlockingQueuedConnection);
+	}
+	if (cam->detectionThread != nullptr) {
+		cam->detectionThread->quit();
+		cam->detectionThread->wait();
+	}
+	cam->detectionWorker.reset();
+	cam->detectionThread.reset();
+	cam->lastDetections.clear();
+	emit detectionsChanged(id, {});
 }
 
 QVariantList CameraManager::detections(int id) const {
 	auto it = m_cameras.find(id);
-	if (it == m_cameras.end())
+	if (it == m_cameras.end()) {
 		return {};
-	QVariantList out;
-	for (const auto& d : it->second->lastDetections) {
-		QVariantMap m;
-		m["x"] = d.x;
-		m["y"] = d.y;
-		m["w"] = d.w;
-		m["h"] = d.h;
-		m["label"] = d.label;
-		m["score"] = d.score;
-		out.append(m);
 	}
-	return out;
+	return detectionsToVariantList(it->second->lastDetections);
 }

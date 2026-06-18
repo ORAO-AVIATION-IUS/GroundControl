@@ -59,7 +59,6 @@ bootstrap-maplibre:
 [linux]
 run BACKEND="xcb":
     cd build && \
-    set -a && source {{justfile_directory()}}/.env && set +a && \
     QT_QPA_PLATFORM={{BACKEND}} \
     LD_LIBRARY_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/lib" \
     QT_PLUGIN_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/plugins" \
@@ -79,26 +78,26 @@ run:
 # Format code using clang-format and qmlformat
 [unix]
 format:
-	find src/ \( -name '*.cpp' -o -name '*.h' \) -exec clang-format -i -style=file {} \;
-	find src/ -name '*.qml' -exec {{qmlformat6}} -i {} \;
+	find src/ -path '*/.venv' -prune -o \( -name '*.cpp' -o -name '*.h' \) -exec clang-format -i -style=file {} \;
+	find src/ -path '*/.venv' -prune -o -name '*.qml' -exec {{qmlformat6}} -i {} \;
 
 # Format code using clang-format and qmlformat
 [windows]
 format:
-	Get-ChildItem -Path 'src' -Recurse -Filter '*.qml' | ForEach-Object { qmlformat -i $_.FullName }
-	Get-ChildItem -Path 'src\*' -Recurse -Include '*.cpp','*.h' | ForEach-Object { clang-format -i -style=file $_.FullName }
+	Get-ChildItem -Path 'src' -Recurse -Filter '*.qml' | Where-Object { $_.FullName -notmatch '\\.venv\\' } | ForEach-Object { qmlformat -i $_.FullName }
+	Get-ChildItem -Path 'src\*' -Recurse -Include '*.cpp','*.h' | Where-Object { $_.FullName -notmatch '\\.venv\\' } | ForEach-Object { clang-format -i -style=file $_.FullName }
 
 # Lint code using clang-tidy and CMake qmllint targets
 [unix]
 lint:
-	find src/ \( -name '*.cpp' -o -name '*.h' \) -exec clang-tidy -p build {} \;
-	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcLog_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcCamera_qmllint
+	find src/ -path '*/.venv' -prune -o \( -name '*.cpp' -o -name '*.h' \) -exec clang-tidy -p build {} \;
+	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcLog_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcDetection_qmllint AgcCamera_qmllint
 
 # Lint code using clang-tidy and qmllint
 [windows]
 lint:
-	Get-ChildItem -Recurse -Include *.cpp,*.h | Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\third_party\\' } | ForEach-Object { clang-tidy $_.FullName -p build --header-filter=".*" 2>&1 | Out-Null }
-	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcLog_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcCamera_qmllint
+	Get-ChildItem -Recurse -Include *.cpp,*.h | Where-Object { $_.FullName -notmatch '\\build\\' -and $_.FullName -notmatch '\\third_party\\' -and $_.FullName -notmatch '\\.venv\\' } | ForEach-Object { clang-tidy $_.FullName -p build --header-filter=".*" 2>&1 | Out-Null }
+	cmake --build build --target GroundControl_qmllint AgcStyle_qmllint AgcLog_qmllint AgcComponents_qmllint AgcPanels_qmllint AgcNetwork_qmllint AgcMavlink_qmllint AgcDetection_qmllint AgcCamera_qmllint
 
 # Clean build directory and LSP files
 [unix]
@@ -112,42 +111,30 @@ clean:
 	Remove-Item -Path build -Verbose -Recurse -ErrorAction SilentlyContinue -Force
 	Remove-Item -Path compile_commands.json -Verbose -ErrorAction SilentlyContinue -Force
 
-# stuff necessary for the object detection should be set up in a way that it will just install
-# the dependencies and everything
-# putting this here cuz i dont want to clog up the preexisting justfile above
+# Detection Python runtime managed with uv.
+detection_project := "src/Detection"
+detection_model := "yolov8n.pt"
 
-# Path to the venv used by the Python detector
-detector_venv := ".venv"
-detector_python := if os() == "windows" { detector_venv + "/Scripts/python.exe" } else { detector_venv + "/bin/python3" }
-
-# Create venv and install detector dependencies
+# Create/update the uv environment for the detector.
 [unix]
 detector-setup:
-    python3 -m venv {{detector_venv}}
-    {{detector_python}} -m pip install --upgrade pip
-    {{detector_python}} -m pip install \
-        sahi ultralytics opencv-python-headless numpy \
-        google-genai
-    {{detector_python}} -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+	uv sync --project {{detection_project}}
 
 [windows]
 detector-setup:
-    python3 -m venv {{detector_venv}}
-    {{detector_python}} -m pip install --upgrade pip
-    {{detector_python}} -m pip install \
-        sahi ultralytics opencv-python-headless numpy \
-    {{detector_python}} -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+	uv sync --project {{detection_project}}
 
-# Download YOLOv8n weights into src/Camera/
+# Download YOLO weights into the detection module.
+# MODEL can be overridden, e.g. `just detector-download-model yolov8s.pt`.
 [unix]
-detector-download-model:
-    {{detector_python}} -c "from ultralytics import YOLO; m=YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', 'src/Camera/yolov8n.pt')" 2>/dev/null || true
+detector-download-model MODEL="yolov8n.pt": detector-setup
+	cd {{detection_project}} && uv run --no-sync python -c "from ultralytics import YOLO; YOLO('{{MODEL}}')"
 
 [windows]
-detector-download-model:
-    {{detector_python}} -c "from ultralytics import YOLO; m=YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', 'src/Camera/yolov8n.pt')"
+detector-download-model MODEL="yolov8n.pt": detector-setup
+	cd {{detection_project}}; uv run --no-sync python -c "from ultralytics import YOLO; YOLO('{{MODEL}}')"
 
-# First-time setup: venv + model + build
+# First-time setup: uv environment + model + build.
 [unix]
 setup: detector-setup detector-download-model prebuild
 

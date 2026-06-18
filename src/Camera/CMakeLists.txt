@@ -18,12 +18,12 @@ qt_add_library(AgcCamera STATIC)
 if(WIN32)
     target_link_libraries(AgcCamera
         PUBLIC Qt6::Multimedia
-        PRIVATE GStreamer::Core GStreamer::App GStreamer::Video
+        PRIVATE AgcDetection GStreamer::Core GStreamer::App GStreamer::Video
     )
 else()
     target_link_libraries(AgcCamera
         PUBLIC Qt6::Multimedia
-        PRIVATE PkgConfig::GST
+        PRIVATE AgcDetection PkgConfig::GST
     )
 endif()
 
@@ -32,12 +32,4 @@ qt_add_qml_module(AgcCamera
     SOURCES ${SOURCES}
     QML_FILES ${QML_FILES}
     IMPORT_PATH "${CMAKE_BINARY_DIR}"
-)
-
-# should maybe consider obfuscating the python side somehow
-add_custom_command(TARGET AgcCamera POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/detector.py"
-        "$<TARGET_FILE_DIR:GroundControl>/detector.py"
-    COMMENT "Copying detector.py to build output"
 )

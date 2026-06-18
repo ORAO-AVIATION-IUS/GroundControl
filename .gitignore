@@ -52,9 +52,8 @@ third_party/maplibre-native-qt/
 # matched by *.cmake, *.dylib, *.a above; keep them tracked.
 !third_party/maplibre-prebuilt/**
 
-# yahi
-src/Camera/.venv/
-src/Camera/yolov8n.pt
+# Python detector runtime
 .venv/
 .env
-src/Camera/.env
+src/Detection/.venv/
+src/Detection/*.pt

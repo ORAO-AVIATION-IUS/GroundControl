@@ -74,6 +74,7 @@ add_subdirectory(src/Components)
 add_subdirectory(src/Mavlink)
 add_subdirectory(src/Panels)
 add_subdirectory(src/Network)
+add_subdirectory(src/Detection)
 add_subdirectory(src/Camera)
 
 qt_add_resources(GroundControl
@@ -95,6 +96,7 @@ target_link_libraries(GroundControl PRIVATE
 	AgcPanelsplugin
 	AgcNetworkplugin
 	AgcMavlinkplugin
+	AgcDetectionplugin
 	AgcCameraplugin
 )
 
