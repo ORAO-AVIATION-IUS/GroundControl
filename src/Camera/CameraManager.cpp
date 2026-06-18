@@ -45,7 +45,7 @@ namespace {
 
 constexpr qsizetype kRgbaBytesPerPixel = 4;
 constexpr qsizetype kBgrBytesPerPixel = 3;
-constexpr int kRtspTcpProtocolMask = 4;
+constexpr int kRtspProtocolMask = 7;
 constexpr int kRtspLatencyMs = 300;
 
 QVariantList detectionsToVariantList(const QList<Detection>& detections) {
@@ -248,11 +248,14 @@ void onSourceSetup(
 		return;
 	}
 
-	// Match ffplay/ffprobe's reliable RTSP behaviour for phone/Wi-Fi streams.
-	// rtspsrc protocols is a GstRTSPLowerTrans bitmask: TCP is 0x4.
+	// Let GStreamer negotiate UDP or TCP. Forcing interleaved TCP works on some
+	// Wi-Fi RTSP servers but fails on some phone USB-tethered servers with
+	// "Could not write to resource", while ffplay succeeds by trying UDP too.
+	// rtspsrc protocols is a GstRTSPLowerTrans bitmask: UDP=0x1,
+	// UDP multicast=0x2, TCP=0x4.
 	if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "protocols") !=
 		nullptr) {
-		g_object_set(source, "protocols", kRtspTcpProtocolMask, nullptr);
+		g_object_set(source, "protocols", kRtspProtocolMask, nullptr);
 	}
 	if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "latency") !=
 		nullptr) {
