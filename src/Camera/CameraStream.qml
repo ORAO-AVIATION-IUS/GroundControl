@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Agc.Camera
+import Agc.Components
 import Agc.Detection
 import Agc.Style as S
 import QtMultimedia
@@ -16,6 +17,7 @@ Item {
 	property string statusText: ""
 	property var detections: []
 	property bool detectionEnabled: true
+	property bool showMenu: false
 
 	anchors.fill: parent
 
@@ -28,6 +30,7 @@ Item {
 			CameraManager.attachSink(root.streamId, video.videoSink);
 			root.connected = CameraManager.streamConnected(root.streamId);
 			root.statusText = CameraManager.streamStatus(root.streamId);
+			root.detectionEnabled = CameraManager.detectionEnabled(root.streamId);
 			if (root.detectionEnabled)
 				CameraManager.setDetectionEnabled(root.streamId, true);
 		}
@@ -44,15 +47,52 @@ Item {
 	DetectionOverlay {
 		anchors.fill: parent
 		contentRect: video.contentRect
-		detections: root.detections
+		detections: root.detectionEnabled ? root.detections : []
+		visible: root.detectionEnabled
 	}
 
-	DetectionAlertPanel {
-		id: alertPanel
+	Rectangle {
 		anchors.left: parent.left
-		anchors.right: parent.right
 		anchors.bottom: parent.bottom
+		anchors.margins: 8
 		visible: root.detectionEnabled
+		width: countText.implicitWidth + 14
+		height: 24
+		radius: 4
+		color: "#B0000000"
+		border.color: "#3a3a46"
+		border.width: 1
+
+		Text {
+			id: countText
+			anchors.centerIn: parent
+			text: qsTr("People: %1").arg(root.detections.length)
+			color: "#ff4d4d"
+			font.pixelSize: 12
+			font.bold: true
+			font.family: S.Style.fontFamily
+		}
+	}
+
+	DetectionSettingsPopup {
+		id: settingsPopup
+		x: Math.max(8, root.width - width - 8)
+		y: 42
+		streamId: root.streamId
+	}
+
+	HamburgerMenu {
+		visible: root.showMenu
+		MenuItem {
+			checkable: true
+			checked: root.detectionEnabled
+			text: qsTr("Human detection")
+			onTriggered: CameraManager.setDetectionEnabled(root.streamId, checked)
+		}
+		MenuItem {
+			text: qsTr("Detection adjustments…")
+			onTriggered: settingsPopup.open()
+		}
 	}
 
 	Rectangle {
@@ -99,14 +139,11 @@ Item {
 				root.detections = dets;
 		}
 
-		function onAlertChanged(id, alert) {
+		function onDetectionEnabledChanged(id, enabled) {
 			if (id === root.streamId)
-				alertPanel.addAlert(alert);
+				root.detectionEnabled = enabled;
 		}
 	}
 
 	Component.onCompleted: root.claimSink()
-
-	Component.onDestruction: if (root.streamId >= 0)
-		CameraManager.setDetectionEnabled(root.streamId, false)
 }

@@ -9,8 +9,18 @@
 #include <gst/app/gstappsink.h>
 #include <gst/gst.h>
 
+#include <algorithm>
+#include <cmath>
+
 #include <QThread>
 #include "DetectionWorker.h"
+
+namespace {
+constexpr double kDefaultDetectionConfidence = 0.3;
+constexpr double kMinDetectionConfidence = 0.1;
+constexpr double kMaxDetectionConfidence = 0.8;
+constexpr double kDetectionConfidenceEpsilon = 0.001;
+}  // namespace
 
 // Per-stream state, internal to this translation unit.
 struct CameraInfo {
@@ -27,7 +37,8 @@ struct CameraInfo {
 	std::unique_ptr<QThread> detectionThread;
 	std::unique_ptr<DetectionWorker> detectionWorker;
 	QList<Detection> lastDetections;
-	bool detectionEnabled = false;
+	bool detectionEnabled = true;
+	double detectionConfidence = kDefaultDetectionConfidence;
 };
 
 namespace {
@@ -545,6 +556,17 @@ bool CameraManager::streamConnected(int id) const {
 	return (it != m_cameras.end()) ? it->second->connected : false;
 }
 
+bool CameraManager::detectionEnabled(int id) const {
+	auto it = m_cameras.find(id);
+	return (it != m_cameras.end()) ? it->second->detectionEnabled : false;
+}
+
+double CameraManager::detectionConfidence(int id) const {
+	auto it = m_cameras.find(id);
+	return (it != m_cameras.end()) ? it->second->detectionConfidence
+								   : kDefaultDetectionConfidence;
+}
+
 void CameraManager::setStreamState(
 	int id, const QString& status, bool connected) {
 	auto it = m_cameras.find(id);
@@ -629,14 +651,18 @@ void CameraManager::setDetectionEnabled(int id, bool enabled) {
 	}
 	auto* cam = it->second.get();
 
-	if (enabled == cam->detectionEnabled) {
+	if (enabled == cam->detectionEnabled &&
+		((enabled && cam->detectionWorker != nullptr) ||
+			(!enabled && cam->detectionWorker == nullptr))) {
 		return;
 	}
 	cam->detectionEnabled = enabled;
+	emit detectionEnabledChanged(id, enabled);
 
 	if (enabled) {
 		cam->detectionThread = std::make_unique<QThread>();
-		cam->detectionWorker = std::make_unique<DetectionWorker>(id);
+		cam->detectionWorker =
+			std::make_unique<DetectionWorker>(id, cam->detectionConfidence);
 		cam->detectionWorker->moveToThread(cam->detectionThread.get());
 
 		connect(
@@ -683,6 +709,31 @@ void CameraManager::setDetectionEnabled(int id, bool enabled) {
 	cam->detectionThread.reset();
 	cam->lastDetections.clear();
 	emit detectionsChanged(id, {});
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void CameraManager::setDetectionConfidence(int id, double confidence) {
+	auto it = m_cameras.find(id);
+	if (it == m_cameras.end()) {
+		return;
+	}
+	auto* cam = it->second.get();
+	const double clamped = std::clamp(
+		confidence, kMinDetectionConfidence, kMaxDetectionConfidence);
+	if (std::abs(cam->detectionConfidence - clamped) <
+		kDetectionConfidenceEpsilon) {
+		return;
+	}
+
+	const bool wasEnabled = cam->detectionEnabled;
+	if (wasEnabled) {
+		setDetectionEnabled(id, false);
+	}
+	cam->detectionConfidence = clamped;
+	emit detectionConfidenceChanged(id, clamped);
+	if (wasEnabled) {
+		setDetectionEnabled(id, true);
+	}
 }
 
 QVariantList CameraManager::detections(int id) const {

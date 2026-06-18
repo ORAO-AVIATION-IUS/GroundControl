@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import Agc.Camera
 import Agc.Components
+import Agc.Detection
 import QtQuick
 import QtQuick.Controls
 import com.kdab.dockwidgets as KDDW
@@ -35,7 +36,25 @@ KDDW.DockWidget {
 			}
 		}
 
+		DetectionSettingsPopup {
+			id: detectionSettings
+			x: Math.max(8, parent.width - width - 8)
+			y: 42
+			streamId: dockRoot.cameraId
+		}
+
 		HamburgerMenu {
+			MenuItem {
+				checkable: true
+				checked: CameraManager.detectionEnabled(dockRoot.cameraId)
+				text: qsTr("Human detection")
+				onTriggered: CameraManager.setDetectionEnabled(dockRoot.cameraId, checked)
+			}
+			MenuItem {
+				text: qsTr("Detection adjustments…")
+				onTriggered: detectionSettings.open()
+			}
+			MenuSeparator {}
 			MenuItem {
 				text: qsTr("Edit…")
 				onTriggered: dockRoot.editRequested()

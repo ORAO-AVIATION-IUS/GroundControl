@@ -33,8 +33,12 @@ Detection detectionFromJson(const QJsonObject& object) {
 }
 }  // namespace
 
-DetectionWorker::DetectionWorker(int streamId, QObject* parent)
-	: QObject(parent), m_streamId(streamId) {}
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+DetectionWorker::DetectionWorker(
+	int streamId, double confidenceThreshold, QObject* parent)
+	: QObject(parent),
+	  m_streamId(streamId),
+	  m_confidenceThreshold(confidenceThreshold) {}
 
 DetectionWorker::~DetectionWorker() {
 	stop();
@@ -55,7 +59,10 @@ void DetectionWorker::start() {
 		{QStringLiteral("run"), QStringLiteral("--project"), projectDir,
 			QStringLiteral("--no-sync"), QStringLiteral("python"), script});
 	m_process->setWorkingDirectory(projectDir);
-	m_process->setProcessEnvironment(QProcessEnvironment::systemEnvironment());
+	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+	env.insert(QStringLiteral("AGC_DETECTION_CONFIDENCE"),
+		QString::number(m_confidenceThreshold, 'f', 2));
+	m_process->setProcessEnvironment(env);
 	m_process->setProcessChannelMode(QProcess::SeparateChannels);
 
 	connect(m_process, &QProcess::readyReadStandardError, this, [this]() {

@@ -8,6 +8,7 @@ Item {
 
 	property rect contentRect
 	property var detections: []
+	readonly property color boxColor: "#ff3b30"
 
 	Repeater {
 		model: root.detections
@@ -25,7 +26,7 @@ Item {
 			Rectangle {
 				anchors.fill: parent
 				color: "transparent"
-				border.color: "#00FF41"
+				border.color: root.boxColor
 				border.width: 2
 				radius: 1
 			}
@@ -42,8 +43,8 @@ Item {
 				Text {
 					id: labelText
 					anchors.centerIn: parent
-					text: "%1 %2%".arg(detectionDelegate.modelData.label).arg(Math.round(detectionDelegate.modelData.score * 100))
-					color: "#00FF41"
+					text: qsTr("person %1%").arg(Math.round(detectionDelegate.modelData.score * 100))
+					color: root.boxColor
 					font.pixelSize: 11
 					font.family: S.Style.fontFamily
 				}

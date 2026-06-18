@@ -24,7 +24,8 @@ class DetectionWorker : public QObject {
 	Q_OBJECT
 
    public:
-	explicit DetectionWorker(int streamId, QObject* parent = nullptr);
+	explicit DetectionWorker(
+		int streamId, double confidenceThreshold, QObject* parent = nullptr);
 	~DetectionWorker() override;
 
 	DetectionWorker(const DetectionWorker&) = delete;
@@ -50,6 +51,7 @@ class DetectionWorker : public QObject {
 	void sendPendingFrame();
 
 	int m_streamId;
+	double m_confidenceThreshold = 0.0;
 	QProcess* m_process = nullptr;
 	QMutex m_frameMutex;
 	QByteArray m_pendingFrame;

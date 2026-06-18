@@ -285,6 +285,7 @@ Item {
 						active: camContent.visible && !camContent.detached && root.panelIsPrimary && root.panelOpen
 						sourceComponent: CameraStream {
 							streamId: camContent.model.cameraId
+							showMenu: true
 						}
 					}
 
