@@ -34,6 +34,8 @@ namespace {
 
 constexpr qsizetype kRgbaBytesPerPixel = 4;
 constexpr qsizetype kBgrBytesPerPixel = 3;
+constexpr int kRtspTcpProtocolMask = 4;
+constexpr int kRtspLatencyMs = 300;
 
 QVariantList detectionsToVariantList(const QList<Detection>& detections) {
 	QVariantList out;
@@ -129,32 +131,36 @@ GstFlowReturn onNewSample(GstAppSink* appsink, gpointer userData) {
 	return GST_FLOW_OK;
 }
 
-void onPadAdded(GstElement* /*src*/, GstPad* newPad, gpointer userData) {
-	auto* convert = static_cast<GstElement*>(userData);
+bool capsIsRawVideo(GstCaps* caps) {
+	if (caps == nullptr || gst_caps_is_empty(caps) != 0 ||
+		gst_caps_is_any(caps) != 0) {
+		return false;
+	}
+
+	for (guint i = 0; i < gst_caps_get_size(caps); ++i) {
+		GstStructure* structure = gst_caps_get_structure(caps, i);
+		if (gst_structure_has_name(structure, "video/x-raw") != 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool linkVideoPadWithCaps(
+	GstPad* newPad, GstElement* convert, GstCaps* newPadCaps) {
 	GstPad* sinkPad = gst_element_get_static_pad(convert, "sink");
+	if (sinkPad == nullptr) {
+		return false;
+	}
 
 	if (gst_pad_is_linked(sinkPad) != 0) {
 		gst_object_unref(sinkPad);
-		return;
+		return true;
 	}
 
-	GstCaps* newPadCaps = gst_pad_get_current_caps(newPad);
-	if (newPadCaps == nullptr) {
+	if (!capsIsRawVideo(newPadCaps)) {
 		gst_object_unref(sinkPad);
-		return;
-	}
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsentinel"
-	GstCaps* filter = gst_caps_new_simple("video/x-raw", nullptr);
-#pragma GCC diagnostic pop
-	bool isVideo = gst_caps_can_intersect(newPadCaps, filter) != 0;
-	gst_caps_unref(filter);
-	gst_caps_unref(newPadCaps);
-
-	if (!isVideo) {
-		gst_object_unref(sinkPad);
-		return;
+		return false;
 	}
 
 	GstPadLinkReturn ret = gst_pad_link(newPad, sinkPad);
@@ -165,6 +171,82 @@ void onPadAdded(GstElement* /*src*/, GstPad* newPad, gpointer userData) {
 	}
 
 	gst_object_unref(sinkPad);
+	return ret == GST_PAD_LINK_OK;
+}
+
+bool linkVideoPad(GstPad* newPad, GstElement* convert) {
+	GstCaps* newPadCaps = gst_pad_get_current_caps(newPad);
+	bool linked = linkVideoPadWithCaps(newPad, convert, newPadCaps);
+	if (newPadCaps != nullptr) {
+		gst_caps_unref(newPadCaps);
+	}
+	return linked;
+}
+
+GstPadProbeReturn onPadCaps(
+	GstPad* pad, GstPadProbeInfo* info, gpointer userData) {
+	if ((GST_PAD_PROBE_INFO_TYPE(info) & GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM) ==
+		0) {
+		return GST_PAD_PROBE_OK;
+	}
+
+	GstEvent* event = GST_PAD_PROBE_INFO_EVENT(info);
+	if (GST_EVENT_TYPE(event) != GST_EVENT_CAPS) {
+		return GST_PAD_PROBE_OK;
+	}
+
+	GstCaps* caps = nullptr;
+	gst_event_parse_caps(event, &caps);
+	if (!capsIsRawVideo(caps)) {
+		return GST_PAD_PROBE_REMOVE;
+	}
+
+	linkVideoPadWithCaps(pad, static_cast<GstElement*>(userData), caps);
+	return GST_PAD_PROBE_REMOVE;
+}
+
+void onPadAdded(GstElement* /*src*/, GstPad* newPad, gpointer userData) {
+	auto* convert = static_cast<GstElement*>(userData);
+	if (linkVideoPad(newPad, convert)) {
+		return;
+	}
+
+	// RTSP/decodebin can expose a pad before fixed caps are available. Do not use
+	// gst_pad_query_caps() here: it can return broad ANY/audio+video caps and make
+	// us link an audio pad to videoconvert, which later surfaces as the generic
+	// "Internal data stream error".
+	GstCaps* currentCaps = gst_pad_get_current_caps(newPad);
+	bool hasCaps = currentCaps != nullptr;
+	if (currentCaps != nullptr) {
+		gst_caps_unref(currentCaps);
+	}
+	if (!hasCaps) {
+		gst_pad_add_probe(newPad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,
+			onPadCaps, convert, nullptr);
+	}
+}
+
+void onSourceSetup(
+	GstElement* /*uridecodebin*/, GstElement* source, gpointer /*userData*/) {
+	GstElementFactory* factory = gst_element_get_factory(source);
+	const char* factoryName = (factory != nullptr)
+		? gst_plugin_feature_get_name(GST_PLUGIN_FEATURE(factory))
+		: nullptr;
+
+	if (factoryName == nullptr || QString::fromUtf8(factoryName) != "rtspsrc") {
+		return;
+	}
+
+	// Match ffplay/ffprobe's reliable RTSP behaviour for phone/Wi-Fi streams.
+	// rtspsrc protocols is a GstRTSPLowerTrans bitmask: TCP is 0x4.
+	if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "protocols") !=
+		nullptr) {
+		g_object_set(source, "protocols", kRtspTcpProtocolMask, nullptr);
+	}
+	if (g_object_class_find_property(G_OBJECT_GET_CLASS(source), "latency") !=
+		nullptr) {
+		g_object_set(source, "latency", kRtspLatencyMs, nullptr);
+	}
 }
 
 // Bus handler running on GStreamer streaming thread; marshals to GUI thread.
@@ -331,6 +413,8 @@ PipelineSetup createUriPipeline(
 
 	g_signal_connect(
 		uridecodebin, "pad-added", G_CALLBACK(onPadAdded), convert);
+	g_signal_connect(
+		uridecodebin, "source-setup", G_CALLBACK(onSourceSetup), nullptr);
 
 	return {.pipeline = pipeline, .appSink = appsinkElem};
 }
