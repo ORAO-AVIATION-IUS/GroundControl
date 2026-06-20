@@ -20,12 +20,30 @@ namespace {
 constexpr int kDefaultIconSize = 32;
 constexpr const char* kBreezeThemeName = "breeze";
 
+bool hasSvgIcons(const QString& rootPath) {
+	if (rootPath.isEmpty() || !QDir(rootPath).exists()) {
+		return false;
+	}
+
+	QDirIterator it(rootPath, {QStringLiteral("*.svg")}, QDir::Files,
+		QDirIterator::Subdirectories);
+	return it.hasNext();
+}
+
 QString breezeIconRoot() {
 #ifdef AGC_BREEZE_ICON_ROOT
-	return QStringLiteral(AGC_BREEZE_ICON_ROOT);
-#else
-	return {};
+	const QString vendoredRoot = QStringLiteral(AGC_BREEZE_ICON_ROOT);
+	if (hasSvgIcons(vendoredRoot)) {
+		return vendoredRoot;
+	}
 #endif
+
+	const QString systemRoot = QStringLiteral("/usr/share/icons/breeze");
+	if (hasSvgIcons(systemRoot)) {
+		return systemRoot;
+	}
+
+	return {};
 }
 
 QHash<QString, QString> buildIconIndex(const QString& rootPath) {
@@ -91,9 +109,9 @@ void configureVendoredThemePath() {
 		QIcon::setThemeSearchPaths(searchPaths);
 	}
 
-	if (QIcon::themeName().isEmpty()) {
-		QIcon::setThemeName(QString::fromLatin1(kBreezeThemeName));
-	}
+	// Keep the application icon rendering independent from the desktop session.
+	// XFCE/GTK theme changes can otherwise make Qt resolve different filled icons.
+	QIcon::setThemeName(QString::fromLatin1(kBreezeThemeName));
 }
 
 QPixmap pixmapFromIcon(const QIcon& icon, int size) {
@@ -108,31 +126,32 @@ QPixmap pixmapFromIcon(const QIcon& icon, int size) {
 // whose content is just the target filename (e.g. "go-home.svg"). Follow
 // these textual references until we reach a real SVG (or a cycle / depth cap).
 QString resolveTextSymlink(const QString& path, int maxDepth = 8) {
-    if (path.isEmpty() || maxDepth <= 0) {
-        return path;
-    }
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return path;
-    }
-    const qint64 size = f.size();
-    if (size <= 0 || size >= 512) {
-        return path;
-    }
-    const QByteArray content = f.readAll().trimmed();
-    if (content.isEmpty() || content.startsWith('<')) {
-        return path;
-    }
-    const QString target = QString::fromUtf8(content);
-    if (target.contains('<') || target.contains('\n')) {
-        return path;
-    }
-    const QFileInfo info(path);
-    const QString resolved = QDir::cleanPath(info.absoluteDir().filePath(target));
-    if (resolved == path || !QFile::exists(resolved)) {
-        return path;
-    }
-    return resolveTextSymlink(resolved, maxDepth - 1);
+	if (path.isEmpty() || maxDepth <= 0) {
+		return path;
+	}
+	QFile f(path);
+	if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		return path;
+	}
+	const qint64 size = f.size();
+	if (size <= 0 || size >= 512) {
+		return path;
+	}
+	const QByteArray content = f.readAll().trimmed();
+	if (content.isEmpty() || content.startsWith('<')) {
+		return path;
+	}
+	const QString target = QString::fromUtf8(content);
+	if (target.contains('<') || target.contains('\n')) {
+		return path;
+	}
+	const QFileInfo info(path);
+	const QString resolved =
+		QDir::cleanPath(info.absoluteDir().filePath(target));
+	if (resolved == path || !QFile::exists(resolved)) {
+		return path;
+	}
+	return resolveTextSymlink(resolved, maxDepth - 1);
 }
 
 QPixmap pixmapFromSvg(const QString& path, int size) {
@@ -141,8 +160,21 @@ QPixmap pixmapFromSvg(const QString& path, int size) {
 	}
 
 	const QString realPath = resolveTextSymlink(path);
+	QFile file(realPath);
+	if (!file.open(QIODevice::ReadOnly)) {
+		return {};
+	}
 
-	QSvgRenderer renderer(realPath);
+	QByteArray svg = file.readAll();
+	// Some Breeze icons encode outlines and inner holes as a single compound path.
+	// On this setup QSvgRenderer fills those inner subpaths unless the fill rule is
+	// explicit, making icons look like solid white blobs after tinting.
+	if (!svg.contains("fill-rule")) {
+		svg.replace(
+			"<path ", "<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" ");
+	}
+
+	QSvgRenderer renderer(svg);
 	if (!renderer.isValid()) {
 		return {};
 	}
@@ -179,10 +211,12 @@ QPixmap BreezeIconProvider::requestPixmap(
 		*size = QSize(iconSize, iconSize);
 	}
 
-	QPixmap pixmap = pixmapFromIcon(QIcon::fromTheme(id), iconSize);
+	// Prefer the vendored Breeze SVGs so the app does not change appearance with
+	// the desktop session/icon theme (for example XFCE can make QIcon::fromTheme
+	// return filled icons, which become solid white after tinting).
+	QPixmap pixmap = pixmapFromSvg(iconPathForName(id), iconSize);
 	if (pixmap.isNull()) {
-		const QString iconPath = iconPathForName(id);
-		pixmap = pixmapFromSvg(iconPath, iconSize);
+		pixmap = pixmapFromIcon(QIcon::fromTheme(id), iconSize);
 	}
 	if (pixmap.isNull()) {
 		static QSet<QString> warnedIcons;
