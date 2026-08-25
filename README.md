@@ -102,4 +102,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message guidelines.
 
 ## License
 
-KDDockWidgets: GPL 2.0 or GPL 3.0. Contact KDAB for commercial licensing.
+Copyright © 2026 Adaptive Ground Control System (AGCS) contributors.
+
+GroundControl is licensed under the [GNU Affero General Public License version 3](LICENSE) (`AGPL-3.0-only`).
+
+Third-party components remain under their respective licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the [`LICENSES`](LICENSES) directory.
