@@ -21,16 +21,6 @@ build:
 build:
     cmake --build build
 
-# Configure + build from scratch (first time or after adding dependencies)
-[unix]
-prebuild: configure
-    cmake --build build
-
-# Configure + build from scratch
-[windows]
-prebuild: configure
-    cmake --build build
-
 # Rebuild the committed QMapLibre prebuilt under third_party/maplibre-prebuilt/macos.
 # The prebuilt artifacts are committed; only run this when the upstream version needs updating.
 [macos]
@@ -134,9 +124,11 @@ detector-download-model MODEL="yolov8n.pt": detector-setup
 detector-download-model MODEL="yolov8n.pt": detector-setup
 	cd {{detection_project}}; uv run --no-sync python -c "from ultralytics import YOLO; YOLO('{{MODEL}}')"
 
-# First-time setup: uv environment + model + build.
+# Set up the Python object-detection environment and model, then configure and build.
 [unix]
-setup: detector-setup detector-download-model prebuild
+setup: detector-setup detector-download-model configure
+    cmake --build build
 
 [windows]
-setup: detector-setup detector-download-model prebuild
+setup: detector-setup detector-download-model configure
+    cmake --build build

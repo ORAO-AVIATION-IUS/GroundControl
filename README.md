@@ -7,7 +7,7 @@ Qt6 QML docking application with KDDockWidgets.
 ```bash
 git clone --recursive <repo-url>     # Clone with submodules
 cd GroundControl
-just build-dependencies              # Build KDDockWidgets library
+just configure                       # Configure once after cloning
 just build                           # Build project
 just run                             # Run application
 ```
@@ -44,8 +44,16 @@ Run `just --list` to see all available commands.
 ### Build
 
 ```bash
-just build-dependencies    # Build KDDockWidgets dependency library
-just build                 # Build the project using CMake + Ninja
+just configure             # Configure once after cloning or cleaning
+just build                 # Incrementally build the project using CMake + Ninja
+```
+
+### Object Detection Setup
+
+`just setup` is only needed to set up the Python object-detection feature. It creates the `uv` environment, downloads the YOLO model, configures the project, and builds it.
+
+```bash
+just setup
 ```
 
 ### Run

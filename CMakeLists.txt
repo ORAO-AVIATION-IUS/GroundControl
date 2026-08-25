@@ -45,6 +45,14 @@ set(BUILD_MAVSDK_SERVER OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(BUILD_FUZZ_TESTS OFF CACHE BOOL "" FORCE)
 set(MAVLINK_DIALECT "ardupilotmega" CACHE STRING "" FORCE)
+
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/MAVSDK/cpp/CMakeLists.txt"
+   OR NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/MAVSDK/proto/protos/mavsdk_options.proto")
+    message(FATAL_ERROR
+        "MAVSDK submodules are missing. Clone GroundControl with --recursive as documented."
+    )
+endif()
+
 add_subdirectory(third_party/MAVSDK/cpp)
 
 add_subdirectory(third_party/KDDockWidgets EXCLUDE_FROM_ALL)
