@@ -1,6 +1,35 @@
 # Ground Control
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![Qt](https://img.shields.io/badge/Qt-6.10-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
+[![C++](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/20)
+[![CMake](https://img.shields.io/badge/CMake-3.22%2B-064F8C?logo=cmake&logoColor=white)](https://cmake.org/)
+[![MAVLink](https://img.shields.io/badge/MAVLink-ardupilotmega-FF6B00)](https://mavlink.io/)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](#platform-notes)
+
 Qt6 QML docking application with KDDockWidgets.
+
+## Flight Commands
+
+<table>
+  <tr>
+    <td align="center" width="50%"><b>Connect</b><br><br><img src="media/connect.gif" width="100%"></td>
+    <td align="center" width="50%"><b>Takeoff</b><br><br><img src="media/takeoff.gif" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><b>Go To</b><br><br><img src="media/goto.gif" width="100%"></td>
+    <td align="center" width="50%"><b>Land</b><br><br><img src="media/land.gif" width="100%"></td>
+  </tr>
+</table>
+
+## Features
+
+<table>
+  <tr>
+    <td align="center" width="50%"><b>Multi-Drone</b><br><br><img src="media/multidrone.gif" width="100%"></td>
+    <td align="center" width="50%"><b>Customization</b><br><br><img src="media/customization.gif" width="100%"></td>
+  </tr>
+</table>
 
 ## Quick Start
 
