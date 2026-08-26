@@ -62,7 +62,7 @@ GStreamer is required for camera/video streaming support.
 | **Linux (Debian/Ubuntu)** | `sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-tools` |
 | **Linux (Fedora)** | `sudo dnf install gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-libav gstreamer1-tools` |
 | **macOS** | `brew install gstreamer` |
-| **Windows** | Download from [GStreamer downloads](https://gstreamer.freedesktop.org/download/) — install both runtime and dev packages. Set `GSTREAMER_ROOT_X86_64` env var to the install path (e.g. `C:\gstreamer\1.0\mingw_x86_64`). |
+| **Windows** | Download from [GStreamer downloads](https://gstreamer.freedesktop.org/download/) - install both runtime and dev packages. Set `GSTREAMER_ROOT_X86_64` env var to the install path (e.g. `C:\gstreamer\1.0\mingw_x86_64`). |
 
 Runtime plugins are also needed for stream decoding: `gst-plugins-good` (RTSP), `gst-plugins-bad` (hardware decode), `gst-libav` (H.264/H.265).
 
@@ -136,3 +136,12 @@ Copyright © 2026 Adaptive Ground Control System (AGCS) contributors.
 GroundControl is licensed under the [GNU Affero General Public License version 3](LICENSE) (`AGPL-3.0-only`).
 
 Third-party components remain under their respective licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the [`LICENSES`](LICENSES) directory.
+
+## The Team
+
+<table>
+  <tr>
+    <td align="center" width="50%"><b>UAVs We Built</b><br><br><img src="media/uavs.jpg" width="100%"></td>
+    <td align="center" width="50%"><b>Award from Our University</b><br><br><img src="media/award.jpg" width="100%"></td>
+  </tr>
+</table>
