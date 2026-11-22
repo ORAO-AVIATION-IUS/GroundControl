@@ -45,14 +45,41 @@ bootstrap-maplibre:
     rm -rf "$out"
     cmake --install "$repo/build"
 
-# Run
+# Rebuild the committed Ubuntu/Debian QMapLibre prebuilt under
+# third_party/maplibre-prebuilt/linux-ubuntu (Qt 6.10.x, glibc 2.35 / Ubuntu 22.04,
+# bundled ICU). Build it on the oldest supported Ubuntu so it runs on newer ones.
+# Needs CMAKE_PREFIX_PATH pointing at the Qt 6.10 install (e.g. ~/Qt/6.10.3/gcc_64).
+[linux]
+bootstrap-maplibre:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    repo="third_party/maplibre-native-qt"
+    rev="399311ee6389c32240cc8bcaae7ad751749de1bb"
+    out="$PWD/third_party/maplibre-prebuilt/linux-ubuntu"
+    if [ ! -d "$repo" ]; then
+        git init -q "$repo"
+        git -C "$repo" fetch --depth 1 https://github.com/maplibre/maplibre-native-qt.git "$rev"
+        git -C "$repo" checkout -q FETCH_HEAD
+        git -C "$repo" submodule update --init --recursive --depth 1
+    fi
+    cmake -S "$repo" -B "$repo/build" -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.19 \
+        -DMLN_WITH_OPENGL=ON \
+        -DMLN_QT_WITH_INTERNAL_ICU=ON \
+        -DMLN_QT_WITH_RENDERER_DEBUGGING=OFF \
+        -DQT_NO_PRIVATE_MODULE_WARNING=ON \
+        -DCMAKE_INSTALL_PREFIX="$out"
+    cmake --build "$repo/build"
+    rm -rf "$out"
+    cmake --install "$repo/build"
+
+# Run (paths to the QMapLibre prebuilt and Qt come from build/runtime-env.sh)
 [linux]
 run BACKEND="xcb":
     cd build && \
+    . ./runtime-env.sh && \
     QT_QPA_PLATFORM={{BACKEND}} \
-    LD_LIBRARY_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/lib" \
-    QT_PLUGIN_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/plugins" \
-    QML_IMPORT_PATH="{{justfile_directory()}}/third_party/maplibre-prebuilt/linux/qml" \
     ./GroundControl
 
 [macos]

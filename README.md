@@ -115,6 +115,36 @@ Backend selection via `just run [xcb|wayland]`:
 - **XCB (default)**: X11 via XWayland. Best docking support.
 - **Wayland**: Native protocol. May have dual title bars/docking issues.
 
+### Ubuntu / Debian
+
+Ubuntu's own Qt packages are too old (22.04 ships Qt 6.2), so install Qt 6.10 with
+[aqtinstall](https://github.com/miurahr/aqtinstall). The QMapLibre map library comes
+prebuilt for Ubuntu 22.04+ in `third_party/maplibre-prebuilt/linux-ubuntu`; CMake picks
+it automatically on Ubuntu/Debian. It is built against **Qt 6.10.x**, so use that exact
+minor version (CMake stops with an error otherwise).
+
+```bash
+sudo apt install git build-essential clang ninja-build cmake pkg-config python3-venv \
+    libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 \
+    libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+    libxcb-shape0 libxcb-xinerama0 libxcb-xkb1 libfontconfig1-dev libfreetype-dev \
+    libwayland-dev libssl-dev zlib1g-dev \
+    libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-tools
+
+python3 -m venv ~/.local/gc-tools
+~/.local/gc-tools/bin/pip install aqtinstall cmake rust-just
+~/.local/gc-tools/bin/aqt install-qt linux desktop 6.10.3 linux_gcc_64 -O ~/Qt \
+    -m qtlocation qtpositioning qtmultimedia qtshadertools qtimageformats qt5compat
+
+export PATH=~/.local/gc-tools/bin:$PATH CMAKE_PREFIX_PATH=~/Qt/6.10.3/gcc_64
+just configure && just build && just run
+```
+
+To use a different prebuilt, configure with `-DAGC_QMAPLIBRE_PREBUILT=linux|linux-ubuntu|none`
+(`none` uses a system-wide QMapLibre). To rebuild the Ubuntu prebuilt (e.g. for another
+Qt version), run `just bootstrap-maplibre` on Ubuntu 22.04.
+
 ### Windows
 
 - `just run` executes natively (no backend parameter)
